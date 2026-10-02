@@ -1,0 +1,17 @@
+# TravelGo — Sistema de Agencias de Viajes
+
+Sistema web para gestionar clientes, catálogo de paquetes, reservas y facturación.
+Proyecto universitario · Programación Orientada a Objetos en Java.
+
+## Stack
+Java 17+ · Spring Boot 3 · Maven · Spring Data JPA · Spring Security · Thymeleaf · MySQL/PostgreSQL
+
+## Cómo correrlo
+1. Clonar el repo: `git clone <url>`
+2. Configurar la base de datos en `src/main/resources/application.properties`
+3. Ejecutar: `./mvnw spring-boot:run`
+
+## Flujo de trabajo
+- Ramas: `main` (estable) ← `develop` (integración) ← `feature/nombre`
+- Nadie hace push directo a `main` ni a `develop`; todo entra por Pull Request con 1 aprobación.
+- Commits: `tipo(módulo): descripción`, por ejemplo `feat(usuario): agregar login`.
