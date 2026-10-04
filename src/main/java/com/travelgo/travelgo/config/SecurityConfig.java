@@ -19,11 +19,13 @@ public class SecurityConfig {
 		http
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/", "/login", "/registro", "/error").permitAll()
+				.requestMatchers("/catalogo", "/catalogo/**").permitAll()
 				.requestMatchers("/css/**", "/js/**", "/img/**").permitAll()
 				.anyRequest().authenticated())
 			.formLogin(form -> form
 				.loginPage("/login")
-				.defaultSuccessUrl("/", true)
+				// Sin "true": tras el login vuelve a la página que pidió el usuario (p. ej. /reserva)
+				.defaultSuccessUrl("/")
 				.permitAll())
 			.logout(logout -> logout
 				.logoutSuccessUrl("/login?logout")
