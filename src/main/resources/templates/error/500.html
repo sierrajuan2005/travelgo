@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Error del servidor')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="d-flex align-items-center justify-content-center py-5">
+    <div class="text-center tg-error">
+        <i class="bi bi-exclamation-triangle tg-error-icon"></i>
+        <h1 class="display-4 fw-bold">500</h1>
+        <p class="lead">Algo salió mal. Intenta de nuevo en unos minutos.</p>
+        <a class="btn btn-tg" th:href="@{/}">Volver al inicio</a>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

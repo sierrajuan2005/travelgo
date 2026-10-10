@@ -75,3 +75,56 @@ main {
     border-bottom: none;
     padding-top: 2rem;
 }
+
+/* Páginas de error (404, 403, 500) */
+.tg-error-icon {
+    font-size: 4rem;
+    color: var(--tg-primario);
+}
+
+/* Tarjetas del catálogo: la "imagen" es un degradado con un icono */
+.tg-card {
+    border: none;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.06);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tg-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.tg-card-img {
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--tg-primario) 0%, #1b9aaa 100%);
+}
+
+.tg-precio {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--tg-primario);
+}
+
+/* Resumen de la reserva: queda fijo al hacer scroll en pantallas grandes */
+@media (min-width: 992px) {
+    .tg-resumen {
+        position: sticky;
+        top: 1rem;
+    }
+}
+
+.tg-opcion {
+    cursor: pointer;
+}
+
+.tg-opcion:has(input:checked) {
+    border-color: var(--tg-primario);
+    background-color: #e8f4f7;
+}
