@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Inicio')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+    <section class="tg-hero text-center">
+        <div class="container">
+            <h1 class="display-5 fw-bold">Tu próximo viaje empieza aquí</h1>
+            <p class="lead mb-4">Paquetes turísticos, vuelos, hoteles y transporte en un solo lugar.</p>
+            <div sec:authorize="isAnonymous()">
+                <a class="btn btn-light btn-lg me-2" th:href="@{/registro}">Crear cuenta</a>
+                <a class="btn btn-outline-light btn-lg" th:href="@{/login}">Iniciar sesión</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="container py-5">
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <i class="bi bi-geo-alt-fill tg-feature-icon"></i>
+                <h2 class="h5 mt-3">Destinos</h2>
+                <p class="text-muted">Explora destinos nacionales e internacionales.</p>
+            </div>
+            <div class="col-md-4">
+                <i class="bi bi-suitcase2-fill tg-feature-icon"></i>
+                <h2 class="h5 mt-3">Paquetes turísticos</h2>
+                <p class="text-muted">Elige paquetes con todo incluido al mejor precio.</p>
+            </div>
+            <div class="col-md-4">
+                <i class="bi bi-calendar-check-fill tg-feature-icon"></i>
+                <h2 class="h5 mt-3">Reservas</h2>
+                <p class="text-muted">Reserva vuelos, hoteles y transporte en minutos.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

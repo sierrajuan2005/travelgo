@@ -1,0 +1,77 @@
+/* Estilos globales de TravelGo (complementan a Bootstrap 5) */
+
+:root {
+    --tg-primario: #0d6e8a;
+    --tg-primario-oscuro: #0a5468;
+    --tg-acento: #f4a259;
+    --tg-fondo: #f5f8fa;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--tg-fondo);
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+/* Barra de navegación y pie */
+.tg-navbar {
+    background-color: var(--tg-primario);
+}
+
+.tg-footer {
+    background-color: var(--tg-primario-oscuro);
+    color: #dbe9ee;
+}
+
+/* Botón principal con el color de la marca */
+.btn-tg {
+    background-color: var(--tg-primario);
+    border-color: var(--tg-primario);
+    color: #fff;
+}
+
+.btn-tg:hover,
+.btn-tg:focus {
+    background-color: var(--tg-primario-oscuro);
+    border-color: var(--tg-primario-oscuro);
+    color: #fff;
+}
+
+/* Portada de la página de inicio */
+.tg-hero {
+    background: linear-gradient(135deg, var(--tg-primario) 0%, #1b9aaa 100%);
+    color: #fff;
+    padding: 5rem 0;
+}
+
+.tg-hero .btn-light {
+    color: var(--tg-primario);
+}
+
+.tg-feature-icon {
+    font-size: 2.5rem;
+    color: var(--tg-primario);
+}
+
+/* Tarjetas de login y registro */
+.tg-auth-card {
+    max-width: 440px;
+    width: 100%;
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+}
+
+.tg-auth-card .card-header {
+    background-color: transparent;
+    border-bottom: none;
+    padding-top: 2rem;
+}
