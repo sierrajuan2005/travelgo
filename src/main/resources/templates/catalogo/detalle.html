@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${paquete.nombre})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${paquete.nombre}">Paquete</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card tg-card">
+                <div class="tg-card-img" style="height: 240px;">
+                    <i class="bi" th:classappend="${paquete.icono}"></i>
+                </div>
+                <div class="card-body p-4">
+                    <h1 class="h3" th:text="${paquete.nombre}">Nombre del paquete</h1>
+                    <p class="text-muted">
+                        <i class="bi bi-geo-alt"></i>
+                        <span th:text="${paquete.destino + ', ' + paquete.pais}">Destino, País</span>
+                    </p>
+                    <p th:text="${paquete.descripcion}">Descripción del paquete.</p>
+
+                    <h2 class="h5 mt-4">¿Qué incluye?</h2>
+                    <ul class="list-unstyled">
+                        <li th:each="item : ${paquete.incluye}" class="mb-1">
+                            <i class="bi bi-check2 text-success"></i> <span th:text="${item}">Servicio</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card tg-card tg-resumen">
+                <div class="card-body p-4">
+                    <p class="text-muted mb-1">Precio por persona</p>
+                    <p class="tg-precio fs-3 mb-1"
+                       th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+                    <p class="text-muted small" th:text="${paquete.duracionDias + ' días'}">5 días</p>
+                    <a class="btn btn-tg w-100" th:href="@{/reserva(paquete=${paquete.id})}">
+                        <i class="bi bi-calendar-plus"></i> Reservar
+                    </a>
+                    <p class="text-muted small mt-2 mb-0">Necesitas iniciar sesión para reservar.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

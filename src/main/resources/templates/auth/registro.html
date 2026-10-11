@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Registro')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="d-flex align-items-center justify-content-center py-5">
+    <div class="card tg-auth-card">
+        <div class="card-header text-center">
+            <i class="bi bi-person-plus-fill fs-1 text-primary"></i>
+            <h1 class="h4 mt-2">Crear cuenta</h1>
+        </div>
+        <div class="card-body px-4 pb-4">
+
+            <form th:action="@{/registro}" th:object="${registro}" method="post" novalidate>
+                <div class="mb-3">
+                    <label for="nombre" class="form-label">Nombre completo</label>
+                    <input type="text" th:field="*{nombre}" class="form-control"
+                           th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{nombre}"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="correo" class="form-label">Correo electrónico</label>
+                    <input type="email" th:field="*{correo}" class="form-control"
+                           placeholder="tucorreo@ejemplo.com"
+                           th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{correo}"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" th:field="*{password}" class="form-control"
+                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{password}"></div>
+                </div>
+                <div class="mb-3">
+                    <label for="confirmarPassword" class="form-label">Confirmar contraseña</label>
+                    <input type="password" th:field="*{confirmarPassword}" class="form-control"
+                           th:classappend="${#fields.hasErrors('confirmarPassword')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{confirmarPassword}"></div>
+                </div>
+                <button type="submit" class="btn btn-tg w-100">Registrarme</button>
+            </form>
+
+            <p class="text-center mt-3 mb-0 small">
+                ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a>
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

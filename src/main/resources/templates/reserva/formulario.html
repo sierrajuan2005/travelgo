@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reservar')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
+            <li class="breadcrumb-item">
+                <a th:href="@{/catalogo/{id}(id=${paquete.id})}" th:text="${paquete.nombre}">Paquete</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Reservar</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
+        <h1 class="h2 mb-0">Arma tu reserva</h1>
+        <span class="badge text-bg-warning align-self-start align-self-md-end">Maqueta · no se guarda</span>
+    </div>
+
+    <form th:action="@{/reserva}" method="post">
+        <input type="hidden" name="paqueteId" th:value="${paquete.id}">
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+
+                <div class="card tg-card mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h5"><i class="bi bi-calendar-event"></i> Fecha del viaje</h2>
+                        <input type="date" name="fechaViaje" class="form-control" style="max-width: 220px;" required>
+                    </div>
+                </div>
+
+                <!-- Una sección por tipo de servicio reservable: Vuelo, Hotel y Transporte -->
+                <div class="card tg-card mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h5"><i class="bi bi-airplane"></i> Vuelo</h2>
+                        <label class="card tg-opcion p-3 mb-2" th:each="vuelo : ${vuelos}">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="vueloId"
+                                       th:value="${vuelo.id}" th:attr="data-precio=${vuelo.precio}">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" th:text="${vuelo.titulo}">Vuelo</div>
+                                    <div class="text-muted small" th:text="${vuelo.detalle}">Detalle</div>
+                                </div>
+                                <span class="fw-semibold"
+                                      th:text="${'+ USD ' + #numbers.formatDecimal(vuelo.precio, 1, 'COMMA', 2, 'POINT')}">+ USD 0.00</span>
+                            </div>
+                        </label>
+                        <label class="card tg-opcion p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="vueloId" value="" data-precio="0" checked>
+                                <span class="text-muted">Sin vuelo</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card tg-card mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h5"><i class="bi bi-building"></i> Hotel</h2>
+                        <p class="text-muted small"
+                           th:text="${'Precio por noche · ' + paquete.duracionDias + ' noches'}">Precio por noche</p>
+                        <label class="card tg-opcion p-3 mb-2" th:each="hotel : ${hoteles}">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="hotelId"
+                                       th:value="${hotel.id}" th:attr="data-precio=${hotel.precio * paquete.duracionDias}">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" th:text="${hotel.titulo}">Hotel</div>
+                                    <div class="text-muted small" th:text="${hotel.detalle}">Detalle</div>
+                                </div>
+                                <span class="fw-semibold"
+                                      th:text="${'USD ' + #numbers.formatDecimal(hotel.precio, 1, 'COMMA', 2, 'POINT') + ' / noche'}">USD 0.00 / noche</span>
+                            </div>
+                        </label>
+                        <label class="card tg-opcion p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="hotelId" value="" data-precio="0" checked>
+                                <span class="text-muted">Sin hotel</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="card tg-card">
+                    <div class="card-body p-4">
+                        <h2 class="h5"><i class="bi bi-car-front"></i> Transporte</h2>
+                        <label class="card tg-opcion p-3 mb-2" th:each="transporte : ${transportes}">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="transporteId"
+                                       th:value="${transporte.id}" th:attr="data-precio=${transporte.precio}">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" th:text="${transporte.titulo}">Transporte</div>
+                                    <div class="text-muted small" th:text="${transporte.detalle}">Detalle</div>
+                                </div>
+                                <span class="fw-semibold"
+                                      th:text="${'+ USD ' + #numbers.formatDecimal(transporte.precio, 1, 'COMMA', 2, 'POINT')}">+ USD 0.00</span>
+                            </div>
+                        </label>
+                        <label class="card tg-opcion p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <input class="form-check-input mt-0" type="radio" name="transporteId" value="" data-precio="0" checked>
+                                <span class="text-muted">Sin transporte</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card tg-card tg-resumen">
+                    <div class="card-body p-4">
+                        <h2 class="h5">Resumen</h2>
+                        <p class="mb-1 fw-semibold" th:text="${paquete.nombre}">Paquete</p>
+                        <p class="text-muted small"
+                           th:text="${paquete.destino + ' · ' + paquete.duracionDias + ' días'}">Destino · días</p>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span>Paquete</span>
+                            <span th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Servicios extra</span>
+                            <span id="extras">USD 0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-semibold">Total</span>
+                            <span id="total" class="tg-precio" th:attr="data-base=${paquete.precio}"
+                                  th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                        </div>
+                        <button type="submit" class="btn btn-tg w-100">Confirmar reserva</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/reserva.js}"></script>
+</body>
+</html>
