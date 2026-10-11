@@ -14,14 +14,20 @@ import org.springframework.web.server.ResponseStatusException;
 @Controller
 public class CatalogoMaquetaController {
 
+	/**
+	 * Lista los paquetes activos.
+	 */
 	@GetMapping("/catalogo")
 	public String listar(Model model) {
-		model.addAttribute("paquetes", PaqueteMaqueta.todos());
+		model.addAttribute("paquetes", PaqueteMaqueta.activos());
 		return "catalogo/lista";
 	}
 
+	/**
+	 * Muestra el detalle de un paquete o la página 404 si no existe.
+	 */
 	@GetMapping("/catalogo/{id}")
-	public String detalle(@PathVariable Long id, Model model) {
+	public String detalle(@PathVariable String id, Model model) {
 		PaqueteMaqueta paquete = PaqueteMaqueta.buscar(id);
 		if (paquete == null) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND);

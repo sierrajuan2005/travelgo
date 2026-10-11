@@ -3,80 +3,76 @@ package com.travelgo.travelgo.maqueta;
 import java.util.List;
 
 /**
- * Paquete turístico de ejemplo para las maquetas del frontend.
- * Se elimina en el Sprint 2, cuando existan las entidades Destino y PaqueteTuristico.
+ * Paquete turístico de ejemplo con los mismos atributos que PaqueteTuristico del diagrama de clases.
+ * Se elimina cuando existan las entidades Destino y PaqueteTuristico.
  */
 public class PaqueteMaqueta {
 
 	private static final List<PaqueteMaqueta> PAQUETES = List.of(
-		new PaqueteMaqueta(1L, "Cartagena colonial", "Cartagena", "Colombia",
-			"Recorre la ciudad amurallada, disfruta de sus playas y de la gastronomía del Caribe.",
-			450.00, 4, "bi-sun", List.of("Hotel 4 estrellas", "Desayuno incluido", "Tour por la ciudad amurallada")),
-		new PaqueteMaqueta(2L, "Machu Picchu mágico", "Cusco", "Perú",
-			"Visita la ciudadela inca, el Valle Sagrado y el centro histórico de Cusco.",
-			780.00, 5, "bi-triangle", List.of("Hotel 3 estrellas", "Tren a Aguas Calientes", "Entrada a Machu Picchu")),
-		new PaqueteMaqueta(3L, "Cancún todo incluido", "Cancún", "México",
-			"Relájate en las playas del Caribe mexicano con todo incluido.",
-			1200.00, 7, "bi-water", List.of("Resort todo incluido", "Traslados aeropuerto-hotel", "Excursión a Isla Mujeres")),
-		new PaqueteMaqueta(4L, "Madrid y Toledo", "Madrid", "España",
-			"Descubre los museos y barrios de Madrid con una excursión de un día a Toledo.",
-			1650.00, 8, "bi-building", List.of("Hotel céntrico", "Desayuno incluido", "Excursión a Toledo")),
-		new PaqueteMaqueta(5L, "Buenos Aires de tango", "Buenos Aires", "Argentina",
-			"Vive el tango, la gastronomía porteña y los barrios de San Telmo y La Boca.",
-			890.00, 5, "bi-music-note-beamed", List.of("Hotel 4 estrellas", "Show de tango con cena", "City tour")),
-		new PaqueteMaqueta(6L, "Punta Cana relax", "Punta Cana", "República Dominicana",
-			"Playas de arena blanca, resort frente al mar y actividades acuáticas.",
-			1100.00, 6, "bi-umbrella", List.of("Resort todo incluido", "Traslados", "Snorkel en arrecife"))
+		new PaqueteMaqueta("1", "Cartagena colonial",
+			"Recorre la ciudad amurallada, disfruta de sus playas y de la gastronomía del Caribe.", 450.00, 4, true,
+			new DestinoMaqueta("d1", "Cartagena de Indias", "Ciudad amurallada del Caribe colombiano.", "Colombia", "Cartagena")),
+		new PaqueteMaqueta("2", "Machu Picchu mágico",
+			"Visita la ciudadela inca, el Valle Sagrado y el centro histórico de Cusco.", 780.00, 5, true,
+			new DestinoMaqueta("d2", "Cusco y Machu Picchu", "Antigua capital del imperio inca.", "Perú", "Cusco")),
+		new PaqueteMaqueta("3", "Cancún todo incluido",
+			"Relájate en las playas del Caribe mexicano con todo incluido.", 1200.00, 7, true,
+			new DestinoMaqueta("d3", "Cancún", "Playas de arena blanca en el Caribe mexicano.", "México", "Cancún")),
+		new PaqueteMaqueta("4", "Madrid y Toledo",
+			"Descubre los museos y barrios de Madrid con una excursión de un día a Toledo.", 1650.00, 8, true,
+			new DestinoMaqueta("d4", "Madrid", "Capital de España, con museos y barrios históricos.", "España", "Madrid")),
+		new PaqueteMaqueta("5", "Buenos Aires de tango",
+			"Vive el tango, la gastronomía porteña y los barrios de San Telmo y La Boca.", 890.00, 5, true,
+			new DestinoMaqueta("d5", "Buenos Aires", "Capital del tango.", "Argentina", "Buenos Aires")),
+		new PaqueteMaqueta("6", "Punta Cana relax",
+			"Playas de arena blanca, resort frente al mar y actividades acuáticas.", 1100.00, 6, true,
+			new DestinoMaqueta("d6", "Punta Cana", "Resorts frente al mar Caribe.", "República Dominicana", "Punta Cana"))
 	);
 
-	private final Long id;
+	private final String id;
 	private final String nombre;
-	private final String destino;
-	private final String pais;
 	private final String descripcion;
 	private final double precio;
 	private final int duracionDias;
-	private final String icono;
-	private final List<String> incluye;
+	private final boolean activo;
+	private final DestinoMaqueta destino;
 
-	public PaqueteMaqueta(Long id, String nombre, String destino, String pais, String descripcion,
-			double precio, int duracionDias, String icono, List<String> incluye) {
+	public PaqueteMaqueta(String id, String nombre, String descripcion, double precio, int duracionDias,
+			boolean activo, DestinoMaqueta destino) {
 		this.id = id;
 		this.nombre = nombre;
-		this.destino = destino;
-		this.pais = pais;
 		this.descripcion = descripcion;
 		this.precio = precio;
 		this.duracionDias = duracionDias;
-		this.icono = icono;
-		this.incluye = incluye;
+		this.activo = activo;
+		this.destino = destino;
 	}
 
-	public static List<PaqueteMaqueta> todos() {
-		return PAQUETES;
-	}
-
-	public static PaqueteMaqueta buscar(Long id) {
+	/**
+	 * Devuelve solo los paquetes activos (Historia 3: solo se listan paquetes activos).
+	 */
+	public static List<PaqueteMaqueta> activos() {
 		return PAQUETES.stream()
+			.filter(PaqueteMaqueta::isActivo)
+			.toList();
+	}
+
+	/**
+	 * Busca un paquete activo por su id. Devuelve null si no existe.
+	 */
+	public static PaqueteMaqueta buscar(String id) {
+		return activos().stream()
 			.filter(p -> p.getId().equals(id))
 			.findFirst()
 			.orElse(null);
 	}
 
-	public Long getId() {
+	public String getId() {
 		return id;
 	}
 
 	public String getNombre() {
 		return nombre;
-	}
-
-	public String getDestino() {
-		return destino;
-	}
-
-	public String getPais() {
-		return pais;
 	}
 
 	public String getDescripcion() {
@@ -91,12 +87,12 @@ public class PaqueteMaqueta {
 		return duracionDias;
 	}
 
-	public String getIcono() {
-		return icono;
+	public boolean isActivo() {
+		return activo;
 	}
 
-	public List<String> getIncluye() {
-		return incluye;
+	public DestinoMaqueta getDestino() {
+		return destino;
 	}
 
 }

@@ -13,20 +13,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class ReservaMaquetaController {
 
+	/**
+	 * Muestra el formulario de reserva con los vuelos, hoteles y transportes del destino del paquete.
+	 */
 	@GetMapping("/reserva")
-	public String formulario(@RequestParam(name = "paquete", required = false) Long paqueteId, Model model) {
+	public String formulario(@RequestParam(name = "paquete", required = false) String paqueteId, Model model) {
 		PaqueteMaqueta paquete = paqueteId == null ? null : PaqueteMaqueta.buscar(paqueteId);
 		if (paquete == null) {
 			return "redirect:/catalogo";
 		}
 
+		String ciudad = paquete.getDestino().getCiudad();
 		model.addAttribute("paquete", paquete);
-		model.addAttribute("vuelos", OpcionServicioMaqueta.vuelos(paquete.getDestino()));
-		model.addAttribute("hoteles", OpcionServicioMaqueta.hoteles(paquete.getDestino()));
-		model.addAttribute("transportes", OpcionServicioMaqueta.transportes(paquete.getDestino()));
+		model.addAttribute("vuelos", VueloMaqueta.deEjemplo(ciudad));
+		model.addAttribute("hoteles", HotelMaqueta.deEjemplo(ciudad, paquete.getDuracionDias()));
+		model.addAttribute("transportes", TransporteMaqueta.deEjemplo(ciudad));
 		return "reserva/formulario";
 	}
 
+	/**
+	 * Recibe la reserva. Todavía no la guarda.
+	 */
 	@PostMapping("/reserva")
 	public String confirmar() {
 		// TODO: crear la Reserva con ReservaService cuando Integrante 2 la mergee a develop
