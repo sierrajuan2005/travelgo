@@ -68,4 +68,36 @@ public class Vuelo extends ServicioReservable {
         this.fechaSalida = fechaSalida;
         this.fechaLlegada = fechaLlegada;
     }
+
+    /*Calcula el costo del vuelo */
+    @Override
+    public double calcularCosto() {
+        return getPrecio();
+    }
+
+    /*Obtiene el nombre de la aerolinea */
+
+    public String getAerolinea() {
+        return aerolinea;
+    }
+
+    /*Obtiene la ciudad de origen */
+    public String getOrigen() {
+        return origen;
+    }
+
+    /*Obtiene la ciudad de destino */
+    public String getDestino() {
+        return destino;
+    }
+
+    /*Obtiene la fecha y hora de salida */
+    public LocalDateTime getFechaSalida() {
+        return fechaSalida;
+    }
+
+    /*Obtiene la fecha y hora de llegada */
+    public LocalDateTime getFechaLlegada() {
+        return fechaLlegada;
+    }
 }
