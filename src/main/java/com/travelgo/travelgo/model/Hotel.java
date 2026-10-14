@@ -53,5 +53,30 @@ public class Hotel extends ServicioReservable {
         this.tipoHabitacion = tipoHabitacion;
         this.noches = noches;
     }
-    
+
+    /*Calcula el costo del hotel */
+    @Override
+    public double calcularCosto() {
+        return getPrecio() * noches;
+    }
+
+    /*Obtiene el nombre del hotel */
+    public String getNombre() {
+        return nombre;
+    }
+
+    /*Obtiene la direccion del hotel */
+    public String getDireccion() {
+        return direccion;
+    }
+
+    /*Obtiene el tipo de habitacion */
+    public String getTipoHabitacion() {
+        return tipoHabitacion;
+    }
+
+    /*Obtiene la cantidad de noches reservadas*/
+    public int getNoches() {
+        return noches;
+    }
 }
