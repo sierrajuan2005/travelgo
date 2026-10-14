@@ -55,4 +55,30 @@ public class Transporte extends ServicioReservable{
         this.destino = destino;
         this.fecha = fecha;
     }
+
+    /*Calcula el costo del transporte */
+    @Override
+    public double calcularCosto() {
+        return getPrecio();
+    }
+
+    /*Obtiene el tipo de transporte */
+    public String getTipo() {
+        return tipo;
+    }
+
+    /*Obtiene la ciudad de origen */
+    public String getOrigen() {
+        return origen;
+    }
+
+    /*Obtiene la ciudad de destino */
+    public String getDestino() {
+        return destino;
+    }
+
+    /*Obtiene la fecha y hora de salida */
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
 }
