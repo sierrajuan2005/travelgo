@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.maqueta;
+package com.travelgo.maqueta;
 
 /**
  * Destino de ejemplo con los mismos atributos que Destino del diagrama de clases.

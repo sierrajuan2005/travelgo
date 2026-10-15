@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.maqueta;
+package com.travelgo.maqueta;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;

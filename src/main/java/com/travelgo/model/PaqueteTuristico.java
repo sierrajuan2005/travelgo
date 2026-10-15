@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.model;
+package com.travelgo.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;

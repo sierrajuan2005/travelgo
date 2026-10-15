@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.maqueta;
+package com.travelgo.maqueta;
 
 /**
  * Servicio reservable de ejemplo con los mismos atributos que ServicioReservable del diagrama de clases.

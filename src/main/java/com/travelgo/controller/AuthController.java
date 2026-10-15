@@ -1,6 +1,6 @@
-package com.travelgo.travelgo.controller;
+package com.travelgo.controller;
 
-import com.travelgo.travelgo.dto.RegistroDTO;
+import com.travelgo.dto.RegistroDTO;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.config;
+package com.travelgo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
