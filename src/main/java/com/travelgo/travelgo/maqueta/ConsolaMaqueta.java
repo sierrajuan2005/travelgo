@@ -31,13 +31,15 @@ public class ConsolaMaqueta {
 			System.out.println("1. Ver catálogo");
 			System.out.println("2. Ver detalle de un paquete");
 			System.out.println("3. Armar una reserva");
+			System.out.println("4. Buscar paquetes por destino o precio");
 			System.out.println("0. Salir");
-			opcion = leerNumero("Opción: ", 0, 3);
+			opcion = leerNumero("Opción: ", 0, 4);
 
 			switch (opcion) {
 				case 1 -> mostrarCatalogo();
 				case 2 -> mostrarDetalle();
 				case 3 -> armarReserva();
+				case 4 -> buscarPaquetes();
 				default -> System.out.println("Hasta pronto.");
 			}
 		} while (opcion != 0);
@@ -49,7 +51,37 @@ public class ConsolaMaqueta {
 	private void mostrarCatalogo() {
 		System.out.println();
 		System.out.println("--- Paquetes turísticos ---");
-		for (PaqueteMaqueta paquete : PaqueteMaqueta.activos()) {
+		imprimirPaquetes(PaqueteMaqueta.activos());
+	}
+
+	/**
+	 * Pide destino y rango de precios y muestra los paquetes que cumplen (Historia 3).
+	 * Dejar un dato vacío significa no filtrar por él.
+	 */
+	private void buscarPaquetes() {
+		System.out.println();
+		System.out.print("Destino (ciudad o país, Enter = todos): ");
+		String destino = scanner.nextLine();
+		Double precioMin = leerPrecioOpcional("Precio mínimo en USD (Enter = sin mínimo): ");
+		Double precioMax = leerPrecioOpcional("Precio máximo en USD (Enter = sin máximo): ");
+
+		if (precioMin != null && precioMax != null && precioMin > precioMax) {
+			System.out.println("El precio mínimo no puede ser mayor que el máximo.");
+			return;
+		}
+
+		List<PaqueteMaqueta> resultado = PaqueteMaqueta.filtrar(destino, precioMin, precioMax);
+		System.out.println();
+		System.out.println("--- Resultados (" + resultado.size() + ") ---");
+		if (resultado.isEmpty()) {
+			System.out.println("No hay paquetes con esos filtros.");
+		} else {
+			imprimirPaquetes(resultado);
+		}
+	}
+
+	private void imprimirPaquetes(List<PaqueteMaqueta> paquetes) {
+		for (PaqueteMaqueta paquete : paquetes) {
 			System.out.printf("[%s] %s - %s, %s - %d días - %s%n", paquete.getId(), paquete.getNombre(),
 				paquete.getDestino().getCiudad(), paquete.getDestino().getPais(), paquete.getDuracionDias(),
 				formatear(paquete.getPrecio()));
@@ -166,6 +198,28 @@ public class ConsolaMaqueta {
 				// Se repite la pregunta
 			}
 			System.out.println("Escribe un número entre " + min + " y " + max + ".");
+		}
+	}
+
+	/**
+	 * Lee un precio mayor o igual a cero. Devuelve null si el usuario solo presiona Enter.
+	 */
+	private Double leerPrecioOpcional(String mensaje) {
+		while (true) {
+			System.out.print(mensaje);
+			String linea = scanner.nextLine().trim();
+			if (linea.isEmpty()) {
+				return null;
+			}
+			try {
+				double precio = Double.parseDouble(linea);
+				if (precio >= 0) {
+					return precio;
+				}
+			} catch (NumberFormatException e) {
+				// Se repite la pregunta
+			}
+			System.out.println("Escribe un número mayor o igual a 0, o presiona Enter.");
 		}
 	}
 

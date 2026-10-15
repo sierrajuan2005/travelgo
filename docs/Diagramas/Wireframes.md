@@ -68,6 +68,8 @@ Los campos corresponden a `Usuario` (nombre, correo, password). El rol se asigna
 ```text
 +------------------------------------------+
 |  Paquetes turísticos                     |
+|  Destino [______] Mín [___] Máx [___]   |
+|  [Filtrar] [X]                           |
 |  +------------+ +------------+ +-------+ |
 |  | Nombre     | | Nombre     | | ...   | |
 |  | Ciudad, País| | Ciudad, País|        | |
@@ -79,7 +81,7 @@ Los campos corresponden a `Usuario` (nombre, correo, password). El rol se asigna
 +------------------------------------------+
 ```
 
-Solo se muestran los paquetes con `activo = true`.
+Solo se muestran los paquetes con `activo = true`. Se pueden filtrar por destino (ciudad o país) y por rango de precios (Historia 3).
 
 ### 3.4 Detalle del paquete
 
@@ -138,6 +140,8 @@ flowchart TD
     Menu -->|"1"| Catalogo["Ver catálogo"]
     Menu -->|"2"| Detalle["Ver detalle de un paquete"]
     Menu -->|"3"| Reserva["Armar una reserva"]
+    Menu -->|"4"| Buscar["Buscar por destino o precio"]
+    Buscar --> Menu
     Menu -->|"0"| Salir["Salir"]
     Detalle --> Id["Pedir id del paquete"]
     Reserva --> Id
@@ -153,6 +157,7 @@ flowchart TD
 1. Ver catálogo
 2. Ver detalle de un paquete
 3. Armar una reserva
+4. Buscar paquetes por destino o precio
 0. Salir
 Opción: 3
 ```

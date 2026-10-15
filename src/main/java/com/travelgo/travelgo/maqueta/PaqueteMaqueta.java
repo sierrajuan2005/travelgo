@@ -58,6 +58,26 @@ public class PaqueteMaqueta {
 	}
 
 	/**
+	 * Filtra los paquetes activos por destino y rango de precios (Historia 3).
+	 * Un filtro vacío o null no se aplica.
+	 *
+	 * @param destino   texto a buscar en la ciudad, el país o el nombre del destino
+	 * @param precioMin precio mínimo
+	 * @param precioMax precio máximo
+	 */
+	public static List<PaqueteMaqueta> filtrar(String destino, Double precioMin, Double precioMax) {
+		String texto = destino == null ? "" : destino.trim().toLowerCase();
+		return activos().stream()
+			.filter(p -> texto.isEmpty()
+				|| p.getDestino().getCiudad().toLowerCase().contains(texto)
+				|| p.getDestino().getPais().toLowerCase().contains(texto)
+				|| p.getDestino().getNombre().toLowerCase().contains(texto))
+			.filter(p -> precioMin == null || p.getPrecio() >= precioMin)
+			.filter(p -> precioMax == null || p.getPrecio() <= precioMax)
+			.toList();
+	}
+
+	/**
 	 * Busca un paquete activo por su id. Devuelve null si no existe.
 	 */
 	public static PaqueteMaqueta buscar(String id) {
