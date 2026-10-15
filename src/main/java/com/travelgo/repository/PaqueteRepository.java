@@ -1,4 +1,4 @@
-package com.travelgo.Repository;
+package com.travelgo.repository;
 
 import com.travelgo.model.PaqueteTuristico;
 import org.springframework.data.jpa.repository.JpaRepository;

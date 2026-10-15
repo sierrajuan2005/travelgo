@@ -1,7 +1,7 @@
 package com.travelgo.dao;
-import com.travelgo.Exception.AccesoDatosException;
+import com.travelgo.exception.AccesoDatosException;
 import com.travelgo.model.Destino;
-import com.travelgo.Repository.DestinoRepository;
+import com.travelgo.repository.DestinoRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 

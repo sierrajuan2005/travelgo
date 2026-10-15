@@ -1,4 +1,4 @@
-package com.travelgo.Exception;
+package com.travelgo.exception;
 
 
 /** Se lanza cuando un recurso solicitado no existe. */
