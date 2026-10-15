@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.maqueta;
+package com.travelgo.maqueta;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
