@@ -1,4 +1,4 @@
-package com.agenciaviajes.model;
+package com.travelgo.travelgo.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
