@@ -23,6 +23,11 @@ public abstract class ServicioReservableMaqueta {
 		return precio;
 	}
 
+	/**
+	 * Texto corto del servicio para la factura. Cada subclase lo arma con sus propios datos.
+	 */
+	public abstract String describir();
+
 	public String getId() {
 		return id;
 	}
