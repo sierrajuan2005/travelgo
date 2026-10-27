@@ -33,6 +33,11 @@ public class HotelMaqueta extends ServicioReservableMaqueta {
 				"Suite", noches));
 	}
 
+	@Override
+	public String describir() {
+		return nombre + ", " + noches + " noches";
+	}
+
 	/**
 	 * Precio por noche multiplicado por el número de noches.
 	 */

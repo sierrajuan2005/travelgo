@@ -132,37 +132,156 @@ El total se actualiza al elegir cada opción: precio del paquete + `calcularPrec
 
 ## 5. Versión en consola
 
-Para la presentación del primer modelo, el catálogo, el detalle y la reserva también se muestran en consola con la clase `ConsolaMaqueta`.
+Para la presentación del primer modelo, el catálogo, el detalle y la reserva también se muestran en consola con la clase `ConsolaMaqueta`. Desde el Sprint 3, el pago, la factura y el panel de administración se muestran solo en consola.
+
+### 5.1 Flujo
 
 ```mermaid
 flowchart TD
-    Menu["Menú principal"]
+    Rol["Elegir rol"] --> Menu["Menú principal"]
     Menu -->|"1"| Catalogo["Ver catálogo"]
     Menu -->|"2"| Detalle["Ver detalle de un paquete"]
     Menu -->|"3"| Reserva["Armar una reserva"]
     Menu -->|"4"| Buscar["Buscar por destino o precio"]
+    Menu -->|"5 (Cliente o Agente)"| Pago["Pagar una reserva"]
+    Menu -->|"6 (Administrador)"| Admin["Panel de administración"]
     Buscar --> Menu
     Menu -->|"0"| Salir["Salir"]
     Detalle --> Id["Pedir id del paquete"]
     Reserva --> Id
     Id -->|"reserva"| Servicios["Elegir vuelo, hotel y transporte"]
     Servicios --> Resumen["Resumen con el total"]
+    Resumen -->|"se guarda como PENDIENTE"| Menu
+    Pago --> Valida{"¿Reserva pendiente?"}
+    Valida -->|"no: cancelada o ya pagada"| Menu
+    Valida -->|"sí"| Metodo["Elegir método de pago"]
+    Metodo --> Factura["Factura"]
+    Factura -->|"reserva CONFIRMADA"| Menu
+    Admin --> Gestion["Destinos / Paquetes"]
+    Gestion -->|"listar, agregar, eliminar"| Admin
+    Admin --> ServiciosAdmin["Servicios de un paquete"]
+    ServiciosAdmin -->|"cambiar disponibilidad"| Admin
+    Admin -->|"0"| Menu
     Catalogo --> Menu
     Detalle --> Menu
-    Resumen --> Menu
 ```
+
+Mientras Integrante 1 no termine el login por rol, la consola pregunta el rol al iniciar. Ese rol decide qué opciones aparecen en el menú (`RolUsuario`: CLIENTE, AGENTE, ADMINISTRADOR).
+
+### 5.2 Menú principal
 
 ```text
 === TravelGo ===
+¿Con qué rol entras?
+1. Cliente
+2. Agente
+3. Administrador
+Opción: 1
+
+=== TravelGo (CLIENTE) ===
 1. Ver catálogo
 2. Ver detalle de un paquete
 3. Armar una reserva
 4. Buscar paquetes por destino o precio
+5. Pagar una reserva
 0. Salir
-Opción: 3
+Opción: 5
 ```
+
+El Administrador ve la opción `6. Panel de administración` en lugar de la 5.
+
+### 5.3 Pagar una reserva
+
+```text
+--- Reservas ---
+[R-001] Machu Picchu mágico - USD 1,040.00 - PENDIENTE
+[R-002] Cartagena colonial - USD 450.00 - CANCELADA
+[R-003] Cancún todo incluido - USD 1,830.00 - CONFIRMADA
+Id de la reserva: R-001
+
+Total a pagar: USD 1,040.00
+1. Tarjeta
+2. Transferencia
+Elige el método de pago: 1
+Pago registrado.
+```
+
+- El monto es el `total` de la reserva; el usuario no lo escribe.
+- Solo se paga una reserva PENDIENTE. Si está CANCELADA o ya pagada, se muestra el motivo y se vuelve al menú:
+
+```text
+Id de la reserva: R-002
+No se puede pagar una reserva cancelada.
+```
+
+### 5.4 Factura
+
+```text
+--- Factura F-0001 ---
+Fecha de emisión: 27/10/2026
+Reserva:          R-001 (CONFIRMADA)
+Cliente:          Cliente de prueba - cliente@travelgo.com
+Servicios:
+  Paquete Machu Picchu mágico   USD   780.00
+  Vuelo LATAM, Bogotá -> Cusco  USD   260.00
+Subtotal:                       USD 1,040.00
+Total:                          USD 1,040.00
+Pago: Tarjeta - 27/10/2026 - APROBADO
+```
+
+La factura se genera sola después del pago, y la reserva pasa a CONFIRMADA (`confirmarReserva()`).
+
+### 5.5 Panel de administración
+
+```text
+=== Panel de administración ===
+1. Destinos
+2. Paquetes
+3. Servicios
+0. Volver
+Opción: 1
+
+--- Destinos ---
+1. Listar
+2. Agregar
+3. Eliminar
+0. Volver
+Opción: 2
+Nombre: Arequipa
+Descripción: La ciudad blanca del sur del Perú.
+País: Perú
+Ciudad: Arequipa
+Destino agregado con id d7.
+```
+
+| Opción | Listar | Agregar (datos que pide) | Eliminar |
+|---|---|---|---|
+| Destinos | id, nombre, ciudad, país | nombre, descripcion, pais, ciudad | por id, pide confirmación (s/n) |
+| Paquetes | id, nombre, destino, precio, días, activo | nombre, descripcion, precio, duracionDias, id del destino | por id, pide confirmación (s/n) |
+
+**Servicios** es la versión básica: el Administrador elige un paquete, ve sus vuelos, hoteles y transportes, y cambia la disponibilidad por id. Los servicios no disponibles no aparecen al armar una reserva. Agregar y eliminar servicios se hará con el CRUD de `/api/servicios` de Integrante 2.
+
+```text
+--- Servicios de Machu Picchu mágico ---
+[v1] Vuelo Avianca, Bogotá -> Cusco - USD 320.00 - disponible
+[v2] Vuelo LATAM, Bogotá -> Cusco - USD 260.00 - disponible
+[h1] Hotel Centro Cusco, 5 noches - USD 450.00 - disponible
+...
+Id del servicio para cambiar su disponibilidad (Enter = volver): v1
+El servicio v1 ahora está no disponible.
+```
+
+### 5.6 Relación entre opciones y clases
+
+| Opción | Clases que usa | Atributos / métodos |
+|---|---|---|
+| Elegir rol | Usuario, Rol | rol |
+| Pagar una reserva | Pago, Reserva | metodo, monto = reserva.total, fechaPago, estado; confirmarReserva() |
+| Factura | Factura, Pago, Reserva, Usuario | numero, fechaEmision, subtotal, total, estado; usuario.nombre, usuario.correo |
+| Panel de administración | Destino, PaqueteTuristico, Vuelo, Hotel, Transporte | atributos de Destino y PaqueteTuristico; disponible de cada servicio |
 
 ## 6. Consideraciones técnicas
 
-- Las pantallas se construyen con Thymeleaf y Bootstrap 5.
+- Las pantallas web se construyen con Thymeleaf y Bootstrap 5.
+- El pago, la factura y el panel de administración se muestran en consola (`ConsolaMaqueta`), sin Spring ni base de datos.
 - Mientras no existan las entidades reales, las pantallas usan datos de ejemplo del paquete `maqueta/`, con los mismos atributos que el diagrama de clases.

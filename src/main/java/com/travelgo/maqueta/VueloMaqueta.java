@@ -35,6 +35,11 @@ public class VueloMaqueta extends ServicioReservableMaqueta {
 				LocalDateTime.of(2026, 11, 20, 13, 15), LocalDateTime.of(2026, 11, 20, 19, 40)));
 	}
 
+	@Override
+	public String describir() {
+		return "Vuelo " + aerolinea + ", " + origen + " -> " + destino;
+	}
+
 	public String getAerolinea() {
 		return aerolinea;
 	}
