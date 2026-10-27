@@ -77,6 +77,18 @@ public class ReservaMaqueta {
 	}
 
 	/**
+	 * Pasa la reserva a CONFIRMADA. Lo llama el pago cuando es exitoso.
+	 *
+	 * @throws IllegalStateException si la reserva no está PENDIENTE
+	 */
+	public void confirmar() {
+		if (!PENDIENTE.equals(estado)) {
+			throw new IllegalStateException("Solo se puede confirmar una reserva pendiente.");
+		}
+		estado = CONFIRMADA;
+	}
+
+	/**
 	 * Precio del paquete más calcularPrecio() de cada servicio (polimorfismo).
 	 */
 	public double calcularTotal() {
