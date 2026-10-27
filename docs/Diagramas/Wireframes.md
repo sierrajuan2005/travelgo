@@ -157,8 +157,10 @@ flowchart TD
     Valida -->|"sí"| Metodo["Elegir método de pago"]
     Metodo --> Factura["Factura"]
     Factura -->|"reserva CONFIRMADA"| Menu
-    Admin --> Gestion["Destinos / Paquetes / Servicios"]
+    Admin --> Gestion["Destinos / Paquetes"]
     Gestion -->|"listar, agregar, eliminar"| Admin
+    Admin --> ServiciosAdmin["Servicios de un paquete"]
+    ServiciosAdmin -->|"cambiar disponibilidad"| Admin
     Admin -->|"0"| Menu
     Catalogo --> Menu
     Detalle --> Menu
@@ -256,9 +258,18 @@ Destino agregado con id d7.
 |---|---|---|---|
 | Destinos | id, nombre, ciudad, país | nombre, descripcion, pais, ciudad | por id, pide confirmación (s/n) |
 | Paquetes | id, nombre, destino, precio, días, activo | nombre, descripcion, precio, duracionDias, id del destino | por id, pide confirmación (s/n) |
-| Servicios | id, tipo, precio, disponible | tipo (Vuelo, Hotel o Transporte), precio y los datos de ese tipo | por id, pide confirmación (s/n) |
 
-Datos de cada tipo de servicio: Vuelo (aerolinea, origen, destino, fechaSalida, fechaLlegada), Hotel (nombre, direccion, tipoHabitacion, noches) y Transporte (tipo, origen, destino, fecha).
+**Servicios** es la versión básica: el Administrador elige un paquete, ve sus vuelos, hoteles y transportes, y cambia la disponibilidad por id. Los servicios no disponibles no aparecen al armar una reserva. Agregar y eliminar servicios se hará con el CRUD de `/api/servicios` de Integrante 2.
+
+```text
+--- Servicios de Machu Picchu mágico ---
+[v1] Vuelo Avianca, Bogotá -> Cusco - USD 320.00 - disponible
+[v2] Vuelo LATAM, Bogotá -> Cusco - USD 260.00 - disponible
+[h1] Hotel Centro Cusco, 5 noches - USD 450.00 - disponible
+...
+Id del servicio para cambiar su disponibilidad (Enter = volver): v1
+El servicio v1 ahora está no disponible.
+```
 
 ### 5.6 Relación entre opciones y clases
 
@@ -267,7 +278,7 @@ Datos de cada tipo de servicio: Vuelo (aerolinea, origen, destino, fechaSalida, 
 | Elegir rol | Usuario, Rol | rol |
 | Pagar una reserva | Pago, Reserva | metodo, monto = reserva.total, fechaPago, estado; confirmarReserva() |
 | Factura | Factura, Pago, Reserva, Usuario | numero, fechaEmision, subtotal, total, estado; usuario.nombre, usuario.correo |
-| Panel de administración | Destino, PaqueteTuristico, Vuelo, Hotel, Transporte | los atributos de cada clase |
+| Panel de administración | Destino, PaqueteTuristico, Vuelo, Hotel, Transporte | atributos de Destino y PaqueteTuristico; disponible de cada servicio |
 
 ## 6. Consideraciones técnicas
 
