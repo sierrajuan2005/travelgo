@@ -8,7 +8,7 @@ public abstract class ServicioReservableMaqueta {
 
 	private final String id;
 	private final double precio;
-	private final boolean disponible;
+	private boolean disponible;
 
 	protected ServicioReservableMaqueta(String id, double precio, boolean disponible) {
 		this.id = id;
@@ -27,6 +27,13 @@ public abstract class ServicioReservableMaqueta {
 	 * Texto corto del servicio para la factura. Cada subclase lo arma con sus propios datos.
 	 */
 	public abstract String describir();
+
+	/**
+	 * Pasa el servicio de disponible a no disponible, o al revés. Lo usa el panel de administración.
+	 */
+	public void cambiarDisponibilidad() {
+		disponible = !disponible;
+	}
 
 	public String getId() {
 		return id;
