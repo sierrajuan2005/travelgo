@@ -127,7 +127,7 @@ public class ConsolaMaqueta {
 	}
 
 	/**
-	 * Pide un paquete y un vuelo, hotel y transporte, y muestra el total.
+	 * Pide un paquete y un vuelo, hotel y transporte, muestra el total y guarda la reserva como PENDIENTE.
 	 * El total usa calcularPrecio() de cada servicio (polimorfismo).
 	 */
 	private void armarReserva() {
@@ -177,7 +177,9 @@ public class ConsolaMaqueta {
 		System.out.println("Paquete:         " + paquete.getNombre() + " - " + formatear(paquete.getPrecio()));
 		System.out.println("Servicios extra: " + servicios.size() + " - " + formatear(extras));
 		System.out.println("Total:           " + formatear(paquete.getPrecio() + extras));
-		System.out.println("(Maqueta: la reserva no se guarda)");
+
+		ReservaMaqueta reserva = ReservaMaqueta.guardar(paquete, servicios);
+		System.out.println("Reserva guardada con id " + reserva.getId() + " (" + reserva.getEstado() + ").");
 	}
 
 	/**
