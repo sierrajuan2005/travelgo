@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.model;
+package com.travelgo.model;
 
 /*
     Representa la abstraccion de un servicio turistico que puede incluir una reserva
