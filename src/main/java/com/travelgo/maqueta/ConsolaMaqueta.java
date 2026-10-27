@@ -1,5 +1,7 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.RolUsuario;
+
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,18 +18,22 @@ public class ConsolaMaqueta {
 
 	private final Scanner scanner = new Scanner(System.in);
 
+	/** Rol con el que se entra a la consola. Decide qué opciones aparecen en el menú. */
+	private RolUsuario rol;
+
 	public static void main(String[] args) {
 		new ConsolaMaqueta().iniciar();
 	}
 
 	/**
-	 * Muestra el menú principal hasta que el usuario elige salir.
+	 * Pide el rol y muestra el menú principal hasta que el usuario elige salir.
 	 */
 	public void iniciar() {
+		rol = elegirRol();
 		int opcion;
 		do {
 			System.out.println();
-			System.out.println("=== TravelGo ===");
+			System.out.println("=== TravelGo (" + rol + ") ===");
 			System.out.println("1. Ver catálogo");
 			System.out.println("2. Ver detalle de un paquete");
 			System.out.println("3. Armar una reserva");
@@ -43,6 +49,23 @@ public class ConsolaMaqueta {
 				default -> System.out.println("Hasta pronto.");
 			}
 		} while (opcion != 0);
+	}
+
+	/**
+	 * Pregunta con qué rol se entra. Reemplaza al login por rol mientras no esté listo.
+	 */
+	private RolUsuario elegirRol() {
+		System.out.println();
+		System.out.println("=== TravelGo ===");
+		System.out.println("¿Con qué rol entras?");
+		System.out.println("1. Cliente");
+		System.out.println("2. Agente");
+		System.out.println("3. Administrador");
+		return switch (leerNumero("Opción: ", 1, 3)) {
+			case 1 -> RolUsuario.CLIENTE;
+			case 2 -> RolUsuario.AGENTE;
+			default -> RolUsuario.ADMINISTRADOR;
+		};
 	}
 
 	/**
