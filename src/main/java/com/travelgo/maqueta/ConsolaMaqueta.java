@@ -164,17 +164,17 @@ public class ConsolaMaqueta {
 	}
 
 	/**
-	 * Pide un paquete y un vuelo, hotel y transporte, muestra el total y guarda la reserva como PENDIENTE.
+	 * Pide un paquete y un vuelo, hotel y transporte disponibles, muestra el total y guarda la reserva como PENDIENTE.
 	 * El total usa calcularPrecio() de cada servicio (polimorfismo).
 	 */
 	private void armarReserva() {
 		PaqueteMaqueta paquete = elegirPaquete();
-		String ciudad = paquete.getDestino().getCiudad();
+		ServiciosPaqueteMaqueta serviciosPaquete = ServiciosPaqueteMaqueta.de(paquete);
 		List<ServicioReservableMaqueta> servicios = new ArrayList<>();
 
 		System.out.println();
 		System.out.println("--- Vuelos ---");
-		List<VueloMaqueta> vuelos = VueloMaqueta.deEjemplo(ciudad);
+		List<VueloMaqueta> vuelos = serviciosPaquete.vuelosDisponibles();
 		for (int i = 0; i < vuelos.size(); i++) {
 			VueloMaqueta vuelo = vuelos.get(i);
 			System.out.printf("%d. %s, %s -> %s, sale %s, llega %s - %s%n", i + 1, vuelo.getAerolinea(),
@@ -185,7 +185,7 @@ public class ConsolaMaqueta {
 
 		System.out.println();
 		System.out.println("--- Hoteles ---");
-		List<HotelMaqueta> hoteles = HotelMaqueta.deEjemplo(ciudad, paquete.getDuracionDias());
+		List<HotelMaqueta> hoteles = serviciosPaquete.hotelesDisponibles();
 		for (int i = 0; i < hoteles.size(); i++) {
 			HotelMaqueta hotel = hoteles.get(i);
 			System.out.printf("%d. %s, %s, %s - %s por noche x %d noches = %s%n", i + 1, hotel.getNombre(),
@@ -196,7 +196,7 @@ public class ConsolaMaqueta {
 
 		System.out.println();
 		System.out.println("--- Transportes ---");
-		List<TransporteMaqueta> transportes = TransporteMaqueta.deEjemplo(ciudad);
+		List<TransporteMaqueta> transportes = serviciosPaquete.transportesDisponibles();
 		for (int i = 0; i < transportes.size(); i++) {
 			TransporteMaqueta transporte = transportes.get(i);
 			System.out.printf("%d. %s, %s -> %s, %s - %s%n", i + 1, transporte.getTipo(), transporte.getOrigen(),
@@ -300,11 +300,13 @@ public class ConsolaMaqueta {
 			System.out.println("=== Panel de administración ===");
 			System.out.println("1. Destinos");
 			System.out.println("2. Paquetes");
+			System.out.println("3. Servicios");
 			System.out.println("0. Volver");
-			opcion = leerNumero("Opción: ", 0, 2);
+			opcion = leerNumero("Opción: ", 0, 3);
 			switch (opcion) {
 				case 1 -> gestionar("Destinos", this::listarDestinos, this::agregarDestino, this::eliminarDestino);
 				case 2 -> gestionar("Paquetes", this::listarPaquetes, this::agregarPaquete, this::eliminarPaquete);
+				case 3 -> gestionarServicios();
 				default -> { }
 			}
 		} while (opcion != 0);
@@ -397,6 +399,36 @@ public class ConsolaMaqueta {
 	}
 
 	/**
+	 * Muestra los servicios de un paquete y cambia la disponibilidad del que elija el Administrador.
+	 * Los servicios no disponibles no aparecen al armar una reserva.
+	 */
+	private void gestionarServicios() {
+		PaqueteMaqueta paquete = elegirPaquete();
+		ServiciosPaqueteMaqueta servicios = ServiciosPaqueteMaqueta.de(paquete);
+		while (true) {
+			System.out.println();
+			System.out.println("--- Servicios de " + paquete.getNombre() + " ---");
+			for (ServicioReservableMaqueta servicio : servicios.todos()) {
+				System.out.printf("[%s] %s - %s - %s%n", servicio.getId(), servicio.describir(),
+					formatear(servicio.calcularPrecio()), servicio.isDisponible() ? "disponible" : "no disponible");
+			}
+			System.out.print("Id del servicio para cambiar su disponibilidad (Enter = volver): ");
+			String id = scanner.nextLine().trim();
+			if (id.isEmpty()) {
+				return;
+			}
+			ServicioReservableMaqueta servicio = servicios.buscar(id);
+			if (servicio == null) {
+				System.out.println("No existe un servicio con ese id en este paquete.");
+			} else {
+				servicio.cambiarDisponibilidad();
+				System.out.println("El servicio " + servicio.getId() + " ahora está "
+					+ (servicio.isDisponible() ? "disponible." : "no disponible."));
+			}
+		}
+	}
+
+	/**
 	 * Pide el id de un destino hasta que exista.
 	 */
 	private DestinoMaqueta elegirDestino() {
@@ -414,6 +446,10 @@ public class ConsolaMaqueta {
 	 */
 	private void agregarElegido(List<ServicioReservableMaqueta> servicios,
 			List<? extends ServicioReservableMaqueta> opciones, String nombre) {
+		if (opciones.isEmpty()) {
+			System.out.println("No hay servicios de tipo " + nombre + " disponibles.");
+			return;
+		}
 		int elegido = leerNumero("Elige un " + nombre + " (0 = sin " + nombre + "): ", 0, opciones.size());
 		if (elegido > 0) {
 			servicios.add(opciones.get(elegido - 1));
