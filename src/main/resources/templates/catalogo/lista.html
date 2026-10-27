@@ -18,6 +18,30 @@
         Reserva enviada (maqueta). En el Sprint 2 se guardará de verdad.
     </div>
 
+    <form th:action="@{/catalogo}" method="get" class="row g-2 align-items-end mb-4">
+        <div class="col-md-4">
+            <label for="destino" class="form-label small">Destino</label>
+            <input type="text" id="destino" name="destino" class="form-control" th:value="${destino}"
+                   placeholder="Ciudad o país">
+        </div>
+        <div class="col-6 col-md-3">
+            <label for="precioMin" class="form-label small">Precio mínimo (USD)</label>
+            <input type="number" id="precioMin" name="precioMin" class="form-control" min="0" step="1"
+                   th:value="${precioMin}">
+        </div>
+        <div class="col-6 col-md-3">
+            <label for="precioMax" class="form-label small">Precio máximo (USD)</label>
+            <input type="number" id="precioMax" name="precioMax" class="form-control" min="0" step="1"
+                   th:value="${precioMax}">
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-tg flex-grow-1"><i class="bi bi-search"></i> Filtrar</button>
+            <a th:href="@{/catalogo}" class="btn btn-outline-secondary" title="Quitar filtros"><i class="bi bi-x-lg"></i></a>
+        </div>
+    </form>
+
+    <p th:if="${#lists.isEmpty(paquetes)}" class="text-muted">No hay paquetes con esos filtros.</p>
+
     <div class="row g-4">
         <div class="col-sm-6 col-lg-4" th:each="paquete : ${paquetes}">
             <div class="card tg-card h-100">
