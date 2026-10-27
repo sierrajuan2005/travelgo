@@ -9,7 +9,8 @@ import java.util.Locale;
 import java.util.Scanner;
 
 /**
- * Versión en consola de las pantallas de catálogo, detalle, reserva, pago y factura, con los datos de ejemplo.
+ * Versión en consola de las pantallas de catálogo, detalle, reserva, pago, factura y panel de administración,
+ * con los datos de ejemplo.
  * No usa Spring ni base de datos.
  */
 public class ConsolaMaqueta {
@@ -42,6 +43,9 @@ public class ConsolaMaqueta {
 			if (puedePagar()) {
 				System.out.println("5. Pagar una reserva");
 			}
+			if (esAdministrador()) {
+				System.out.println("6. Panel de administración");
+			}
 			System.out.println("0. Salir");
 			opcion = leerOpcionMenu();
 
@@ -51,6 +55,7 @@ public class ConsolaMaqueta {
 				case 3 -> armarReserva();
 				case 4 -> buscarPaquetes();
 				case 5 -> pagarReserva();
+				case 6 -> panelAdministracion();
 				default -> System.out.println("Hasta pronto.");
 			}
 		} while (opcion != 0);
@@ -61,8 +66,8 @@ public class ConsolaMaqueta {
 	 */
 	private int leerOpcionMenu() {
 		while (true) {
-			int opcion = leerNumero("Opción: ", 0, 5);
-			if (opcion <= 4 || (opcion == 5 && puedePagar())) {
+			int opcion = leerNumero("Opción: ", 0, 6);
+			if (opcion <= 4 || (opcion == 5 && puedePagar()) || (opcion == 6 && esAdministrador())) {
 				return opcion;
 			}
 			System.out.println("Esa opción no está disponible para el rol " + rol + ".");
@@ -74,6 +79,13 @@ public class ConsolaMaqueta {
 	 */
 	private boolean puedePagar() {
 		return rol == RolUsuario.CLIENTE || rol == RolUsuario.AGENTE;
+	}
+
+	/**
+	 * Solo el Administrador ve el panel de administración.
+	 */
+	private boolean esAdministrador() {
+		return rol == RolUsuario.ADMINISTRADOR;
 	}
 
 	/**
@@ -279,6 +291,125 @@ public class ConsolaMaqueta {
 	}
 
 	/**
+	 * Menú del panel de administración. Se repite hasta que el Administrador vuelve al menú principal.
+	 */
+	private void panelAdministracion() {
+		int opcion;
+		do {
+			System.out.println();
+			System.out.println("=== Panel de administración ===");
+			System.out.println("1. Destinos");
+			System.out.println("2. Paquetes");
+			System.out.println("0. Volver");
+			opcion = leerNumero("Opción: ", 0, 2);
+			switch (opcion) {
+				case 1 -> gestionar("Destinos", this::listarDestinos, this::agregarDestino, this::eliminarDestino);
+				case 2 -> gestionar("Paquetes", this::listarPaquetes, this::agregarPaquete, this::eliminarPaquete);
+				default -> { }
+			}
+		} while (opcion != 0);
+	}
+
+	/**
+	 * Submenú Listar / Agregar / Eliminar, igual para cada parte del catálogo.
+	 * Si una regla no se cumple (dato inválido o registro en uso), muestra el motivo y sigue en el submenú.
+	 */
+	private void gestionar(String titulo, Runnable listar, Runnable agregar, Runnable eliminar) {
+		int opcion;
+		do {
+			System.out.println();
+			System.out.println("--- " + titulo + " ---");
+			System.out.println("1. Listar");
+			System.out.println("2. Agregar");
+			System.out.println("3. Eliminar");
+			System.out.println("0. Volver");
+			opcion = leerNumero("Opción: ", 0, 3);
+			try {
+				switch (opcion) {
+					case 1 -> listar.run();
+					case 2 -> agregar.run();
+					case 3 -> eliminar.run();
+					default -> { }
+				}
+			} catch (IllegalArgumentException | IllegalStateException e) {
+				System.out.println(e.getMessage());
+			}
+		} while (opcion != 0);
+	}
+
+	private void listarDestinos() {
+		for (DestinoMaqueta destino : DestinoMaqueta.todos()) {
+			System.out.printf("[%s] %s - %s, %s%n", destino.getId(), destino.getNombre(), destino.getCiudad(),
+				destino.getPais());
+		}
+	}
+
+	private void agregarDestino() {
+		String nombre = leerTexto("Nombre: ");
+		String descripcion = leerTexto("Descripción: ");
+		String pais = leerTexto("País: ");
+		String ciudad = leerTexto("Ciudad: ");
+		DestinoMaqueta destino = DestinoMaqueta.agregar(nombre, descripcion, pais, ciudad);
+		System.out.println("Destino agregado con id " + destino.getId() + ".");
+	}
+
+	private void eliminarDestino() {
+		listarDestinos();
+		String id = leerTexto("Id del destino a eliminar: ");
+		if (DestinoMaqueta.buscar(id) == null) {
+			System.out.println("No existe un destino con ese id.");
+		} else if (confirmar("¿Eliminar el destino " + id + "? (s/n): ")) {
+			DestinoMaqueta.eliminar(id);
+			System.out.println("Destino eliminado.");
+		}
+	}
+
+	private void listarPaquetes() {
+		for (PaqueteMaqueta paquete : PaqueteMaqueta.todos()) {
+			System.out.printf("[%s] %s - %s - %s - %d días - %s%n", paquete.getId(), paquete.getNombre(),
+				paquete.getDestino().getCiudad(), formatear(paquete.getPrecio()), paquete.getDuracionDias(),
+				paquete.isActivo() ? "activo" : "inactivo");
+		}
+	}
+
+	private void agregarPaquete() {
+		String nombre = leerTexto("Nombre: ");
+		String descripcion = leerTexto("Descripción: ");
+		double precio = leerPrecio("Precio en USD: ");
+		int duracionDias = leerNumero("Duración en días: ", 1, 60);
+		listarDestinos();
+		DestinoMaqueta destino = elegirDestino();
+		boolean activo = confirmar("¿Activo? (s/n): ");
+		PaqueteMaqueta paquete = PaqueteMaqueta.agregar(nombre, descripcion, precio, duracionDias, activo, destino);
+		System.out.println("Paquete agregado con id " + paquete.getId() + ".");
+	}
+
+	private void eliminarPaquete() {
+		listarPaquetes();
+		String id = leerTexto("Id del paquete a eliminar: ");
+		boolean existe = PaqueteMaqueta.todos().stream().anyMatch(p -> p.getId().equals(id));
+		if (!existe) {
+			System.out.println("No existe un paquete con ese id.");
+		} else if (confirmar("¿Eliminar el paquete " + id + "? (s/n): ")) {
+			PaqueteMaqueta.eliminar(id);
+			System.out.println("Paquete eliminado.");
+		}
+	}
+
+	/**
+	 * Pide el id de un destino hasta que exista.
+	 */
+	private DestinoMaqueta elegirDestino() {
+		while (true) {
+			DestinoMaqueta destino = DestinoMaqueta.buscar(leerTexto("Id del destino: "));
+			if (destino != null) {
+				return destino;
+			}
+			System.out.println("No existe un destino con ese id.");
+		}
+	}
+
+	/**
 	 * Pide el número de una opción de la lista (0 = ninguna) y la agrega a los servicios elegidos.
 	 */
 	private void agregarElegido(List<ServicioReservableMaqueta> servicios,
@@ -341,6 +472,52 @@ public class ConsolaMaqueta {
 				// Se repite la pregunta
 			}
 			System.out.println("Escribe un número mayor o igual a 0, o presiona Enter.");
+		}
+	}
+
+	/**
+	 * Lee un texto que no esté vacío. Repite la pregunta si el usuario solo presiona Enter.
+	 */
+	private String leerTexto(String mensaje) {
+		while (true) {
+			System.out.print(mensaje);
+			String linea = scanner.nextLine().trim();
+			if (!linea.isEmpty()) {
+				return linea;
+			}
+			System.out.println("Este dato es obligatorio.");
+		}
+	}
+
+	/**
+	 * Lee un precio mayor que cero.
+	 */
+	private double leerPrecio(String mensaje) {
+		while (true) {
+			System.out.print(mensaje);
+			try {
+				double precio = Double.parseDouble(scanner.nextLine().trim());
+				if (precio > 0) {
+					return precio;
+				}
+			} catch (NumberFormatException e) {
+				// Se repite la pregunta
+			}
+			System.out.println("Escribe un número mayor que 0.");
+		}
+	}
+
+	/**
+	 * Hace una pregunta de sí o no. Repite la pregunta hasta recibir s o n.
+	 */
+	private boolean confirmar(String mensaje) {
+		while (true) {
+			System.out.print(mensaje);
+			String respuesta = scanner.nextLine().trim().toLowerCase();
+			if (respuesta.equals("s") || respuesta.equals("n")) {
+				return respuesta.equals("s");
+			}
+			System.out.println("Escribe s o n.");
 		}
 	}
 
