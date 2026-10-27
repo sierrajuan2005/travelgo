@@ -192,12 +192,12 @@ El Administrador ve la opción `6. Panel de administración` en lugar de la 5.
 
 ```text
 --- Reservas ---
-[R-001] Machu Picchu mágico - USD 1,450.00 - PENDIENTE
-[R-002] Cartagena colonial - USD 980.00 - CANCELADA
-[R-003] Cancún todo incluido - USD 2,100.00 - CONFIRMADA
+[R-001] Machu Picchu mágico - USD 1,040.00 - PENDIENTE
+[R-002] Cartagena colonial - USD 450.00 - CANCELADA
+[R-003] Cancún todo incluido - USD 1,830.00 - CONFIRMADA
 Id de la reserva: R-001
 
-Total a pagar: USD 1,450.00
+Total a pagar: USD 1,040.00
 1. Tarjeta
 2. Transferencia
 Elige el método de pago: 1
@@ -218,12 +218,12 @@ No se puede pagar una reserva cancelada.
 --- Factura F-0001 ---
 Fecha de emisión: 27/10/2026
 Reserva:          R-001 (CONFIRMADA)
-Cliente:          nombre - correo
+Cliente:          Cliente de prueba - cliente@travelgo.com
 Servicios:
-  Paquete Machu Picchu mágico   USD 1,200.00
-  Vuelo LATAM, Lima -> Cusco    USD   250.00
-Subtotal:                       USD 1,450.00
-Total:                          USD 1,450.00
+  Paquete Machu Picchu mágico   USD   780.00
+  Vuelo LATAM, Bogotá -> Cusco  USD   260.00
+Subtotal:                       USD 1,040.00
+Total:                          USD 1,040.00
 Pago: Tarjeta - 27/10/2026 - APROBADO
 ```
 
@@ -249,7 +249,7 @@ Nombre: Arequipa
 Descripción: La ciudad blanca del sur del Perú.
 País: Perú
 Ciudad: Arequipa
-Destino agregado con id d6.
+Destino agregado con id d7.
 ```
 
 | Opción | Listar | Agregar (datos que pide) | Eliminar |
