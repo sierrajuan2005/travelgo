@@ -9,12 +9,13 @@ import java.util.Locale;
 import java.util.Scanner;
 
 /**
- * Versión en consola de las pantallas de catálogo, detalle y reserva, con los datos de ejemplo.
+ * Versión en consola de las pantallas de catálogo, detalle, reserva, pago y factura, con los datos de ejemplo.
  * No usa Spring ni base de datos.
  */
 public class ConsolaMaqueta {
 
 	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+	private static final DateTimeFormatter FECHA_CORTA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
 	private final Scanner scanner = new Scanner(System.in);
 
@@ -38,17 +39,41 @@ public class ConsolaMaqueta {
 			System.out.println("2. Ver detalle de un paquete");
 			System.out.println("3. Armar una reserva");
 			System.out.println("4. Buscar paquetes por destino o precio");
+			if (puedePagar()) {
+				System.out.println("5. Pagar una reserva");
+			}
 			System.out.println("0. Salir");
-			opcion = leerNumero("Opción: ", 0, 4);
+			opcion = leerOpcionMenu();
 
 			switch (opcion) {
 				case 1 -> mostrarCatalogo();
 				case 2 -> mostrarDetalle();
 				case 3 -> armarReserva();
 				case 4 -> buscarPaquetes();
+				case 5 -> pagarReserva();
 				default -> System.out.println("Hasta pronto.");
 			}
 		} while (opcion != 0);
+	}
+
+	/**
+	 * Lee una opción del menú principal. Repite la pregunta si la opción no existe para el rol.
+	 */
+	private int leerOpcionMenu() {
+		while (true) {
+			int opcion = leerNumero("Opción: ", 0, 5);
+			if (opcion <= 4 || (opcion == 5 && puedePagar())) {
+				return opcion;
+			}
+			System.out.println("Esa opción no está disponible para el rol " + rol + ".");
+		}
+	}
+
+	/**
+	 * Cliente y Agente pagan reservas; el Administrador gestiona el catálogo.
+	 */
+	private boolean puedePagar() {
+		return rol == RolUsuario.CLIENTE || rol == RolUsuario.AGENTE;
 	}
 
 	/**
@@ -180,6 +205,77 @@ public class ConsolaMaqueta {
 
 		ReservaMaqueta reserva = ReservaMaqueta.guardar(paquete, servicios);
 		System.out.println("Reserva guardada con id " + reserva.getId() + " (" + reserva.getEstado() + ").");
+	}
+
+	/**
+	 * Muestra las reservas, pide una y la paga con el método elegido. Si se puede pagar, muestra la factura.
+	 */
+	private void pagarReserva() {
+		System.out.println();
+		System.out.println("--- Reservas ---");
+		for (ReservaMaqueta reserva : ReservaMaqueta.todas()) {
+			System.out.printf("[%s] %s - %s - %s%n", reserva.getId(), reserva.getPaquete().getNombre(),
+				formatear(reserva.calcularTotal()), reserva.getEstado());
+		}
+
+		ReservaMaqueta reserva = elegirReserva();
+		try {
+			PagoMaqueta.validar(reserva);
+		} catch (IllegalStateException e) {
+			System.out.println(e.getMessage());
+			return;
+		}
+
+		System.out.println();
+		System.out.println("Total a pagar: " + formatear(reserva.calcularTotal()));
+		System.out.println("1. " + PagoMaqueta.TARJETA);
+		System.out.println("2. " + PagoMaqueta.TRANSFERENCIA);
+		String metodo = leerNumero("Elige el método de pago: ", 1, 2) == 1
+			? PagoMaqueta.TARJETA : PagoMaqueta.TRANSFERENCIA;
+
+		PagoMaqueta pago = PagoMaqueta.registrar(reserva, metodo);
+		System.out.println("Pago registrado.");
+		imprimirFactura(pago);
+	}
+
+	/**
+	 * Pide el id de una reserva hasta que exista.
+	 */
+	private ReservaMaqueta elegirReserva() {
+		while (true) {
+			System.out.print("Id de la reserva: ");
+			ReservaMaqueta reserva = ReservaMaqueta.buscar(scanner.nextLine().trim());
+			if (reserva != null) {
+				return reserva;
+			}
+			System.out.println("No existe una reserva con ese id.");
+		}
+	}
+
+	/**
+	 * Muestra la factura del pago: datos de la reserva, del cliente, cada servicio y los totales.
+	 */
+	private void imprimirFactura(PagoMaqueta pago) {
+		FacturaMaqueta factura = pago.getFactura();
+		ReservaMaqueta reserva = factura.getReserva();
+		System.out.println();
+		System.out.println("--- Factura " + factura.getNumero() + " ---");
+		System.out.println("Fecha de emisión: " + factura.getFechaEmision().format(FECHA_CORTA));
+		System.out.println("Reserva:          " + reserva.getId() + " (" + reserva.getEstado() + ")");
+		System.out.println("Cliente:          " + reserva.getCliente() + " - " + reserva.getCorreo());
+		System.out.println("Servicios:");
+		imprimirLineaFactura("  Paquete " + reserva.getPaquete().getNombre(), reserva.getPaquete().getPrecio());
+		for (ServicioReservableMaqueta servicio : reserva.getServicios()) {
+			imprimirLineaFactura("  " + servicio.describir(), servicio.calcularPrecio());
+		}
+		imprimirLineaFactura("Subtotal:", factura.getSubtotal());
+		imprimirLineaFactura("Total:", factura.getTotal());
+		System.out.println("Pago: " + pago.getMetodo() + " - " + pago.getFechaPago().format(FECHA_CORTA) + " - "
+			+ pago.getEstado());
+	}
+
+	private void imprimirLineaFactura(String texto, double valor) {
+		System.out.printf(Locale.US, "%-40s USD %,10.2f%n", texto, valor);
 	}
 
 	/**

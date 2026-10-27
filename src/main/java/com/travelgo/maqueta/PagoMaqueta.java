@@ -50,17 +50,26 @@ public class PagoMaqueta {
 		if (metodo == null || metodo.isBlank()) {
 			throw new IllegalArgumentException("Elige un método de pago.");
 		}
+		validar(reserva);
+
+		reserva.confirmar();
+		PagoMaqueta pago = new PagoMaqueta("p" + (PAGOS.size() + 1), reserva, metodo);
+		PAGOS.add(pago);
+		return pago;
+	}
+
+	/**
+	 * Revisa que la reserva se pueda pagar: no puede estar cancelada ni pagada.
+	 *
+	 * @throws IllegalStateException con el motivo si no se puede pagar
+	 */
+	public static void validar(ReservaMaqueta reserva) {
 		if (ReservaMaqueta.CANCELADA.equals(reserva.getEstado())) {
 			throw new IllegalStateException("No se puede pagar una reserva cancelada.");
 		}
 		if (ReservaMaqueta.CONFIRMADA.equals(reserva.getEstado())) {
 			throw new IllegalStateException("La reserva ya está pagada.");
 		}
-
-		reserva.confirmar();
-		PagoMaqueta pago = new PagoMaqueta("p" + (PAGOS.size() + 1), reserva, metodo);
-		PAGOS.add(pago);
-		return pago;
 	}
 
 	public String getId() {
