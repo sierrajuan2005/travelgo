@@ -17,7 +17,7 @@ public class Reserva{
     private final PaqueteTuristico paqueteTuristico;
     private final List<ServicioReservable> servicios;
     private final LocalDate fechaReserva;
-    private String estado;
+    private EstadoReserva estado;
     private double total;
 
     /*
@@ -33,8 +33,33 @@ public class Reserva{
         this.paqueteTuristico = paqueteTuristico;
         this.servicios = new ArrayList<>();
         this.fechaReserva = LocalDate.now();
-        this.estado = "PENDIENTE";
+        this.estado = EstadoReserva.PENDIENTE;
         this.total = 0.0;
+    }
+
+    /*Reconstruye una reserva con los datos de la Base de Datos */
+    public Reserva(String id, Usuario usuario, PaqueteTuristico paqueteTuristico, List<ServicioReservable> servicios, LocalDate fechaReserva, EstadoReserva estado, double total) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("El ID de la reserva es obligatorio.");
+        }
+        if (usuario == null) {
+            throw new IllegalArgumentException("El usuario de la reserva es obligatorio.");
+        }
+        if (fechaReserva == null) {
+            throw new IllegalArgumentException("La fecha de la reserva es obligatoria.");
+        }
+        if (total < 0 || !Double.isFinite(total)) {
+            throw new IllegalArgumentException("El total de la reserva debe ser un número valido y no negativo.");
+        }
+
+        this.id = id;
+        this.usuario = usuario;
+        this.paqueteTuristico = paqueteTuristico;
+        this.servicios = new ArrayList<>(
+            servicios==null ? Collections.emptyList() : servicios);
+        this.fechaReserva = fechaReserva;
+        this.estado = estado;
+        this.total = total;
     }
 
     /*Agrega un servicio a la reserva y actualiza el total */
@@ -43,7 +68,7 @@ public class Reserva{
             throw new IllegalArgumentException("El servicio a agregar no puede ser nulo.");
         }
 
-        if("CANCELADA".equals(estado)){
+        if(estado == EstadoReserva.CANCELADA){
             throw new IllegalStateException("No se pueden agregar servicios a una reserva cancelada.");
         }
 
@@ -51,7 +76,7 @@ public class Reserva{
             throw new IllegalStateException("El servicio no está disponible para agregar a la reserva.");
         }
 
-        this.servicios.add(servicio);
+        servicios.add(servicio);
         calcularTotal();
     }
 
@@ -63,7 +88,7 @@ public class Reserva{
 
     /*Confirma la reserva */
     public void confirmarReserva(){
-        if("CANCELADA".equals(estado)){
+        if(estado == EstadoReserva.CANCELADA){
             throw new IllegalStateException("No se puede confirmar una reserva cancelada.");
         }
 
@@ -72,16 +97,16 @@ public class Reserva{
         }
 
         calcularTotal();
-        estado="CONFIRMADA";
+        estado = EstadoReserva.CONFIRMADA;
     }
 
     /*Cancela la reserva */
     public void cancelarReserva(){
-        if("CANCELADA".equals(estado)){
+        if(estado == EstadoReserva.CANCELADA){
             throw new IllegalStateException("La reserva ya esta cancelada.");
         }
 
-        estado = "CANCELADA";
+        estado = EstadoReserva.CANCELADA;
     }
 
     /*Obtiene el ID de la reserva */
@@ -111,6 +136,10 @@ public class Reserva{
 
     /*Obtiene el estado de la reserva */
     public String getEstado() {
+        return estado.toString();
+    }
+
+    public EstadoReserva getEstadoEnum() {
         return estado;
     }
 
