@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+
 /*
     Representa una reserva de un viaje realizada por un usuario
 */
@@ -13,6 +14,7 @@ import java.util.UUID;
 public class Reserva{
     private final String id;
     private final Usuario usuario;
+    private final PaqueteTuristico paqueteTuristico;
     private final List<ServicioReservable> servicios;
     private final LocalDate fechaReserva;
     private String estado;
@@ -21,13 +23,14 @@ public class Reserva{
     /*
         Construye una reserva asociada a un usuario.
     */
-    public Reserva(Usuario usuario) {
-        if(usuario == null){
-            throw new IllegalArgumentException("El usuario de la reserva debe de ser obligatorio.");
+    public Reserva(Usuario usuario, PaqueteTuristico paqueteTuristico) {
+        if (usuario == null) {
+            throw new IllegalArgumentException("El usuario de la reserva es obligatorio.");
         }
 
         this.id = UUID.randomUUID().toString();
         this.usuario = usuario;
+        this.paqueteTuristico = paqueteTuristico;
         this.servicios = new ArrayList<>();
         this.fechaReserva = LocalDate.now();
         this.estado = "PENDIENTE";
@@ -89,6 +92,11 @@ public class Reserva{
     /*Obtiene el usuario asociado a la reserva */
     public Usuario getUsuario() {
         return usuario;
+    }
+
+    /*Obtiene el paquete turístico asociado a la reserva */
+    public PaqueteTuristico getPaqueteTuristico() {
+        return paqueteTuristico;
     }
 
     /*Obtiene los servicios de la reserva */
