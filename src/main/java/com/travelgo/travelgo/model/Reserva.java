@@ -31,7 +31,7 @@ public class Reserva{
         this.usuario = usuario;
         this.servicios = new ArrayList<>();
         this.fechaReserva = LocalDate.now();
-        this.estado = "Pendiente";
+        this.estado = "PENDIENTE";
         this.total = 0.0;
     }
 
