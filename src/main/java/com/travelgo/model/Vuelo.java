@@ -1,4 +1,4 @@
-package com.travelgo.travelgo.model;
+package com.travelgo.model;
 
 import java.time.LocalDateTime;
 /*

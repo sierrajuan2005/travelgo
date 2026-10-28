@@ -33,6 +33,11 @@ public class TransporteMaqueta extends ServicioReservableMaqueta {
 				ciudad, LocalDateTime.of(2026, 11, 20, 12, 0)));
 	}
 
+	@Override
+	public String describir() {
+		return tipo + ", " + origen + " -> " + destino;
+	}
+
 	public String getTipo() {
 		return tipo;
 	}

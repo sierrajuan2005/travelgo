@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ReservaMaquetaController {
 
 	/**
-	 * Muestra el formulario de reserva con los vuelos, hoteles y transportes del destino del paquete.
+	 * Muestra el formulario de reserva con los vuelos, hoteles y transportes disponibles del paquete.
 	 */
 	@GetMapping("/reserva")
 	public String formulario(@RequestParam(name = "paquete", required = false) String paqueteId, Model model) {
@@ -23,11 +23,11 @@ public class ReservaMaquetaController {
 			return "redirect:/catalogo";
 		}
 
-		String ciudad = paquete.getDestino().getCiudad();
+		ServiciosPaqueteMaqueta servicios = ServiciosPaqueteMaqueta.de(paquete);
 		model.addAttribute("paquete", paquete);
-		model.addAttribute("vuelos", VueloMaqueta.deEjemplo(ciudad));
-		model.addAttribute("hoteles", HotelMaqueta.deEjemplo(ciudad, paquete.getDuracionDias()));
-		model.addAttribute("transportes", TransporteMaqueta.deEjemplo(ciudad));
+		model.addAttribute("vuelos", servicios.vuelosDisponibles());
+		model.addAttribute("hoteles", servicios.hotelesDisponibles());
+		model.addAttribute("transportes", servicios.transportesDisponibles());
 		return "reserva/formulario";
 	}
 

@@ -1,7 +1,6 @@
-package com.travelgo.travelgo.model;
+package com.travelgo.model;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

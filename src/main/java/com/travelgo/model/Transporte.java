@@ -1,11 +1,11 @@
-package com.travelgo.travelgo.model;
+package com.travelgo.model;
 
 import java.time.LocalDateTime;
 
 /*
     Representa un transporte disponible para reserva
 */
-public class Transporte extends ServicioReservable{
+public class Transporte extends ServicioReservable {
 
     private final String tipo;
     private final String origen;
