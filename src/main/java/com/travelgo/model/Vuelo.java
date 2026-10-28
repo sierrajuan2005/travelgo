@@ -47,7 +47,7 @@ public class Vuelo extends ServicioReservable {
             );
         }
 
-        if(destino.equalsIgnoreCase(origen)){
+        if(destino.trim().equalsIgnoreCase(origen.trim())){
             throw new IllegalArgumentException(
                 "La ciudad de destino no puede ser la misma que la ciudad de origen."
             );

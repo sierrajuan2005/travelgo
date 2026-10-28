@@ -17,6 +17,10 @@ public class ServicioReservableDAOMemoria implements ServicioReservableDAO {
 
     @Override
     public synchronized <T extends ServicioReservable> T guardar(T servicio) {
+        if (servicio == null) {
+            throw new IllegalArgumentException("El servicio no puede ser nulo.");
+        }
+
         almacen.put(servicio.getId(), servicio);
         return servicio;
     }
