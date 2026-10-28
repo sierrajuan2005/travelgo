@@ -44,15 +44,21 @@ public class Transporte extends ServicioReservable{
             );
         }
 
-        if(fecha==null){
+        if (origen.trim().equalsIgnoreCase(destino.trim())) {
+            throw new IllegalArgumentException(
+                "La ciudad de destino no puede ser la misma que la ciudad de origen."
+            );
+        }
+
+        if (fecha == null) {
             throw new IllegalArgumentException(
                 "La fecha y hora de salida es obligatoria."
             );
         }
 
-        this.tipo = tipo;
-        this.origen = origen;
-        this.destino = destino;
+        this.tipo = tipo.trim();
+        this.origen = origen.trim();
+        this.destino = destino.trim();
         this.fecha = fecha;
     }
 
