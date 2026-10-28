@@ -15,7 +15,6 @@ public class ConsolaMaqueta {
 	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
 	private final Scanner scanner = new Scanner(System.in);
-
 	public static void main(String[] args) {
 		new ConsolaMaqueta().iniciar();
 	}
