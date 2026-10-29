@@ -34,10 +34,10 @@ public class ReservaService {
     }
 
     /** Crea la reserva; si un servicio no existe o no está disponible, no se guarda nada. */
-    public Reserva crearReserva(ReservaRequest request) {
-        Usuario usuario = usuarioDAO.buscarPorId(request.usuarioId())
+    public Reserva crearReserva(ReservaRequest request, String correoAutenticado) {
+        Usuario usuario = usuarioDAO.buscarPorId(correoAutenticado)
             .orElseThrow(() -> new RecursoNoEncontradoException(
-                "Usuario no encontrado: " + request.usuarioId()));
+                "Usuario no encontrado"));
 
         PaqueteTuristico paquete = request.paqueteId() == null
                 ? null

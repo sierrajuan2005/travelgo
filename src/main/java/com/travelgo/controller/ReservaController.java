@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -22,10 +23,14 @@ public class ReservaController {
     }
 
     @PostMapping
-    public ResponseEntity<ReservaRespuestaDTO> crear(@Valid @RequestBody ReservaRequest request) {
+    public ResponseEntity<ReservaRespuestaDTO> crear(
+            @Valid @RequestBody ReservaRequest request,
+            Authentication autenticacion) {
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ReservaRespuestaDTO.desde(service.crearReserva(request)));
-    }
+                .body(ReservaRespuestaDTO.desde(
+                    service.crearReserva(request, autenticacion.getName())));
+}
 
     @GetMapping
     public List<ReservaRespuestaDTO> listar() {
