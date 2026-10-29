@@ -1,5 +1,8 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.PaqueteTuristico;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,12 +136,24 @@ public class PaqueteMaqueta {
 			.filter(p -> p.getId().equals(id))
 			.findFirst()
 			.orElseThrow(() -> new IllegalArgumentException("No existe un paquete con id " + id + "."));
-		boolean tieneReservas = ReservaMaqueta.todas().stream()
-			.anyMatch(r -> r.getPaquete() == paquete);
+		boolean tieneReservas = BackendConsola.RESERVAS.listarTodas().stream()
+			.anyMatch(r -> r.getPaqueteTuristico() != null
+				&& r.getPaqueteTuristico().getId().toString().equals(paquete.getId()));
 		if (tieneReservas) {
 			throw new IllegalStateException("No se puede eliminar un paquete que tiene reservas.");
 		}
 		PAQUETES.remove(paquete);
+	}
+
+	/**
+	 * Crea el PaqueteTuristico real con los mismos datos, para guardarlo en una Reserva real.
+	 * Los ids de la maqueta son números ("1", "2"...), así que sirven como id del paquete real.
+	 */
+	public PaqueteTuristico aModelo() {
+		PaqueteTuristico paquete = new PaqueteTuristico(nombre, descripcion, BigDecimal.valueOf(precio), duracionDias);
+		paquete.setId(Long.valueOf(id));
+		paquete.setActivo(activo);
+		return paquete;
 	}
 
 	public String getId() {
