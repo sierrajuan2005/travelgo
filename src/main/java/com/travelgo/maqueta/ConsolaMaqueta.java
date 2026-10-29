@@ -1,6 +1,16 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.dto.PagoRequest;
+import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.Factura;
+import com.travelgo.model.Hotel;
+import com.travelgo.model.MetodoPago;
+import com.travelgo.model.Pago;
+import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
+import com.travelgo.model.ServicioReservable;
+import com.travelgo.model.Transporte;
+import com.travelgo.model.Vuelo;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -9,8 +19,9 @@ import java.util.Locale;
 import java.util.Scanner;
 
 /**
- * Versión en consola de las pantallas de catálogo, detalle, reserva, pago, factura y panel de administración,
- * con los datos de ejemplo.
+ * Versión en consola de las pantallas de catálogo, detalle, reserva, pago, factura y panel de administración.
+ * El catálogo y el panel usan los datos de ejemplo; las reservas, los pagos y las facturas usan las clases y
+ * los services reales (ver BackendConsola).
  * No usa Spring ni base de datos.
  */
 public class ConsolaMaqueta {
@@ -164,8 +175,8 @@ public class ConsolaMaqueta {
 	}
 
 	/**
-	 * Pide un paquete y un vuelo, hotel y transporte disponibles, muestra el total y guarda la reserva como PENDIENTE.
-	 * El total usa calcularPrecio() de cada servicio (polimorfismo).
+	 * Pide un paquete y un vuelo, hotel y transporte disponibles, guarda una Reserva real como PENDIENTE y muestra
+	 * el total. El total lo calcula Reserva con calcularCosto() de cada servicio (polimorfismo).
 	 */
 	private void armarReserva() {
 		PaqueteMaqueta paquete = elegirPaquete();
@@ -204,86 +215,127 @@ public class ConsolaMaqueta {
 		}
 		agregarElegido(servicios, transportes, "transporte");
 
-		double extras = 0;
-		for (ServicioReservableMaqueta servicio : servicios) {
-			extras += servicio.calcularPrecio();
+		Reserva reserva;
+		try {
+			reserva = BackendConsola.guardarReserva(paquete, servicios);
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			System.out.println("No se pudo guardar la reserva: " + e.getMessage());
+			return;
 		}
 
 		System.out.println();
 		System.out.println("--- Resumen de la reserva ---");
 		System.out.println("Paquete:         " + paquete.getNombre() + " - " + formatear(paquete.getPrecio()));
-		System.out.println("Servicios extra: " + servicios.size() + " - " + formatear(extras));
-		System.out.println("Total:           " + formatear(paquete.getPrecio() + extras));
-
-		ReservaMaqueta reserva = ReservaMaqueta.guardar(paquete, servicios);
-		System.out.println("Reserva guardada con id " + reserva.getId() + " (" + reserva.getEstado() + ").");
+		System.out.println("Servicios extra: " + servicios.size());
+		System.out.println("Total a pagar:   " + formatear(reserva.getTotal()));
+		// Quitar esta línea cuando Reserva.calcularTotal() sume también el precio del paquete
+		System.out.println("(Por ahora el total solo suma los servicios, no el precio del paquete.)");
+		System.out.println("Reserva guardada con id " + idCorto(reserva.getId()) + " (" + reserva.getEstado() + ").");
 	}
 
 	/**
-	 * Muestra las reservas, pide una y la paga con el método elegido. Si se puede pagar, muestra la factura.
+	 * Muestra las reservas, pide una y la paga con PagoService, con las mismas reglas que /api/pagos:
+	 * una reserva se paga una sola vez, no se paga una reserva cancelada, y el pago confirma la reserva y genera
+	 * la factura. Si la reserva ya está pagada, muestra su factura.
 	 */
 	private void pagarReserva() {
+		List<Reserva> reservas = BackendConsola.RESERVAS.listarTodas();
 		System.out.println();
 		System.out.println("--- Reservas ---");
-		for (ReservaMaqueta reserva : ReservaMaqueta.todas()) {
-			System.out.printf("[%s] %s - %s - %s%n", reserva.getId(), reserva.getPaquete().getNombre(),
-				formatear(reserva.calcularTotal()), reserva.getEstado());
+		for (int i = 0; i < reservas.size(); i++) {
+			Reserva reserva = reservas.get(i);
+			System.out.printf("%d. [%s] %s - %s - %s%n", i + 1, idCorto(reserva.getId()), nombrePaquete(reserva),
+				formatear(reserva.getTotal()), reserva.getEstado());
 		}
+		Reserva reserva = reservas.get(leerNumero("Elige una reserva: ", 1, reservas.size()) - 1);
 
-		ReservaMaqueta reserva = elegirReserva();
-		try {
-			PagoMaqueta.validar(reserva);
-		} catch (IllegalStateException e) {
-			System.out.println(e.getMessage());
+		Factura facturaAnterior = buscarFactura(reserva);
+		if (facturaAnterior != null) {
+			System.out.println("La reserva ya está pagada. Esta es su factura:");
+			imprimirFactura(facturaAnterior);
 			return;
 		}
 
 		System.out.println();
-		System.out.println("Total a pagar: " + formatear(reserva.calcularTotal()));
-		System.out.println("1. " + PagoMaqueta.TARJETA);
-		System.out.println("2. " + PagoMaqueta.TRANSFERENCIA);
-		String metodo = leerNumero("Elige el método de pago: ", 1, 2) == 1
-			? PagoMaqueta.TARJETA : PagoMaqueta.TRANSFERENCIA;
+		System.out.println("Total a pagar: " + formatear(reserva.getTotal()));
+		MetodoPago[] metodos = MetodoPago.values();
+		for (int i = 0; i < metodos.length; i++) {
+			System.out.println((i + 1) + ". " + nombreMetodo(metodos[i]));
+		}
+		MetodoPago metodo = metodos[leerNumero("Elige el método de pago: ", 1, metodos.length) - 1];
 
-		PagoMaqueta pago = PagoMaqueta.registrar(reserva, metodo);
-		System.out.println("Pago registrado.");
-		imprimirFactura(pago);
-	}
-
-	/**
-	 * Pide el id de una reserva hasta que exista.
-	 */
-	private ReservaMaqueta elegirReserva() {
-		while (true) {
-			System.out.print("Id de la reserva: ");
-			ReservaMaqueta reserva = ReservaMaqueta.buscar(scanner.nextLine().trim());
-			if (reserva != null) {
-				return reserva;
-			}
-			System.out.println("No existe una reserva con ese id.");
+		try {
+			Factura factura = BackendConsola.PAGOS.pagar(new PagoRequest(reserva.getId(), metodo));
+			System.out.println("Pago registrado.");
+			imprimirFactura(factura);
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			System.out.println("No se pudo pagar: " + e.getMessage());
 		}
 	}
 
 	/**
-	 * Muestra la factura del pago: datos de la reserva, del cliente, cada servicio y los totales.
+	 * Busca la factura de una reserva con FacturaService. Devuelve null si la reserva no está pagada.
 	 */
-	private void imprimirFactura(PagoMaqueta pago) {
-		FacturaMaqueta factura = pago.getFactura();
-		ReservaMaqueta reserva = factura.getReserva();
+	private Factura buscarFactura(Reserva reserva) {
+		try {
+			return BackendConsola.FACTURAS.obtenerPorReserva(reserva.getId());
+		} catch (RecursoNoEncontradoException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Muestra la factura: datos de la reserva, del cliente, cada servicio, el total y el pago.
+	 */
+	private void imprimirFactura(Factura factura) {
+		Reserva reserva = factura.getReserva();
+		Pago pago = factura.getPago();
 		System.out.println();
 		System.out.println("--- Factura " + factura.getNumero() + " ---");
 		System.out.println("Fecha de emisión: " + factura.getFechaEmision().format(FECHA_CORTA));
-		System.out.println("Reserva:          " + reserva.getId() + " (" + reserva.getEstado() + ")");
-		System.out.println("Cliente:          " + reserva.getCliente() + " - " + reserva.getCorreo());
+		System.out.println("Reserva:          " + idCorto(reserva.getId()) + " (" + reserva.getEstado() + ")");
+		System.out.println("Cliente:          " + reserva.getUsuario().getNombre() + " - "
+			+ reserva.getUsuario().getCorreo());
+		System.out.println("Paquete:          " + nombrePaquete(reserva));
 		System.out.println("Servicios:");
-		imprimirLineaFactura("  Paquete " + reserva.getPaquete().getNombre(), reserva.getPaquete().getPrecio());
-		for (ServicioReservableMaqueta servicio : reserva.getServicios()) {
-			imprimirLineaFactura("  " + servicio.describir(), servicio.calcularPrecio());
+		for (ServicioReservable servicio : reserva.getServicios()) {
+			imprimirLineaFactura("  " + describir(servicio), servicio.calcularCosto());
 		}
-		imprimirLineaFactura("Subtotal:", factura.getSubtotal());
 		imprimirLineaFactura("Total:", factura.getTotal());
-		System.out.println("Pago: " + pago.getMetodo() + " - " + pago.getFechaPago().format(FECHA_CORTA) + " - "
-			+ pago.getEstado());
+		System.out.println("Pago: " + nombreMetodo(pago.getMetodo()) + " - " + pago.getFechaPago().format(FECHA));
+	}
+
+	/**
+	 * Texto corto de un servicio para la factura. Cada tipo usa sus propios datos.
+	 */
+	private String describir(ServicioReservable servicio) {
+		return switch (servicio) {
+			case Vuelo vuelo -> "Vuelo " + vuelo.getAerolinea() + ", " + vuelo.getOrigen() + " -> " + vuelo.getDestino();
+			case Hotel hotel -> hotel.getNombre() + ", " + hotel.getNoches() + " noches";
+			case Transporte transporte -> transporte.getTipo() + ", " + transporte.getOrigen() + " -> "
+				+ transporte.getDestino();
+			default -> "Servicio " + servicio.getId();
+		};
+	}
+
+	private String nombreMetodo(MetodoPago metodo) {
+		return switch (metodo) {
+			case TARJETA_CREDITO -> "Tarjeta de crédito";
+			case TARJETA_DEBITO -> "Tarjeta de débito";
+			case TRANSFERENCIA -> "Transferencia";
+			case EFECTIVO -> "Efectivo";
+		};
+	}
+
+	private String nombrePaquete(Reserva reserva) {
+		return reserva.getPaqueteTuristico() == null ? "Sin paquete" : reserva.getPaqueteTuristico().getNombre();
+	}
+
+	/**
+	 * Primeros 8 caracteres del id de la reserva (es un UUID), para que se pueda leer en la consola.
+	 */
+	private String idCorto(String id) {
+		return id.substring(0, 8);
 	}
 
 	private void imprimirLineaFactura(String texto, double valor) {

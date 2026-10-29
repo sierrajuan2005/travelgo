@@ -1,5 +1,7 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.Vuelo;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,6 +40,11 @@ public class VueloMaqueta extends ServicioReservableMaqueta {
 	@Override
 	public String describir() {
 		return "Vuelo " + aerolinea + ", " + origen + " -> " + destino;
+	}
+
+	@Override
+	public Vuelo aModelo() {
+		return new Vuelo(getId(), getPrecio(), isDisponible(), aerolinea, origen, destino, fechaSalida, fechaLlegada);
 	}
 
 	public String getAerolinea() {

@@ -1,8 +1,10 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.ServicioReservable;
+
 /**
  * Servicio reservable de ejemplo con los mismos atributos que ServicioReservable del diagrama de clases.
- * Se elimina cuando existan ServicioReservable, Vuelo, Hotel y Transporte.
+ * Se elimina cuando la consola use ServicioReservableService.
  */
 public abstract class ServicioReservableMaqueta {
 
@@ -27,6 +29,12 @@ public abstract class ServicioReservableMaqueta {
 	 * Texto corto del servicio para la factura. Cada subclase lo arma con sus propios datos.
 	 */
 	public abstract String describir();
+
+	/**
+	 * Crea el servicio real del dominio (Vuelo, Hotel o Transporte) con los mismos datos, para agregarlo a una
+	 * Reserva real.
+	 */
+	public abstract ServicioReservable aModelo();
 
 	/**
 	 * Pasa el servicio de disponible a no disponible, o al revés. Lo usa el panel de administración.
