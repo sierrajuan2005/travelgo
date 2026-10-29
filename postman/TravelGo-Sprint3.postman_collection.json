@@ -1,0 +1,2919 @@
+{
+  "info": {
+    "name": "TravelGo - Sprint 3 (pruebas de destinos, reservas, pagos y roles)",
+    "description": "Colección del Integrante 4 para que todo el equipo pruebe igual.\n\nREQUISITOS: app corriendo en {{baseUrl}} y los usuarios de data.sql cargados (admin@, agente@, cliente@, cliente2@travelgo.com).\nORDEN: ejecutar con el Collection Runner, de arriba hacia abajo, una sola vez por base de datos limpia.\nLOGIN: la app usa login de formulario + sesión (cookie JSESSIONID) y tiene CSRF activo; los scripts de la colección obtienen el token solos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Autenticación",
+      "item": [
+        {
+          "name": "Registrar un cliente nuevo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registro"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "nombre",
+                  "value": "Cliente Postman"
+                },
+                {
+                  "key": "correo",
+                  "value": "{{correoNuevo}}"
+                },
+                {
+                  "key": "password",
+                  "value": "Clave123*"
+                },
+                {
+                  "key": "confirmarPassword",
+                  "value": "Clave123*"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/registro', method: 'GET' }, function (err, res) {",
+                  "  if (err) { return; }",
+                  "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text());",
+                  "  if (t) { pm.collectionVariables.set('csrf', t[1]); }",
+                  "  pm.collectionVariables.set('correoNuevo', 'nuevo' + Date.now() + '@correo.com');",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Registro correcto: redirige a /login?registrado', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.include('registrado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Login con contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/login"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{emailCliente}}"
+                },
+                {
+                  "key": "password",
+                  "value": "mala-clave"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                  "  if (err) { return; }",
+                  "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text());",
+                  "  if (t) { pm.collectionVariables.set('csrf', t[1]); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Credenciales inválidas: redirige a /login?error', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.include('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Sin sesión: /api/reservas redirige al login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sin sesión → 302 a /login', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.include('/login');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Catálogo web es público",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalogo"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('El catálogo web se ve sin iniciar sesión', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        }
+      ],
+      "description": "Registro y errores de login. Los logins correctos están al inicio de cada carpeta siguiente."
+    },
+    {
+      "name": "01 Administrador: catálogo y servicios",
+      "item": [
+        {
+          "name": "Login como ADMINISTRADOR",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/login"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{emailAdmin}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{passAdmin}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                  "  if (err) { console.error(err); return; }",
+                  "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                  "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Crear destino",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Destino Postman\",\n  \"descripcion\": \"Creado desde Postman\",\n  \"pais\": \"Colombia\",\n  \"ciudad\": \"Santa Marta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Devuelve id', function () { pm.expect(json.id).to.be.a('number'); });",
+                  "pm.collectionVariables.set('destinoId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear destino inválido (sin país)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sin pais\",\n  \"ciudad\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validación: país obligatorio → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar destinos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener destino por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/{{destinoId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Es el destino creado', function () { pm.expect(json.nombre).to.eql('Destino Postman'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener destino inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/999999"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear paquete turístico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Paquete Postman\",\n  \"descripcion\": \"Paquete de prueba\",\n  \"precio\": 1500000,\n  \"duracionDias\": 4,\n  \"activo\": true,\n  \"destinos\": [ { \"id\": {{destinoId}} } ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('paqueteId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear paquete con precio 0",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Gratis\",\n  \"precio\": 0,\n  \"duracionDias\": 1,\n  \"destinos\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validación: precio debe ser mayor a cero → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar paquetes activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear vuelo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/vuelos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 450000,\n  \"disponible\": true,\n  \"aerolinea\": \"Avianca\",\n  \"origen\": \"Bogotá\",\n  \"destino\": \"Santa Marta\",\n  \"fechaSalida\": \"2026-12-10T08:00:00\",\n  \"fechaLlegada\": \"2026-12-10T09:35:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('vueloId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear vuelo con llegada antes de la salida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/vuelos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 450000,\n  \"aerolinea\": \"Avianca\",\n  \"origen\": \"Bogotá\",\n  \"destino\": \"Santa Marta\",\n  \"fechaSalida\": \"2026-12-10T10:00:00\",\n  \"fechaLlegada\": \"2026-12-10T09:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Regla de dominio → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear hotel (200.000 x 3 noches)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/hoteles"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 200000,\n  \"disponible\": true,\n  \"nombre\": \"Hotel Postman\",\n  \"direccion\": \"Calle 1 # 2-3\",\n  \"tipoHabitacion\": \"Doble\",\n  \"noches\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('hotelId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear transporte",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/transportes"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 80000,\n  \"disponible\": true,\n  \"tipo\": \"Bus\",\n  \"origen\": \"Santa Marta\",\n  \"destino\": \"Barranquilla\",\n  \"fecha\": \"2026-12-12T07:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('transporteId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear transporte descartable (para probar permisos de borrado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/transportes"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 10000,\n  \"disponible\": true,\n  \"tipo\": \"Taxi\",\n  \"origen\": \"Santa Marta\",\n  \"destino\": \"Taganga\",\n  \"fecha\": \"2026-12-12T09:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('descartableId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear transporte NO disponible",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/transportes"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 10000,\n  \"disponible\": false,\n  \"tipo\": \"Tren\",\n  \"origen\": \"Santa Marta\",\n  \"destino\": \"Ciénaga\",\n  \"fecha\": \"2026-12-12T09:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('noDisponibleId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar servicios (solo disponibles por defecto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('No incluye el servicio no disponible', function () {",
+                  "  pm.expect(json.map(s => s.id)).to.not.include(pm.collectionVariables.get('noDisponibleId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar servicios incluyendo no disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios?soloDisponibles=false"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Sí incluye el no disponible', function () {",
+                  "  pm.expect(json.map(s => s.id)).to.include(pm.collectionVariables.get('noDisponibleId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar vuelo (nuevo precio)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/vuelos/{{vueloId}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 450000,\n  \"disponible\": true,\n  \"aerolinea\": \"Avianca\",\n  \"origen\": \"Bogotá\",\n  \"destino\": \"Santa Marta\",\n  \"fechaSalida\": \"2026-12-10T08:00:00\",\n  \"fechaLlegada\": \"2026-12-10T09:35:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar un hotel usando el id de un vuelo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicios/hoteles/{{vueloId}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 1,\n  \"nombre\": \"X\",\n  \"direccion\": \"Y\",\n  \"tipoHabitacion\": \"Z\",\n  \"noches\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tipo incorrecto → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logout"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cierra la sesión', function () { pm.expect(pm.response.code).to.be.oneOf([302, 200]); });"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        }
+      ],
+      "description": "Datos base del flujo. Guarda destinoId, paqueteId, vueloId, hotelId, transporteId en variables de colección."
+    },
+    {
+      "name": "02 Cliente: reservas",
+      "item": [
+        {
+          "name": "Login como CLIENTE",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/login"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{emailCliente}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{passCliente}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                  "  if (err) { console.error(err); return; }",
+                  "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                  "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        },
+        {
+          "name": "Crear reserva (vuelo + hotel + paquete)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": [\"{{vueloId}}\", \"{{hotelId}}\"],\n  \"paqueteId\": {{paqueteId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Nace PENDIENTE', function () { pm.expect(json.estado).to.eql('PENDIENTE'); });",
+                  "pm.test('Total = vuelo 450.000 + hotel 200.000 x 3 noches = 1.050.000', function () { pm.expect(json.total).to.eql(1050000); });",
+                  "pm.collectionVariables.set('reservaId', json.id);",
+                  "pm.collectionVariables.set('clienteId', json.usuarioId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva ignorando un usuarioId falso en el body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"{{otroUsuarioId}}\",\n  \"serviciosIds\": [\"{{transporteId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('El body no decide el dueño', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('El dueño es el usuario autenticado, no el del body', function () {",
+                  "  pm.expect(json.usuarioId).to.not.equal(pm.collectionVariables.get('otroUsuarioId'));",
+                  "  pm.expect(json.usuarioId).to.eql(pm.collectionVariables.get('clienteId'));",
+                  "});",
+                  "pm.collectionVariables.set('reservaAjenaId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva con servicio inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": [\n    \"no-existe\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva con servicio NO disponible",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": [\"{{noDisponibleId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Servicio no disponible → 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva sin servicios",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validación: al menos un servicio → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear reserva con paquete inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": [\"{{vueloId}}\"],\n  \"paqueteId\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver mis reservas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Incluye la reserva creada', function () { pm.expect(json.map(r => r.id)).to.include(pm.collectionVariables.get('reservaId')); });",
+                  "pm.test('Todas son del usuario autenticado', function () { json.forEach(r => pm.expect(r.usuarioId).to.eql(pm.collectionVariables.get('clienteId'))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver una de mis reservas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Es la reserva pedida', function () { pm.expect(json.id).to.eql(pm.collectionVariables.get('reservaId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver reserva inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/no-existe"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear segunda reserva (para probar la cancelación)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviciosIds\": [\"{{transporteId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('reservaCanceladaId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar la segunda reserva",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaCanceladaId}}/cancelar"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Queda CANCELADA', function () { pm.expect(json.estado).to.eql('CANCELADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar de nuevo la misma reserva",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaCanceladaId}}/cancelar"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ya cancelada → 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirmar una reserva cancelada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaCanceladaId}}/confirmar"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No se confirma una cancelada → 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "El usuario de la reserva sale del usuario autenticado. Guarda reservaId, reservaAjenaId y reservaCanceladaId."
+    },
+    {
+      "name": "03 Cliente: pagos y facturas",
+      "item": [
+        {
+          "name": "Pagar una reserva cancelada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{reservaCanceladaId}}\",\n  \"metodo\": \"TARJETA_CREDITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No se paga una cancelada → 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar reserva inexistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"no-existe\",\n  \"metodo\": \"EFECTIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar con método inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{reservaId}}\",\n  \"metodo\": \"BITCOIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Método inexistente → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar sin método",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{reservaId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validación: método obligatorio → 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar mi reserva (genera la factura)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{reservaId}}\",\n  \"metodo\": \"TARJETA_CREDITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.test('La factura tiene número FAC-', function () { pm.expect(json.numero).to.match(/^FAC-/); });",
+                  "pm.test('El total facturado es el total de la reserva', function () { pm.expect(json.total).to.eql(1050000); });",
+                  "pm.test('La factura es de mi reserva', function () { pm.expect(json.reservaId).to.eql(pm.collectionVariables.get('reservaId')); });",
+                  "pm.collectionVariables.set('facturaId', json.id);",
+                  "pm.collectionVariables.set('pagoId', json.pagoId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi reserva quedó CONFIRMADA tras el pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservas/{{reservaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Estado CONFIRMADA', function () { pm.expect(json.estado).to.eql('CONFIRMADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagar de nuevo la misma reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservaId\": \"{{reservaId}}\",\n  \"metodo\": \"EFECTIVO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Una reserva se paga una sola vez → 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver el pago de mi reserva",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/reserva/{{reservaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Monto 1.050.000', function () { pm.expect(json.monto).to.eql(1050000); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver el pago por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/{{pagoId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver el pago de una reserva sin pagos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pagos/reserva/{{reservaAjenaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver mi factura por reserva",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/facturas/reserva/{{reservaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Mismo número de factura', function () { pm.expect(json.id).to.eql(pm.collectionVariables.get('facturaId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver mi factura por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/facturas/{{facturaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('No expone la contraseña', function () { pm.expect(JSON.stringify(json)).to.not.include('password'); });",
+                  "pm.test('Detalla los 2 servicios', function () { pm.expect(json.servicios.length).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver factura inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/facturas/no-existe"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver la factura de una reserva sin factura",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/facturas/reserva/{{reservaAjenaId}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Flujo cliente → reserva → pago → factura. Sigue con la sesión de CLIENTE de la carpeta anterior."
+    },
+    {
+      "name": "04 Roles y permisos (matriz de docs/matriz_permisos.md)",
+      "item": [
+        {
+          "name": "CLIENTE (segundo cliente intenta lo que no debe)",
+          "item": [
+            {
+              "name": "Cerrar sesión",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/logout"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Cierra la sesión', function () { pm.expect(pm.response.code).to.be.oneOf([302, 200]); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Login como CLIENTE 2",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/login"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "username",
+                      "value": "{{emailCliente2}}"
+                    },
+                    {
+                      "key": "password",
+                      "value": "{{passCliente}}"
+                    },
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                      "  if (err) { console.error(err); return; }",
+                      "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                      "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                      "  pm.response.to.have.status(302);",
+                      "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Ver la reserva de otro cliente",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/{{reservaAjenaId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — CLIENTE solo ve sus reservas', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Confirmar la reserva de otro cliente",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/{{reservaAjenaId}}/confirmar"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Cancelar la reserva de otro cliente",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/{{reservaAjenaId}}/cancelar"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Pagar la reserva de otro cliente",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/pagos"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reservaId\": \"{{reservaAjenaId}}\",\n  \"metodo\": \"EFECTIVO\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — solo se pagan reservas propias (hoy falla: defecto D3)', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ver las reservas de otro usuario por id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/usuario/{{clienteId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — hoy falla: defecto D3', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Listar todos los pagos",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/pagos"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — gestionar pagos es del AGENTE (hoy falla: D2)', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Listar todas las facturas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/facturas"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — hoy falla: D3', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ver las facturas de otro usuario",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/facturas/usuario/{{clienteId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — hoy falla: D3', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Crear un destino",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/destinos"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Hack\",\n  \"pais\": \"X\",\n  \"ciudad\": \"Y\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — el catálogo es del ADMIN (hoy falla: D2)', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Crear un vuelo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/servicios/vuelos"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"precio\": 1,\n  \"aerolinea\": \"A\",\n  \"origen\": \"B\",\n  \"destino\": \"C\",\n  \"fechaSalida\": \"2026-12-10T08:00:00\",\n  \"fechaLlegada\": \"2026-12-10T09:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — los servicios son del ADMIN (hoy falla: D2)', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Borrar un servicio",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/servicios/{{descartableId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — hoy falla: D2', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Entrar a una ruta de administrador",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/panel"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — SecurityConfig: /admin/** solo ADMINISTRADOR', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Entrar a una ruta de agente",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/agente/panel"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — SecurityConfig: /agente/** solo AGENTE/ADMIN', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "AGENTE",
+          "item": [
+            {
+              "name": "Cerrar sesión",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/logout"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Cierra la sesión', function () { pm.expect(pm.response.code).to.be.oneOf([302, 200]); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Login como AGENTE",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/login"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "username",
+                      "value": "{{emailAgente}}"
+                    },
+                    {
+                      "key": "password",
+                      "value": "{{passAgente}}"
+                    },
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                      "  if (err) { console.error(err); return; }",
+                      "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                      "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                      "  pm.response.to.have.status(302);",
+                      "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Ver todas las reservas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200 — el AGENTE gestiona todas las reservas (hoy solo ve las propias: D4)', function () { pm.response.to.have.status(200); });",
+                      "const json = pm.response.json();",
+                      "pm.test('Incluye reservas de clientes', function () { pm.expect(json.map(r => r.id)).to.include(pm.collectionVariables.get('reservaId')); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ver la reserva de un cliente",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/{{reservaAjenaId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200 — hoy responde 403: D4', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Confirmar la reserva de un cliente",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reservas/{{reservaAjenaId}}/confirmar"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200 — hoy responde 403: D4', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Listar todos los pagos",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/pagos"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Listar todas las facturas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/facturas"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Ver las facturas de un cliente",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/facturas/usuario/{{clienteId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 200', function () { pm.response.to.have.status(200); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Crear un destino",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/destinos"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Hack\",\n  \"pais\": \"X\",\n  \"ciudad\": \"Y\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403 — el AGENTE no gestiona el catálogo (hoy falla: D2)', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Entrar a una ruta de agente",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/agente/panel"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 404 — pasa la seguridad; la ruta aún no existe', function () { pm.response.to.have.status(404); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Entrar a una ruta de administrador",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/panel"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 403', function () { pm.response.to.have.status(403); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMINISTRADOR",
+          "item": [
+            {
+              "name": "Cerrar sesión",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/logout"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Cierra la sesión', function () { pm.expect(pm.response.code).to.be.oneOf([302, 200]); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Login como ADMINISTRADOR (de nuevo)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/login"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "username",
+                      "value": "{{emailAdmin}}"
+                    },
+                    {
+                      "key": "password",
+                      "value": "{{passAdmin}}"
+                    },
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                      "  if (err) { console.error(err); return; }",
+                      "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                      "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                      "});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                      "  pm.response.to.have.status(302);",
+                      "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Crear un destino",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/destinos"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Destino Admin\",\n  \"pais\": \"Colombia\",\n  \"ciudad\": \"Leticia\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 201', function () { pm.response.to.have.status(201); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Borrar un servicio",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/servicios/{{descartableId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 204', function () { pm.response.to.have.status(204); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Borrar un servicio que ya no existe",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/servicios/{{descartableId}}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 404', function () { pm.response.to.have.status(404); });"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Entrar a una ruta de administrador",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/panel"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Esperado 404 — pasa la seguridad; la ruta aún no existe', function () { pm.response.to.have.status(404); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            },
+            {
+              "name": "Cerrar sesión",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-TOKEN",
+                    "value": "{{csrf}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/logout"
+                },
+                "body": {
+                  "mode": "urlencoded",
+                  "urlencoded": [
+                    {
+                      "key": "_csrf",
+                      "value": "{{csrf}}"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Cierra la sesión', function () { pm.expect(pm.response.code).to.be.oneOf([302, 200]); });"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "followRedirects": false
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Cada prueba indica el código esperado según la matriz. Las que hoy fallan están marcadas con el defecto del reporte (D1…D4)."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Antes de cada petición que modifica datos, renueva el token CSRF de la sesión actual.",
+          "const metodo = pm.request.method;",
+          "const ruta = pm.request.url.getPath();",
+          "const esLoginORegistro = ruta === '/login' || ruta === '/registro';",
+          "if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(metodo) && !esLoginORegistro) {",
+          "  pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/registro', method: 'GET' }, function (err, res) {",
+          "    if (err) { console.error('No se pudo leer el token CSRF', err); return; }",
+          "    const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+          "    if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('Token CSRF no encontrado'); }",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "emailAdmin",
+      "value": "admin@travelgo.com"
+    },
+    {
+      "key": "passAdmin",
+      "value": "Admin123*"
+    },
+    {
+      "key": "emailAgente",
+      "value": "agente@travelgo.com"
+    },
+    {
+      "key": "passAgente",
+      "value": "Agente123*"
+    },
+    {
+      "key": "emailCliente",
+      "value": "cliente@travelgo.com"
+    },
+    {
+      "key": "emailCliente2",
+      "value": "cliente2@travelgo.com"
+    },
+    {
+      "key": "passCliente",
+      "value": "Cliente123*"
+    },
+    {
+      "key": "otroUsuarioId",
+      "value": "u-cliente2"
+    },
+    {
+      "key": "csrf",
+      "value": ""
+    }
+  ]
+}
