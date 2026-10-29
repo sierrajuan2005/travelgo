@@ -10,18 +10,20 @@ import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.ServicioReservable;
 import com.travelgo.model.Transporte;
+import com.travelgo.model.Usuario;
 import com.travelgo.model.Vuelo;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Scanner;
 
 /**
- * Versión en consola de las pantallas de catálogo, detalle, reserva, pago, factura y panel de administración.
- * El catálogo y el panel usan los datos de ejemplo; las reservas, los pagos y las facturas usan las clases y
- * los services reales (ver BackendConsola).
+ * Versión en consola de las pantallas de login, catálogo, detalle, reserva, pago, factura y panel de
+ * administración. El catálogo y el panel usan los datos de ejemplo; el login, las reservas, los pagos y las
+ * facturas usan las clases y los services reales (ver BackendConsola).
  * No usa Spring ni base de datos.
  */
 public class ConsolaMaqueta {
@@ -31,33 +33,71 @@ public class ConsolaMaqueta {
 
 	private final Scanner scanner = new Scanner(System.in);
 
-	/** Rol con el que se entra a la consola. Decide qué opciones aparecen en el menú. */
-	private RolUsuario rol;
+	/** Usuario que inició sesión. Su rol decide qué opciones aparecen en el menú (docs/matriz_permisos.md). */
+	private Usuario usuario;
 
 	public static void main(String[] args) {
 		new ConsolaMaqueta().iniciar();
 	}
 
 	/**
-	 * Pide el rol y muestra el menú principal hasta que el usuario elige salir.
+	 * Pide el login y muestra el menú principal del usuario. Al cerrar sesión vuelve al login, para poder entrar
+	 * con otro rol; en el login, Enter sin correo sale de la consola.
 	 */
 	public void iniciar() {
-		rol = elegirRol();
+		while ((usuario = iniciarSesion()) != null) {
+			mostrarMenuPrincipal();
+		}
+		System.out.println("Hasta pronto.");
+	}
+
+	/**
+	 * Pide correo y contraseña hasta que sean correctos. Usa UsuarioService y BCrypt, igual que el login web.
+	 *
+	 * @return el usuario autenticado, o null si se deja el correo vacío para salir
+	 */
+	private Usuario iniciarSesion() {
+		System.out.println();
+		System.out.println("=== TravelGo: iniciar sesión ===");
+		System.out.println("Usuarios de prueba (contraseña " + BackendConsola.PASSWORD_EJEMPLO + "): "
+			+ "cliente@travelgo.com, ana@travelgo.com, agente@travelgo.com, admin@travelgo.com");
+		while (true) {
+			System.out.print("Correo (Enter = salir): ");
+			String correo = scanner.nextLine().trim();
+			if (correo.isEmpty()) {
+				return null;
+			}
+			String password = leerTexto("Contraseña: ");
+			Optional<Usuario> autenticado = BackendConsola.iniciarSesion(correo, password);
+			if (autenticado.isPresent()) {
+				System.out.println("Bienvenido, " + autenticado.get().getNombre() + ".");
+				return autenticado.get();
+			}
+			System.out.println("Correo o contraseña incorrectos.");
+		}
+	}
+
+	/**
+	 * Muestra el menú principal hasta que el usuario cierra sesión.
+	 */
+	private void mostrarMenuPrincipal() {
 		int opcion;
 		do {
 			System.out.println();
-			System.out.println("=== TravelGo (" + rol + ") ===");
+			System.out.println("=== TravelGo (" + usuario.getNombre() + " - " + usuario.getRol() + ") ===");
 			System.out.println("1. Ver catálogo");
 			System.out.println("2. Ver detalle de un paquete");
-			System.out.println("3. Armar una reserva");
+			if (puedeReservar()) {
+				System.out.println("3. Armar una reserva");
+			}
 			System.out.println("4. Buscar paquetes por destino o precio");
-			if (puedePagar()) {
+			if (puedeReservar()) {
 				System.out.println("5. Pagar una reserva");
 			}
 			if (esAdministrador()) {
 				System.out.println("6. Panel de administración");
 			}
-			System.out.println("0. Salir");
+			System.out.println("0. Cerrar sesión");
 			opcion = leerOpcionMenu();
 
 			switch (opcion) {
@@ -67,7 +107,7 @@ public class ConsolaMaqueta {
 				case 4 -> buscarPaquetes();
 				case 5 -> pagarReserva();
 				case 6 -> panelAdministracion();
-				default -> System.out.println("Hasta pronto.");
+				default -> System.out.println("Sesión cerrada.");
 			}
 		} while (opcion != 0);
 	}
@@ -78,42 +118,40 @@ public class ConsolaMaqueta {
 	private int leerOpcionMenu() {
 		while (true) {
 			int opcion = leerNumero("Opción: ", 0, 6);
-			if (opcion <= 4 || (opcion == 5 && puedePagar()) || (opcion == 6 && esAdministrador())) {
+			boolean permitida = switch (opcion) {
+				case 3, 5 -> puedeReservar();
+				case 6 -> esAdministrador();
+				default -> true;
+			};
+			if (permitida) {
 				return opcion;
 			}
-			System.out.println("Esa opción no está disponible para el rol " + rol + ".");
+			System.out.println("Esa opción no está disponible para el rol " + usuario.getRol() + ".");
 		}
 	}
 
 	/**
-	 * Cliente y Agente pagan reservas; el Administrador gestiona el catálogo.
+	 * Cliente y Agente reservan y pagan; para el Administrador "no aplica" (matriz de permisos).
 	 */
-	private boolean puedePagar() {
-		return rol == RolUsuario.CLIENTE || rol == RolUsuario.AGENTE;
+	private boolean puedeReservar() {
+		return usuario.getRol() == RolUsuario.CLIENTE || usuario.getRol() == RolUsuario.AGENTE;
 	}
 
 	/**
 	 * Solo el Administrador ve el panel de administración.
 	 */
 	private boolean esAdministrador() {
-		return rol == RolUsuario.ADMINISTRADOR;
+		return usuario.getRol() == RolUsuario.ADMINISTRADOR;
 	}
 
 	/**
-	 * Pregunta con qué rol se entra. Reemplaza al login por rol mientras no esté listo.
+	 * El Cliente solo ve y paga sus propias reservas; el Agente gestiona las de todos los clientes.
 	 */
-	private RolUsuario elegirRol() {
-		System.out.println();
-		System.out.println("=== TravelGo ===");
-		System.out.println("¿Con qué rol entras?");
-		System.out.println("1. Cliente");
-		System.out.println("2. Agente");
-		System.out.println("3. Administrador");
-		return switch (leerNumero("Opción: ", 1, 3)) {
-			case 1 -> RolUsuario.CLIENTE;
-			case 2 -> RolUsuario.AGENTE;
-			default -> RolUsuario.ADMINISTRADOR;
-		};
+	private List<Reserva> reservasVisibles() {
+		if (usuario.getRol() == RolUsuario.AGENTE) {
+			return BackendConsola.RESERVAS.listarTodas();
+		}
+		return BackendConsola.RESERVAS.listarPorUsuario(usuario.getId());
 	}
 
 	/**
@@ -217,7 +255,7 @@ public class ConsolaMaqueta {
 
 		Reserva reserva;
 		try {
-			reserva = BackendConsola.guardarReserva(paquete, servicios);
+			reserva = BackendConsola.guardarReserva(usuario, paquete, servicios);
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			System.out.println("No se pudo guardar la reserva: " + e.getMessage());
 			return;
@@ -237,15 +275,22 @@ public class ConsolaMaqueta {
 	 * Muestra las reservas, pide una y la paga con PagoService, con las mismas reglas que /api/pagos:
 	 * una reserva se paga una sola vez, no se paga una reserva cancelada, y el pago confirma la reserva y genera
 	 * la factura. Si la reserva ya está pagada, muestra su factura.
+	 * El Cliente solo ve sus reservas; el Agente ve las de todos, con el nombre del cliente.
 	 */
 	private void pagarReserva() {
-		List<Reserva> reservas = BackendConsola.RESERVAS.listarTodas();
+		List<Reserva> reservas = reservasVisibles();
+		boolean esAgente = usuario.getRol() == RolUsuario.AGENTE;
 		System.out.println();
-		System.out.println("--- Reservas ---");
+		System.out.println("--- " + (esAgente ? "Reservas de todos los clientes" : "Mis reservas") + " ---");
+		if (reservas.isEmpty()) {
+			System.out.println("No hay reservas. Arma una con la opción 3.");
+			return;
+		}
 		for (int i = 0; i < reservas.size(); i++) {
 			Reserva reserva = reservas.get(i);
-			System.out.printf("%d. [%s] %s - %s - %s%n", i + 1, idCorto(reserva.getId()), nombrePaquete(reserva),
-				formatear(reserva.getTotal()), reserva.getEstado());
+			String cliente = esAgente ? " - " + reserva.getUsuario().getNombre() : "";
+			System.out.printf("%d. [%s] %s - %s - %s%s%n", i + 1, idCorto(reserva.getId()), nombrePaquete(reserva),
+				formatear(reserva.getTotal()), reserva.getEstado(), cliente);
 		}
 		Reserva reserva = reservas.get(leerNumero("Elige una reserva: ", 1, reservas.size()) - 1);
 
