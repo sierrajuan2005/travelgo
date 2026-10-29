@@ -138,15 +138,18 @@ Para la presentación del primer modelo, el catálogo, el detalle y la reserva t
 
 ```mermaid
 flowchart TD
-    Rol["Elegir rol"] --> Menu["Menú principal"]
+    Login["Iniciar sesión (correo y contraseña)"] -->|"datos correctos"| Menu["Menú principal"]
+    Login -->|"datos incorrectos"| Login
+    Login -->|"Enter sin correo"| Salir
     Menu -->|"1"| Catalogo["Ver catálogo"]
     Menu -->|"2"| Detalle["Ver detalle de un paquete"]
-    Menu -->|"3"| Reserva["Armar una reserva"]
+    Menu -->|"3 (Cliente o Agente)"| Reserva["Armar una reserva"]
     Menu -->|"4"| Buscar["Buscar por destino o precio"]
     Menu -->|"5 (Cliente o Agente)"| Pago["Pagar una reserva"]
     Menu -->|"6 (Administrador)"| Admin["Panel de administración"]
     Buscar --> Menu
-    Menu -->|"0"| Salir["Salir"]
+    Menu -->|"0: cerrar sesión"| Login
+    Salir["Salir"]
     Detalle --> Id["Pedir id del paquete"]
     Reserva --> Id
     Id -->|"reserva"| Servicios["Elegir vuelo, hotel y transporte"]
@@ -166,34 +169,41 @@ flowchart TD
     Detalle --> Menu
 ```
 
-Mientras Integrante 1 no termine el login por rol, la consola pregunta el rol al iniciar. Ese rol decide qué opciones aparecen en el menú (`RolUsuario`: CLIENTE, AGENTE, ADMINISTRADOR).
+La consola empieza con el login. Valida el correo y la contraseña con `UsuarioService` y `BCryptPasswordEncoder`, igual que el login web de Integrante 1. El rol del usuario (`RolUsuario`: CLIENTE, AGENTE, ADMINISTRADOR) decide qué opciones aparecen en el menú, según `docs/matriz_permisos.md`. Al cerrar sesión se vuelve al login, para entrar con otro rol.
+
+Usuarios de prueba (contraseña `123456`, creados en `BackendConsola`):
+
+| Correo | Rol |
+|---|---|
+| cliente@travelgo.com | CLIENTE (tiene 3 reservas de ejemplo) |
+| ana@travelgo.com | CLIENTE (tiene 1 reserva de ejemplo) |
+| agente@travelgo.com | AGENTE |
+| admin@travelgo.com | ADMINISTRADOR |
 
 ### 5.2 Menú principal
 
 ```text
-=== TravelGo ===
-¿Con qué rol entras?
-1. Cliente
-2. Agente
-3. Administrador
-Opción: 1
+=== TravelGo: iniciar sesión ===
+Correo (Enter = salir): cliente@travelgo.com
+Contraseña: 123456
+Bienvenido, Cliente de prueba.
 
-=== TravelGo (CLIENTE) ===
+=== TravelGo (Cliente de prueba - CLIENTE) ===
 1. Ver catálogo
 2. Ver detalle de un paquete
 3. Armar una reserva
 4. Buscar paquetes por destino o precio
 5. Pagar una reserva
-0. Salir
+0. Cerrar sesión
 Opción: 5
 ```
 
-El Administrador ve la opción `6. Panel de administración` en lugar de la 5.
+El Administrador ve la opción `6. Panel de administración` en lugar de la 3 y la 5 (en la matriz de permisos, reservar y pagar "no aplica" para él).
 
 ### 5.3 Pagar una reserva
 
 ```text
---- Reservas ---
+--- Mis reservas ---
 1. [5e5eeebd] Machu Picchu mágico - USD 260.00 - PENDIENTE
 2. [f294e4ca] Cartagena colonial - USD 0.00 - CANCELADA
 3. [f3fc3a6a] Cancún todo incluido - USD 630.00 - CONFIRMADA
@@ -209,6 +219,8 @@ Pago registrado.
 ```
 
 - La consola usa `PagoService` y `FacturaService` de Integrante 2 (las mismas reglas que `/api/pagos` y `/api/facturas`), armados sin Spring en `BackendConsola`.
+- El Cliente solo ve sus propias reservas. El Agente ve las de todos los clientes (título `Reservas de todos los clientes`, con el nombre del cliente al final de cada línea).
+- Las reservas nuevas se guardan con el usuario que inició sesión como dueño.
 - El id de la reserva es un UUID; la consola muestra sus primeros 8 caracteres y se elige la reserva por número.
 - El monto es el total de la reserva (`Reserva.calcularTotal()`); el usuario no lo escribe. Por ahora ese total solo suma los servicios, no el precio del paquete.
 - Si la reserva ya está pagada, se muestra su factura. Si está CANCELADA o no tiene servicios, se muestra el motivo que da `PagoService` y se vuelve al menú:
@@ -279,7 +291,7 @@ El servicio v1 ahora está no disponible.
 
 | Opción | Clases que usa | Atributos / métodos |
 |---|---|---|
-| Elegir rol | Usuario, Rol | rol |
+| Iniciar sesión | Usuario, RolUsuario, UsuarioService | correo, password (BCrypt), rol; buscarPorCorreo() |
 | Pagar una reserva | Pago, MetodoPago, Reserva, PagoService | metodo, monto = reserva.total, fechaPago; pagar(), confirmarReserva() |
 | Factura | Factura, Pago, Reserva, Usuario, FacturaService | numero, fechaEmision, total; usuario.nombre, usuario.correo; obtenerPorReserva() |
 | Panel de administración | Destino, PaqueteTuristico, Vuelo, Hotel, Transporte | atributos de Destino y PaqueteTuristico; disponible de cada servicio |
@@ -288,5 +300,5 @@ El servicio v1 ahora está no disponible.
 
 - Las pantallas web se construyen con Thymeleaf y Bootstrap 5.
 - El pago, la factura y el panel de administración se muestran en consola (`ConsolaMaqueta`), sin Spring ni base de datos.
-- Las reservas, los pagos y las facturas de la consola usan las clases y los services reales, con los DAO en memoria (`BackendConsola`).
+- El login, las reservas, los pagos y las facturas de la consola usan las clases y los services reales, con los DAO en memoria (`BackendConsola`).
 - El catálogo y el panel de administración todavía usan datos de ejemplo del paquete `maqueta/`, con los mismos atributos que el diagrama de clases.
