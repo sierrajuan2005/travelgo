@@ -27,4 +27,12 @@ public class UsuarioDAOMemoria implements UsuarioDAO {
     public synchronized Optional<Usuario> buscarPorId(String id) {
         return Optional.ofNullable(almacen.get(id));
     }
+
+    @Override
+    public synchronized Optional<Usuario> buscarPorCorreo(String correo) {
+        return almacen.values().stream()
+                .filter(usuario -> usuario.getCorreo().equalsIgnoreCase(correo))
+                .findFirst();
+    }
+
 }
