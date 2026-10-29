@@ -1,6 +1,5 @@
 package com.travelgo.controller;
 
-import com.travelgo.dto.FacturaRespuestaDTO;
 import com.travelgo.dto.PagoRequest;
 import com.travelgo.dto.PagoRespuestaDTO;
 import com.travelgo.service.PagoService;
@@ -22,11 +21,11 @@ public class PagoController {
         this.service = service;
     }
 
-    /** Paga una reserva y devuelve la factura generada. */
+    /** Paga una reserva y devuelve el pago junto con su factura. */
     @PostMapping
-    public ResponseEntity<FacturaRespuestaDTO> pagar(@Valid @RequestBody PagoRequest request) {
+    public ResponseEntity<PagoRespuestaDTO> pagar(@Valid @RequestBody PagoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(FacturaRespuestaDTO.desde(service.pagar(request)));
+                .body(PagoRespuestaDTO.desde(service.pagar(request)));
     }
 
     @GetMapping
