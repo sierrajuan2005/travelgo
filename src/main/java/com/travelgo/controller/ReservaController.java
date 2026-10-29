@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -22,19 +23,26 @@ public class ReservaController {
     }
 
     @PostMapping
-    public ResponseEntity<ReservaRespuestaDTO> crear(@Valid @RequestBody ReservaRequest request) {
+    public ResponseEntity<ReservaRespuestaDTO> crear(
+            @Valid @RequestBody ReservaRequest request,
+            Authentication autenticacion) {
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ReservaRespuestaDTO.desde(service.crearReserva(request)));
-    }
+                .body(ReservaRespuestaDTO.desde(
+                    service.crearReserva(request, autenticacion.getName())));
+}
 
     @GetMapping
-    public List<ReservaRespuestaDTO> listar() {
-        return service.listar().stream().map(ReservaRespuestaDTO::desde).toList();
+    public List<ReservaRespuestaDTO> listar(Authentication autenticacion) {
+        return service.listarPropias(autenticacion.getName())
+                .stream().map(ReservaRespuestaDTO::desde).toList();
     }
 
     @GetMapping("/{id}")
-    public ReservaRespuestaDTO obtener(@PathVariable String id) {
-        return ReservaRespuestaDTO.desde(service.obtener(id));
+    public ReservaRespuestaDTO obtener(
+            @PathVariable String id, Authentication autenticacion) {
+        return ReservaRespuestaDTO.desde(
+                service.obtenerPropia(id, autenticacion.getName()));
     }
 
     @GetMapping("/usuario/{usuarioId}")
@@ -43,12 +51,16 @@ public class ReservaController {
     }
 
     @PutMapping("/{id}/confirmar")
-    public ReservaRespuestaDTO confirmar(@PathVariable String id) {
-        return ReservaRespuestaDTO.desde(service.confirmarReserva(id));
+    public ReservaRespuestaDTO confirmar(
+            @PathVariable String id, Authentication autenticacion) {
+        return ReservaRespuestaDTO.desde(
+                service.confirmarPropia(id, autenticacion.getName()));
     }
 
     @PutMapping("/{id}/cancelar")
-    public ReservaRespuestaDTO cancelar(@PathVariable String id) {
-        return ReservaRespuestaDTO.desde(service.cancelarReserva(id));
+    public ReservaRespuestaDTO cancelar(
+            @PathVariable String id, Authentication autenticacion) {
+        return ReservaRespuestaDTO.desde(
+                service.cancelarPropia(id, autenticacion.getName()));
     }
 }

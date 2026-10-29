@@ -10,4 +10,6 @@ public interface UsuarioDAO {
     Usuario guardar(Usuario usuario);
 
     Optional<Usuario> buscarPorId(String id);
+
+    Optional<Usuario> buscarPorCorreo(String correo);
 }
