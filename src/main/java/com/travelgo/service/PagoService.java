@@ -27,10 +27,11 @@ public class PagoService {
     }
 
     /**
-     * Paga una reserva: la confirma, registra el pago y genera la factura.
-     * Si la reserva ya está pagada, está cancelada o no tiene servicios, no se guarda nada.
+     * Paga una reserva: obtiene (o emite) su factura, registra el pago,
+     * marca la factura como pagada y confirma la reserva.
+     * Todas las validaciones van antes de modificar algo, para no dejar datos a medias.
      */
-    public Factura pagar(PagoRequest request) {
+    public Pago pagar(PagoRequest request) {
         Reserva reserva = reservaDAO.buscarPorId(request.reservaId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Reserva no encontrada: " + request.reservaId()));
@@ -38,12 +39,20 @@ public class PagoService {
         if (pagoDAO.buscarPorReservaId(reserva.getId()).isPresent()) {
             throw new IllegalStateException("La reserva " + reserva.getId() + " ya fue pagada.");
         }
+        if ("CANCELADA".equalsIgnoreCase(reserva.getEstado())) {
+            throw new IllegalStateException("No se puede pagar una reserva cancelada.");
+        }
 
-        reserva.confirmarReserva(); // lanza excepción si está cancelada o sin servicios
+        Factura factura = facturaDAO.buscarPorReservaId(reserva.getId())
+                .orElseGet(() -> new Factura(reserva)); // falla si la reserva no tiene servicios
+        Pago pago = new Pago(factura, request.metodo()); // falla si la factura no está pendiente
+
+        factura.marcarPagada();
+        reserva.confirmarReserva();
+
         reservaDAO.guardar(reserva);
-
-        Pago pago = pagoDAO.guardar(new Pago(reserva, request.metodo()));
-        return facturaDAO.guardar(new Factura(pago));
+        facturaDAO.guardar(factura);
+        return pagoDAO.guardar(pago);
     }
 
     public Pago obtener(String id) {
