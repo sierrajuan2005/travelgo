@@ -1,5 +1,7 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.Transporte;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,6 +38,11 @@ public class TransporteMaqueta extends ServicioReservableMaqueta {
 	@Override
 	public String describir() {
 		return tipo + ", " + origen + " -> " + destino;
+	}
+
+	@Override
+	public Transporte aModelo() {
+		return new Transporte(getId(), getPrecio(), isDisponible(), tipo, origen, destino, fecha);
 	}
 
 	public String getTipo() {

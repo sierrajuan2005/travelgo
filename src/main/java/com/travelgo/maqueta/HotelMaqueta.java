@@ -1,5 +1,7 @@
 package com.travelgo.maqueta;
 
+import com.travelgo.model.Hotel;
+
 import java.util.List;
 
 /**
@@ -36,6 +38,11 @@ public class HotelMaqueta extends ServicioReservableMaqueta {
 	@Override
 	public String describir() {
 		return nombre + ", " + noches + " noches";
+	}
+
+	@Override
+	public Hotel aModelo() {
+		return new Hotel(getId(), getPrecio(), isDisponible(), nombre, direccion, tipoHabitacion, noches);
 	}
 
 	/**
