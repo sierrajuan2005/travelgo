@@ -11,8 +11,7 @@ import com.travelgo.model.ServicioReservable;
 import com.travelgo.model.Usuario;
 import org.springframework.stereotype.Service;
 import com.travelgo.model.PaqueteTuristico;
-import com.travelgo.dao.PaqueteDAO;
-import com.travelgo.model.PaqueteTuristico;
+import org.springframework.security.access.AccessDeniedException;
 
 
 import java.util.List;
@@ -69,6 +68,39 @@ public class ReservaService {
 
     public List<Reserva> listarPorUsuario(String usuarioId) {
         return reservaDAO.listarPorUsuario(usuarioId);
+    }
+
+    public Reserva obtenerPropia(String id, String correo) {
+        Reserva reserva = obtener(id);
+        verificarPropietario(reserva, correo);
+        return reserva;
+    }
+
+    public List<Reserva> listarPropias(String correo) {
+        Usuario usuario = usuarioDAO.buscarPorCorreo(correo)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado"));
+
+        return reservaDAO.listarPorUsuario(usuario.getId());
+    }
+
+    public Reserva confirmarPropia(String id, String correo) {
+        Reserva reserva = obtenerPropia(id, correo);
+        reserva.confirmarReserva();
+        return reservaDAO.guardar(reserva);
+    }
+
+    public Reserva cancelarPropia(String id, String correo) {
+        Reserva reserva = obtenerPropia(id, correo);
+        reserva.cancelarReserva();
+        return reservaDAO.guardar(reserva);
+    }
+
+    private void verificarPropietario(Reserva reserva, String correo) {
+        if (!reserva.getUsuario().getCorreo().equalsIgnoreCase(correo)) {
+            throw new AccessDeniedException(
+                    "No tienes permiso para acceder a esta reserva");
+        }
     }
 
     public Reserva confirmarReserva(String id) {
