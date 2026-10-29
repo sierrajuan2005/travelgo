@@ -194,42 +194,46 @@ El Administrador ve la opción `6. Panel de administración` en lugar de la 5.
 
 ```text
 --- Reservas ---
-[R-001] Machu Picchu mágico - USD 1,040.00 - PENDIENTE
-[R-002] Cartagena colonial - USD 450.00 - CANCELADA
-[R-003] Cancún todo incluido - USD 1,830.00 - CONFIRMADA
-Id de la reserva: R-001
+1. [5e5eeebd] Machu Picchu mágico - USD 260.00 - PENDIENTE
+2. [f294e4ca] Cartagena colonial - USD 0.00 - CANCELADA
+3. [f3fc3a6a] Cancún todo incluido - USD 630.00 - CONFIRMADA
+Elige una reserva: 1
 
-Total a pagar: USD 1,040.00
-1. Tarjeta
-2. Transferencia
-Elige el método de pago: 1
+Total a pagar: USD 260.00
+1. Tarjeta de crédito
+2. Tarjeta de débito
+3. Transferencia
+4. Efectivo
+Elige el método de pago: 2
 Pago registrado.
 ```
 
-- El monto es el `total` de la reserva; el usuario no lo escribe.
-- Solo se paga una reserva PENDIENTE. Si está CANCELADA o ya pagada, se muestra el motivo y se vuelve al menú:
+- La consola usa `PagoService` y `FacturaService` de Integrante 2 (las mismas reglas que `/api/pagos` y `/api/facturas`), armados sin Spring en `BackendConsola`.
+- El id de la reserva es un UUID; la consola muestra sus primeros 8 caracteres y se elige la reserva por número.
+- El monto es el total de la reserva (`Reserva.calcularTotal()`); el usuario no lo escribe. Por ahora ese total solo suma los servicios, no el precio del paquete.
+- Si la reserva ya está pagada, se muestra su factura. Si está CANCELADA o no tiene servicios, se muestra el motivo que da `PagoService` y se vuelve al menú:
 
 ```text
-Id de la reserva: R-002
-No se puede pagar una reserva cancelada.
+Elige una reserva: 2
+...
+No se pudo pagar: No se puede confirmar una reserva cancelada.
 ```
 
 ### 5.4 Factura
 
 ```text
---- Factura F-0001 ---
-Fecha de emisión: 27/10/2026
-Reserva:          R-001 (CONFIRMADA)
+--- Factura FAC-93F951B7 ---
+Fecha de emisión: 28/10/2026
+Reserva:          5e5eeebd (CONFIRMADA)
 Cliente:          Cliente de prueba - cliente@travelgo.com
+Paquete:          Machu Picchu mágico
 Servicios:
-  Paquete Machu Picchu mágico   USD   780.00
-  Vuelo LATAM, Bogotá -> Cusco  USD   260.00
-Subtotal:                       USD 1,040.00
-Total:                          USD 1,040.00
-Pago: Tarjeta - 27/10/2026 - APROBADO
+  Vuelo LATAM, Bogotá -> Cusco           USD     260.00
+Total:                                   USD     260.00
+Pago: Tarjeta de débito - 28/10/2026 21:07
 ```
 
-La factura se genera sola después del pago, y la reserva pasa a CONFIRMADA (`confirmarReserva()`).
+La factura se genera sola después del pago (`new Factura(pago)`), y la reserva pasa a CONFIRMADA (`confirmarReserva()`).
 
 ### 5.5 Panel de administración
 
@@ -276,12 +280,13 @@ El servicio v1 ahora está no disponible.
 | Opción | Clases que usa | Atributos / métodos |
 |---|---|---|
 | Elegir rol | Usuario, Rol | rol |
-| Pagar una reserva | Pago, Reserva | metodo, monto = reserva.total, fechaPago, estado; confirmarReserva() |
-| Factura | Factura, Pago, Reserva, Usuario | numero, fechaEmision, subtotal, total, estado; usuario.nombre, usuario.correo |
+| Pagar una reserva | Pago, MetodoPago, Reserva, PagoService | metodo, monto = reserva.total, fechaPago; pagar(), confirmarReserva() |
+| Factura | Factura, Pago, Reserva, Usuario, FacturaService | numero, fechaEmision, total; usuario.nombre, usuario.correo; obtenerPorReserva() |
 | Panel de administración | Destino, PaqueteTuristico, Vuelo, Hotel, Transporte | atributos de Destino y PaqueteTuristico; disponible de cada servicio |
 
 ## 6. Consideraciones técnicas
 
 - Las pantallas web se construyen con Thymeleaf y Bootstrap 5.
 - El pago, la factura y el panel de administración se muestran en consola (`ConsolaMaqueta`), sin Spring ni base de datos.
-- Mientras no existan las entidades reales, las pantallas usan datos de ejemplo del paquete `maqueta/`, con los mismos atributos que el diagrama de clases.
+- Las reservas, los pagos y las facturas de la consola usan las clases y los services reales, con los DAO en memoria (`BackendConsola`).
+- El catálogo y el panel de administración todavía usan datos de ejemplo del paquete `maqueta/`, con los mismos atributos que el diagrama de clases.
