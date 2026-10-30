@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${'Factura ' + factura.numero})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${factura.numero}">Factura</li>
+        </ol>
+    </nav>
+
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <div class="card tg-card mx-auto" style="max-width: 720px;">
+        <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <p class="fw-bold mb-0"><i class="bi bi-airplane-fill"></i> TravelGo</p>
+                    <p class="text-muted small mb-0">Agencia de viajes</p>
+                </div>
+                <div class="text-end">
+                    <h1 class="h4 mb-1" th:text="${'Factura ' + factura.numero}">Factura FAC-0000</h1>
+                    <span class="badge"
+                          th:classappend="${factura.estado.name() == 'PAGADA'} ? 'text-bg-success' : 'text-bg-warning'"
+                          th:text="${factura.estado}">PAGADA</span>
+                </div>
+            </div>
+
+            <div class="row small mb-4">
+                <div class="col-sm-6">
+                    <p class="text-muted mb-1">Cliente</p>
+                    <p class="mb-0 fw-semibold" th:text="${reserva.usuario.nombre}">Cliente</p>
+                    <p class="mb-0" th:text="${reserva.usuario.correo}">correo</p>
+                </div>
+                <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
+                    <p class="mb-0"><span class="text-muted">Fecha de emisión:</span>
+                        <span th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}">01/01/2026</span></p>
+                    <p class="mb-0"><span class="text-muted">Reserva:</span>
+                        <code th:text="${idCorto}">abcd1234</code> (<span th:text="${reserva.estado}">CONFIRMADA</span>)</p>
+                    <p class="mb-0"><span class="text-muted">Paquete:</span> <span th:text="${paquete}">Paquete</span></p>
+                </div>
+            </div>
+
+            <table class="table mb-4">
+                <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th class="text-end">Valor</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="linea : ${lineas}">
+                    <td th:text="${linea.descripcion()}">Servicio</td>
+                    <td class="text-end"
+                        th:text="${'USD ' + #numbers.formatDecimal(linea.valor(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <th>Total</th>
+                    <th class="text-end tg-precio"
+                        th:text="${'USD ' + #numbers.formatDecimal(factura.total, 1, 'COMMA', 2, 'POINT')}">USD 0.00</th>
+                </tr>
+                </tfoot>
+            </table>
+
+            <p class="small mb-0" th:if="${pago != null}">
+                <i class="bi bi-credit-card"></i>
+                Pagado con <span th:text="${metodo}">Tarjeta</span>
+                el <span th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/01/2026</span>.
+            </p>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a class="btn btn-outline-secondary" th:href="@{/reservas}"><i class="bi bi-arrow-left"></i> Volver a reservas</a>
+        <button type="button" class="btn btn-tg" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -13,10 +13,6 @@
         <span class="badge text-bg-warning align-self-start align-self-md-end">Maqueta · datos de ejemplo</span>
     </div>
 
-    <div th:if="${param.reservado}" class="alert alert-success">
-        <i class="bi bi-check-circle-fill"></i>
-        Reserva enviada (maqueta). En el Sprint 2 se guardará de verdad.
-    </div>
 
     <form th:action="@{/catalogo}" method="get" class="row g-2 align-items-end mb-4">
         <div class="col-md-4">

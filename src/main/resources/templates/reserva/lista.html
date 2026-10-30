@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${esAgente ? 'Reservas' : 'Mis reservas'})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<!-- Cliente: solo sus reservas. Agente: las de todos los clientes, con el nombre del cliente. -->
+<main class="container py-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
+        <div>
+            <h1 class="h2 mb-1" th:text="${esAgente} ? 'Reservas de todos los clientes' : 'Mis reservas'">Mis reservas</h1>
+            <p class="text-muted mb-0">Paga una reserva pendiente o consulta la factura de una reserva pagada.</p>
+        </div>
+        <a class="btn btn-tg align-self-start align-self-md-end" th:href="@{/catalogo}">
+            <i class="bi bi-calendar-plus"></i> Nueva reserva
+        </a>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <p th:if="${#lists.isEmpty(reservas)}" class="text-muted">
+        No hay reservas. Elige un paquete en el <a th:href="@{/catalogo}">catálogo</a> para armar una.
+    </p>
+
+    <div class="card tg-card" th:unless="${#lists.isEmpty(reservas)}">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>Reserva</th>
+                    <th>Paquete</th>
+                    <th th:if="${esAgente}">Cliente</th>
+                    <th class="text-end">Total</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acción</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${reservas}">
+                    <td><code th:text="${r.idCorto()}">abcd1234</code></td>
+                    <td th:text="${r.paquete()}">Paquete</td>
+                    <td th:if="${esAgente}" th:text="${r.cliente()}">Cliente</td>
+                    <td class="text-end"
+                        th:text="${'USD ' + #numbers.formatDecimal(r.total(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${r.estado() == 'CONFIRMADA' ? 'text-bg-success'
+                                  : (r.estado() == 'CANCELADA' ? 'text-bg-secondary' : 'text-bg-warning')}"
+                              th:text="${r.estado()}">PENDIENTE</span>
+                    </td>
+                    <td class="text-end">
+                        <a th:if="${r.pagada()}" class="btn btn-outline-secondary btn-sm"
+                           th:href="@{/reservas/{id}/factura(id=${r.id()})}">
+                            <i class="bi bi-receipt"></i> Ver factura
+                        </a>
+                        <a th:if="${!r.pagada() and r.estado() != 'CANCELADA'}" class="btn btn-tg btn-sm"
+                           th:href="@{/reservas/{id}/pagar(id=${r.id()})}">
+                            <i class="bi bi-credit-card"></i> Pagar
+                        </a>
+                        <span th:if="${!r.pagada() and r.estado() == 'CANCELADA'}" class="text-muted small">
+                            No se puede pagar
+                        </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
