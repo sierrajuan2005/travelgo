@@ -34,7 +34,7 @@ public class ReservaService {
 
     /** Crea la reserva; si un servicio no existe o no está disponible, no se guarda nada. */
     public Reserva crearReserva(ReservaRequest request, String correoAutenticado) {
-        Usuario usuario = usuarioDAO.buscarPorId(correoAutenticado)
+        Usuario usuario = usuarioDAO.buscarPorCorreo(correoAutenticado)
             .orElseThrow(() -> new RecursoNoEncontradoException(
                 "Usuario no encontrado"));
 

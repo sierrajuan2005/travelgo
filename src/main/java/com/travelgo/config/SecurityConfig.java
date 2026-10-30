@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
 
 /**
  * Configuración base de seguridad: rutas públicas y página de login propia.
@@ -25,9 +26,52 @@ public class SecurityConfig {
                     "/catalogo", "/catalogo/**",
                     "/css/**", "/js/**", "/img/**"
                 ).permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/agente/**").hasAnyRole("AGENTE", "ADMINISTRADOR")
-                .requestMatchers("/cliente/**").hasRole("CLIENTE")
+
+                // Administración
+                .requestMatchers("/admin/**")
+                    .hasRole("ADMINISTRADOR")
+
+                // Gestión de agentes
+                .requestMatchers("/agente/**")
+                    .hasAnyRole("AGENTE", "ADMINISTRADOR")
+
+                // Área del cliente
+                .requestMatchers("/cliente/**")
+                    .hasRole("CLIENTE")
+
+                // Destinos: consulta autenticada
+                .requestMatchers(HttpMethod.GET, "/api/destinos/**")
+                    .authenticated()
+                .requestMatchers("/api/destinos/**")
+                    .hasRole("ADMINISTRADOR")
+
+                // Paquetes: consulta autenticada
+                .requestMatchers(HttpMethod.GET, "/api/paquetes/**")
+                    .authenticated()
+                .requestMatchers("/api/paquetes/**")
+                    .hasRole("ADMINISTRADOR")
+
+                // Servicios: consulta autenticada
+                .requestMatchers(HttpMethod.GET, "/api/servicios/**")
+                    .authenticated()
+                .requestMatchers("/api/servicios/**")
+                    .hasAnyRole("AGENTE", "ADMINISTRADOR")
+
+                // Reservas: usuarios autenticados.
+                // El propietario se verifica en ReservaService.
+                .requestMatchers(HttpMethod.POST, "/api/reservas/**")
+                    .hasRole("CLIENTE")
+
+                .requestMatchers(HttpMethod.GET, "/api/reservas/**")
+                    .hasAnyRole("CLIENTE", "AGENTE", "ADMINISTRADOR")
+
+                .requestMatchers(HttpMethod.PUT, "/api/reservas/**")
+                    .hasAnyRole("CLIENTE", "AGENTE", "ADMINISTRADOR")
+
+                .requestMatchers("/api/reservas/**")
+                    .denyAll()
+
+                // Cualquier otra ruta
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
