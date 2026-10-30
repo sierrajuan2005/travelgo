@@ -310,9 +310,9 @@ public class ConsolaMaqueta {
 		MetodoPago metodo = metodos[leerNumero("Elige el método de pago: ", 1, metodos.length) - 1];
 
 		try {
-			Factura factura = BackendConsola.PAGOS.pagar(new PagoRequest(reserva.getId(), metodo));
+			Pago pago = BackendConsola.PAGOS.pagar(new PagoRequest(reserva.getId(), metodo));
 			System.out.println("Pago registrado.");
-			imprimirFactura(factura);
+			imprimirFactura(pago.getFactura());
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			System.out.println("No se pudo pagar: " + e.getMessage());
 		}
@@ -330,12 +330,22 @@ public class ConsolaMaqueta {
 	}
 
 	/**
+	 * Busca el pago de una reserva con PagoService. Devuelve null si la reserva no tiene pago.
+	 */
+	private Pago buscarPago(Reserva reserva) {
+		try {
+			return BackendConsola.PAGOS.obtenerPorReserva(reserva.getId());
+		} catch (RecursoNoEncontradoException e) {
+			return null;
+		}
+	}
+
+	/**
 	 * Muestra la factura: datos de la reserva, del cliente, cada servicio, el total y el pago.
 	 */
 	private void imprimirFactura(Factura factura) {
 		Reserva reserva = factura.getReserva();
-		Pago pago = factura.getPago();
-		System.out.println();
+		Pago pago = buscarPago(reserva);		System.out.println();
 		System.out.println("--- Factura " + factura.getNumero() + " ---");
 		System.out.println("Fecha de emisión: " + factura.getFechaEmision().format(FECHA_CORTA));
 		System.out.println("Reserva:          " + idCorto(reserva.getId()) + " (" + reserva.getEstado() + ")");
@@ -347,8 +357,10 @@ public class ConsolaMaqueta {
 			imprimirLineaFactura("  " + describir(servicio), servicio.calcularCosto());
 		}
 		imprimirLineaFactura("Total:", factura.getTotal());
-		System.out.println("Pago: " + nombreMetodo(pago.getMetodo()) + " - " + pago.getFechaPago().format(FECHA));
-	}
+		System.out.println("Estado de la factura: " + factura.getEstado());
+		if (pago != null) {
+			System.out.println("Pago: " + nombreMetodo(pago.getMetodo()) + " - " + pago.getFechaPago().format(FECHA_CORTA));
+		}	}
 
 	/**
 	 * Texto corto de un servicio para la factura. Cada tipo usa sus propios datos.

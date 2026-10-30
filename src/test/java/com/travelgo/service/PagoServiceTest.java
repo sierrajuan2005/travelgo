@@ -5,6 +5,8 @@ import com.travelgo.dao.PagoDAO;
 import com.travelgo.dao.ReservaDAO;
 import com.travelgo.dto.PagoRequest;
 import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.EstadoFactura;
+import com.travelgo.model.EstadoPago;
 import com.travelgo.model.EstadoReserva;
 import com.travelgo.model.Factura;
 import com.travelgo.model.Hotel;
@@ -39,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Pruebas unitarias de PagoService: reglas de pago (una sola vez, no pagar canceladas,
- * el pago confirma la reserva y genera la factura). Los DAO se simulan con Mockito.
+ * el pago marca la factura como pagada y confirma la reserva). Los DAO se simulan con Mockito.
  */
 @ExtendWith(MockitoExtension.class)
 class PagoServiceTest {
@@ -73,6 +75,11 @@ class PagoServiceTest {
         return reserva; // total 600
     }
 
+    /** Pago ya registrado de una reserva nueva (factura pendiente y luego pago). */
+    private Pago pagoDe(Reserva reserva) {
+        return new Pago(new Factura(reserva), MetodoPago.EFECTIVO);
+    }
+
     private void guardadosDevuelvenElMismo() {
         when(pagoDAO.guardar(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
         when(facturaDAO.guardar(any(Factura.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -81,25 +88,27 @@ class PagoServiceTest {
     // ---------- pagar: camino feliz ----------
 
     @Test
-    @DisplayName("Pagar una reserva pendiente: la confirma, registra el pago y genera la factura")
+    @DisplayName("Pagar una reserva pendiente: emite la factura, registra el pago y confirma la reserva")
     void pagarReservaValida() {
         Reserva reserva = reservaConServicios();
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
         guardadosDevuelvenElMismo();
 
-        Factura factura = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_CREDITO));
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_CREDITO));
 
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstadoEnum());
-        assertNotNull(factura.getNumero());
-        assertSame(reserva, factura.getReserva());
-        assertEquals(600.0, factura.getTotal(), 0.001);
-        assertEquals(600.0, factura.getPago().getMonto(), 0.001);
-        assertEquals(MetodoPago.TARJETA_CREDITO, factura.getPago().getMetodo());
+        assertEquals(EstadoPago.APROBADO, pago.getEstado());
+        assertEquals(MetodoPago.TARJETA_CREDITO, pago.getMetodo());
+        assertEquals(600.0, pago.getMonto(), 0.001);
+        assertSame(reserva, pago.getReserva());
+        assertEquals(EstadoFactura.PAGADA, pago.getFactura().getEstado());
+        assertEquals(600.0, pago.getFactura().getTotal(), 0.001);
+        assertNotNull(pago.getFactura().getNumero());
     }
 
     @Test
-    @DisplayName("Pagar guarda primero la reserva confirmada, luego el pago y al final la factura")
+    @DisplayName("Pagar guarda primero la reserva confirmada, luego la factura y al final el pago")
     void pagarGuardaEnOrden() {
         Reserva reserva = reservaConServicios();
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
@@ -108,10 +117,26 @@ class PagoServiceTest {
 
         service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO));
 
-        InOrder orden = inOrder(reservaDAO, pagoDAO, facturaDAO);
+        InOrder orden = inOrder(reservaDAO, facturaDAO, pagoDAO);
         orden.verify(reservaDAO).guardar(reserva);
-        orden.verify(pagoDAO).guardar(any(Pago.class));
         orden.verify(facturaDAO).guardar(any(Factura.class));
+        orden.verify(pagoDAO).guardar(any(Pago.class));
+    }
+
+    @Test
+    @DisplayName("Si la reserva ya tiene una factura pendiente, el pago usa esa factura y la marca como pagada")
+    void pagarUsaLaFacturaExistente() {
+        Reserva reserva = reservaConServicios();
+        Factura pendiente = new Factura(reserva);
+        when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
+        when(facturaDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.of(pendiente));
+        guardadosDevuelvenElMismo();
+
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO));
+
+        assertSame(pendiente, pago.getFactura());
+        assertEquals(EstadoFactura.PAGADA, pendiente.getEstado());
     }
 
     @Test
@@ -123,10 +148,10 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
         guardadosDevuelvenElMismo();
 
-        Factura factura = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TRANSFERENCIA));
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TRANSFERENCIA));
 
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstadoEnum());
-        assertEquals(600.0, factura.getTotal(), 0.001);
+        assertEquals(600.0, pago.getMonto(), 0.001);
     }
 
     // ---------- pagar: reglas de negocio ----------
@@ -140,16 +165,15 @@ class PagoServiceTest {
                 () -> service.pagar(new PagoRequest("no-existe", MetodoPago.EFECTIVO)));
 
         verify(reservaDAO, never()).guardar(any());
-        verify(pagoDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
     }
 
     @Test
     @DisplayName("Una reserva se paga una sola vez: el segundo pago lanza IllegalStateException y no guarda nada")
     void pagarDosVeces() {
         Reserva reserva = reservaConServicios();
-        reserva.confirmarReserva();
-        Pago pagoExistente = new Pago(reserva, MetodoPago.TARJETA_DEBITO);
+        Pago pagoExistente = pagoDe(reserva);
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.of(pagoExistente));
 
@@ -157,8 +181,8 @@ class PagoServiceTest {
                 () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO)));
 
         verify(reservaDAO, never()).guardar(any());
-        verify(pagoDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
     }
 
     @Test
@@ -174,23 +198,25 @@ class PagoServiceTest {
 
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstadoEnum());
         verify(reservaDAO, never()).guardar(any());
-        verify(pagoDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
     }
 
     @Test
-    @DisplayName("No se puede pagar una reserva sin servicios: lanza IllegalStateException y no guarda nada")
+    @DisplayName("No se puede pagar una reserva sin servicios: lanza IllegalArgumentException y no guarda nada")
     void pagarReservaSinServicios() {
         Reserva vacia = new Reserva(usuario, null);
         when(reservaDAO.buscarPorId(vacia.getId())).thenReturn(Optional.of(vacia));
         when(pagoDAO.buscarPorReservaId(vacia.getId())).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class,
+        // La excepción la lanza new Factura(reserva): no se puede facturar una reserva sin servicios
+        assertThrows(IllegalArgumentException.class,
                 () -> service.pagar(new PagoRequest(vacia.getId(), MetodoPago.EFECTIVO)));
 
         assertEquals(EstadoReserva.PENDIENTE, vacia.getEstadoEnum());
-        verify(pagoDAO, never()).guardar(any());
+        verify(reservaDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
     }
 
     // ---------- consultas ----------
@@ -198,8 +224,7 @@ class PagoServiceTest {
     @Test
     @DisplayName("Obtener un pago existente lo devuelve")
     void obtenerExistente() {
-        Reserva reserva = reservaConServicios();
-        Pago pago = new Pago(reserva, MetodoPago.EFECTIVO);
+        Pago pago = pagoDe(reservaConServicios());
         when(pagoDAO.buscarPorId(pago.getId())).thenReturn(Optional.of(pago));
 
         assertSame(pago, service.obtener(pago.getId()));
@@ -217,7 +242,7 @@ class PagoServiceTest {
     @DisplayName("Obtener el pago de una reserva existente lo devuelve")
     void obtenerPorReservaExistente() {
         Reserva reserva = reservaConServicios();
-        Pago pago = new Pago(reserva, MetodoPago.EFECTIVO);
+        Pago pago = pagoDe(reserva);
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.of(pago));
 
         assertSame(pago, service.obtenerPorReserva(reserva.getId()));
@@ -234,7 +259,7 @@ class PagoServiceTest {
     @Test
     @DisplayName("Listar delega en el DAO")
     void listar() {
-        List<Pago> pagos = List.of(new Pago(reservaConServicios(), MetodoPago.EFECTIVO));
+        List<Pago> pagos = List.of(pagoDe(reservaConServicios()));
         when(pagoDAO.listarTodos()).thenReturn(pagos);
 
         assertEquals(pagos, service.listar());

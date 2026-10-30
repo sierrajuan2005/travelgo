@@ -4,30 +4,50 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Representa la factura generada a partir de un pago.
+ * Representa la factura de una reserva. Nace pendiente y pasa a pagada cuando se registra su pago.
  */
 public class Factura {
     private final String id;
     private final String numero;
-    private final Pago pago;
+    private final Reserva reserva;
     private final LocalDate fechaEmision;
+    private final double subtotal;
     private final double total;
+    private EstadoFactura estado;
 
     /**
-     * Construye la factura de un pago.
+     * Construye la factura de una reserva.
      *
-     * @param pago pago que se factura
-     * @throws IllegalArgumentException si el pago es nulo
+     * @param reserva reserva que se factura
+     * @throws IllegalArgumentException si la reserva es nula o no tiene servicios
      */
-    public Factura(Pago pago) {
-        if (pago == null) {
-            throw new IllegalArgumentException("El pago de la factura es obligatorio.");
+    public Factura(Reserva reserva) {
+        if (reserva == null) {
+            throw new IllegalArgumentException("La reserva de la factura es obligatoria.");
         }
+        double subtotal = reserva.calcularTotal();
+        if (subtotal <= 0) {
+            throw new IllegalArgumentException("No se puede facturar una reserva sin servicios.");
+        }
+
         this.id = UUID.randomUUID().toString();
         this.numero = "FAC-" + id.substring(0, 8).toUpperCase();
-        this.pago = pago;
+        this.reserva = reserva;
         this.fechaEmision = LocalDate.now();
-        this.total = pago.getMonto();
+        this.subtotal = subtotal;
+        this.total = subtotal; // sin impuestos ni descuentos por ahora
+        this.estado = EstadoFactura.PENDIENTE;
+    }
+
+    /** Marca la factura como pagada. */
+    public void marcarPagada() {
+        if (estado == EstadoFactura.PAGADA) {
+            throw new IllegalStateException("La factura ya está pagada.");
+        }
+        if (estado == EstadoFactura.ANULADA) {
+            throw new IllegalStateException("No se puede pagar una factura anulada.");
+        }
+        estado = EstadoFactura.PAGADA;
     }
 
     /** Obtiene el id de la factura. */
@@ -40,14 +60,9 @@ public class Factura {
         return numero;
     }
 
-    /** Obtiene el pago facturado. */
-    public Pago getPago() {
-        return pago;
-    }
-
     /** Obtiene la reserva facturada. */
     public Reserva getReserva() {
-        return pago.getReserva();
+        return reserva;
     }
 
     /** Obtiene la fecha de emisión. */
@@ -55,8 +70,18 @@ public class Factura {
         return fechaEmision;
     }
 
-    /** Obtiene el total facturado. */
+    /** Obtiene el subtotal. */
+    public double getSubtotal() {
+        return subtotal;
+    }
+
+    /** Obtiene el total. */
     public double getTotal() {
         return total;
+    }
+
+    /** Obtiene el estado de la factura. */
+    public EstadoFactura getEstado() {
+        return estado;
     }
 }
