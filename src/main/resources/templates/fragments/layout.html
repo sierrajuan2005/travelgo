@@ -6,6 +6,7 @@
      Uso en una página:
        <head th:replace="~{fragments/layout :: head('Título')}"></head>
        <nav th:replace="~{fragments/layout :: navbar}"></nav>
+       <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
        <footer th:replace="~{fragments/layout :: footer}"></footer>
        <th:block th:replace="~{fragments/layout :: scripts}"></th:block> -->
 
@@ -34,6 +35,16 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" th:href="@{/}">Inicio</a></li>
                 <li class="nav-item"><a class="nav-link" th:href="@{/catalogo}">Catálogo</a></li>
+                <!-- Menú por rol, igual que la consola (docs/matriz_permisos.md) -->
+                <li class="nav-item" sec:authorize="hasRole('CLIENTE')">
+                    <a class="nav-link" th:href="@{/reservas}">Mis reservas</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('AGENTE')">
+                    <a class="nav-link" th:href="@{/reservas}">Reservas</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a class="nav-link" th:href="@{/admin}">Administración</a>
+                </li>
             </ul>
 
             <ul class="navbar-nav align-items-lg-center gap-2">
@@ -57,6 +68,32 @@
         </div>
     </div>
 </nav>
+
+<!-- Mensajes que dejan los controladores después de un redirect (flash attributes "mensaje" y "error") -->
+<th:block th:fragment="alertas">
+    <div th:if="${mensaje}" class="alert alert-success">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}">Mensaje</span>
+    </div>
+    <div th:if="${error}" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}">Error</span>
+    </div>
+</th:block>
+
+<!-- Pestañas del panel de administración. "activa" es destinos, paquetes o servicios. -->
+<ul th:fragment="adminTabs(activa)" class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link" th:classappend="${activa == 'destinos'} ? 'active'" th:href="@{/admin/destinos}">
+            <i class="bi bi-geo-alt"></i> Destinos</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" th:classappend="${activa == 'paquetes'} ? 'active'" th:href="@{/admin/paquetes}">
+            <i class="bi bi-suitcase2"></i> Paquetes</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" th:classappend="${activa == 'servicios'} ? 'active'" th:href="@{/admin/servicios}">
+            <i class="bi bi-airplane"></i> Servicios</a>
+    </li>
+</ul>
 
 <footer th:fragment="footer" class="tg-footer mt-auto py-3">
     <div class="container text-center small">

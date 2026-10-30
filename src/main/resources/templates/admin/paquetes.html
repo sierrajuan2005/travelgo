@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administración · Paquetes')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="container py-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
+        <h1 class="h2 mb-0">Panel de administración</h1>
+        <span class="badge text-bg-warning align-self-start align-self-md-end">Catálogo de ejemplo</span>
+    </div>
+    <ul th:replace="~{fragments/layout :: adminTabs('paquetes')}"></ul>
+
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card tg-card">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Paquete</th>
+                            <th class="text-end">Precio</th>
+                            <th>Días</th>
+                            <th>Estado</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="paquete : ${paquetes}">
+                            <td><code th:text="${paquete.id}">1</code></td>
+                            <td>
+                                <div class="fw-semibold" th:text="${paquete.nombre}">Nombre</div>
+                                <div class="text-muted small" th:text="${paquete.destino.ciudad}">Ciudad</div>
+                            </td>
+                            <td class="text-end"
+                                th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                            <td th:text="${paquete.duracionDias}">5</td>
+                            <td>
+                                <span class="badge" th:classappend="${paquete.activo} ? 'text-bg-success' : 'text-bg-secondary'"
+                                      th:text="${paquete.activo} ? 'Activo' : 'Inactivo'">Activo</span>
+                            </td>
+                            <td class="text-end">
+                                <!-- No se elimina un paquete que tiene reservas: el controlador muestra el motivo -->
+                                <form th:action="@{/admin/paquetes/{id}/eliminar(id=${paquete.id})}" method="post"
+                                      onsubmit="return confirm('¿Eliminar este paquete?')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card tg-card">
+                <div class="card-body p-4">
+                    <h2 class="h5">Agregar paquete</h2>
+                    <form th:action="@{/admin/paquetes}" method="post">
+                        <div class="mb-2">
+                            <label for="nombre" class="form-label small">Nombre</label>
+                            <input type="text" id="nombre" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="mb-2">
+                            <label for="descripcion" class="form-label small">Descripción</label>
+                            <textarea id="descripcion" name="descripcion" class="form-control" rows="2" required></textarea>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label for="precio" class="form-label small">Precio (USD)</label>
+                                <input type="number" id="precio" name="precio" class="form-control"
+                                       min="0.01" step="0.01" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="duracionDias" class="form-label small">Duración (días)</label>
+                                <input type="number" id="duracionDias" name="duracionDias" class="form-control"
+                                       min="1" max="60" required>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="destinoId" class="form-label small">Destino</label>
+                            <select id="destinoId" name="destinoId" class="form-select" required>
+                                <option th:each="destino : ${destinos}" th:value="${destino.id}"
+                                        th:text="${destino.nombre + ' (' + destino.id + ')'}">Destino</option>
+                            </select>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="activo" name="activo" value="true" checked>
+                            <label class="form-check-label small" for="activo">Activo (se muestra en el catálogo)</label>
+                        </div>
+                        <button type="submit" class="btn btn-tg w-100"><i class="bi bi-plus-lg"></i> Agregar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

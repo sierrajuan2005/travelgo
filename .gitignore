@@ -34,3 +34,6 @@ build/
 
 ### Documentos personales (no se versionan) ###
 mis_docs/
+
+### Configuración local de cada PC (contraseña de la base de datos) ###
+/config/

@@ -17,8 +17,10 @@
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
         <h1 class="h2 mb-0">Arma tu reserva</h1>
-        <span class="badge text-bg-warning align-self-start align-self-md-end">Maqueta · no se guarda</span>
+        <span class="badge text-bg-warning align-self-start align-self-md-end">Catálogo de ejemplo</span>
     </div>
+
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
     <form th:action="@{/reserva}" method="post">
         <input type="hidden" name="paqueteId" th:value="${paquete.id}">
@@ -129,6 +131,10 @@
                                   th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
                         </div>
                         <button type="submit" class="btn btn-tg w-100">Confirmar reserva</button>
+                        <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
+                        <p class="text-muted small mt-2 mb-0">
+                            Por ahora el total a pagar solo suma los servicios, no el precio del paquete.
+                        </p>
                     </div>
                 </div>
             </div>
