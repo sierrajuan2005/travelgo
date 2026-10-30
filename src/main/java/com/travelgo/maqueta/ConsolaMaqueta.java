@@ -1,17 +1,13 @@
 package com.travelgo.maqueta;
 
 import com.travelgo.dto.PagoRequest;
-import com.travelgo.exception.RecursoNoEncontradoException;
 import com.travelgo.model.Factura;
-import com.travelgo.model.Hotel;
 import com.travelgo.model.MetodoPago;
 import com.travelgo.model.Pago;
 import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.ServicioReservable;
-import com.travelgo.model.Transporte;
 import com.travelgo.model.Usuario;
-import com.travelgo.model.Vuelo;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -19,6 +15,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Scanner;
+
+import static com.travelgo.maqueta.FormatoMaqueta.describir;
+import static com.travelgo.maqueta.FormatoMaqueta.idCorto;
+import static com.travelgo.maqueta.FormatoMaqueta.nombreMetodo;
+import static com.travelgo.maqueta.FormatoMaqueta.nombrePaquete;
 
 /**
  * Versión en consola de las pantallas de login, catálogo, detalle, reserva, pago, factura y panel de
@@ -134,7 +135,7 @@ public class ConsolaMaqueta {
 	 * Cliente y Agente reservan y pagan; para el Administrador "no aplica" (matriz de permisos).
 	 */
 	private boolean puedeReservar() {
-		return usuario.getRol() == RolUsuario.CLIENTE || usuario.getRol() == RolUsuario.AGENTE;
+		return BackendConsola.puedeReservar(usuario);
 	}
 
 	/**
@@ -148,10 +149,7 @@ public class ConsolaMaqueta {
 	 * El Cliente solo ve y paga sus propias reservas; el Agente gestiona las de todos los clientes.
 	 */
 	private List<Reserva> reservasVisibles() {
-		if (usuario.getRol() == RolUsuario.AGENTE) {
-			return BackendConsola.RESERVAS.listarTodas();
-		}
-		return BackendConsola.RESERVAS.listarPorUsuario(usuario.getId());
+		return BackendConsola.reservasVisibles(usuario);
 	}
 
 	/**
@@ -322,22 +320,14 @@ public class ConsolaMaqueta {
 	 * Busca la factura de una reserva con FacturaService. Devuelve null si la reserva no está pagada.
 	 */
 	private Factura buscarFactura(Reserva reserva) {
-		try {
-			return BackendConsola.FACTURAS.obtenerPorReserva(reserva.getId());
-		} catch (RecursoNoEncontradoException e) {
-			return null;
-		}
+		return BackendConsola.buscarFactura(reserva).orElse(null);
 	}
 
 	/**
 	 * Busca el pago de una reserva con PagoService. Devuelve null si la reserva no tiene pago.
 	 */
 	private Pago buscarPago(Reserva reserva) {
-		try {
-			return BackendConsola.PAGOS.obtenerPorReserva(reserva.getId());
-		} catch (RecursoNoEncontradoException e) {
-			return null;
-		}
+		return BackendConsola.buscarPago(reserva).orElse(null);
 	}
 
 	/**
@@ -361,39 +351,6 @@ public class ConsolaMaqueta {
 		if (pago != null) {
 			System.out.println("Pago: " + nombreMetodo(pago.getMetodo()) + " - " + pago.getFechaPago().format(FECHA_CORTA));
 		}	}
-
-	/**
-	 * Texto corto de un servicio para la factura. Cada tipo usa sus propios datos.
-	 */
-	private String describir(ServicioReservable servicio) {
-		return switch (servicio) {
-			case Vuelo vuelo -> "Vuelo " + vuelo.getAerolinea() + ", " + vuelo.getOrigen() + " -> " + vuelo.getDestino();
-			case Hotel hotel -> hotel.getNombre() + ", " + hotel.getNoches() + " noches";
-			case Transporte transporte -> transporte.getTipo() + ", " + transporte.getOrigen() + " -> "
-				+ transporte.getDestino();
-			default -> "Servicio " + servicio.getId();
-		};
-	}
-
-	private String nombreMetodo(MetodoPago metodo) {
-		return switch (metodo) {
-			case TARJETA_CREDITO -> "Tarjeta de crédito";
-			case TARJETA_DEBITO -> "Tarjeta de débito";
-			case TRANSFERENCIA -> "Transferencia";
-			case EFECTIVO -> "Efectivo";
-		};
-	}
-
-	private String nombrePaquete(Reserva reserva) {
-		return reserva.getPaqueteTuristico() == null ? "Sin paquete" : reserva.getPaqueteTuristico().getNombre();
-	}
-
-	/**
-	 * Primeros 8 caracteres del id de la reserva (es un UUID), para que se pueda leer en la consola.
-	 */
-	private String idCorto(String id) {
-		return id.substring(0, 8);
-	}
 
 	private void imprimirLineaFactura(String texto, double valor) {
 		System.out.printf(Locale.US, "%-40s USD %,10.2f%n", texto, valor);

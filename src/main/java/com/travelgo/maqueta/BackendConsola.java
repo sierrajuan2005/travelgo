@@ -7,7 +7,10 @@ import com.travelgo.dao.ReservaDAO;
 import com.travelgo.dao.ReservaDAOMemoria;
 import com.travelgo.dao.UsuarioDAOMemoria;
 import com.travelgo.dto.PagoRequest;
+import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.Factura;
 import com.travelgo.model.MetodoPago;
+import com.travelgo.model.Pago;
 import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.Usuario;
@@ -22,13 +25,18 @@ import java.util.Optional;
 
 /**
  * Arma a mano, sin Spring, los DAO en memoria y los services reales de usuarios, reservas, pagos y facturas.
- * Así la consola usa las mismas reglas que la web y que /api/pagos y /api/facturas.
- * Los datos duran mientras la consola está abierta.
+ * La consola y las páginas web de reservas, pagos y administración usan este mismo backend, así las dos
+ * interfaces ven los mismos datos y aplican las mismas reglas que /api/pagos y /api/facturas.
+ * Los datos duran mientras la consola o la aplicación web están abiertas.
  */
 public final class BackendConsola {
 
 	/** Contraseña de todos los usuarios de ejemplo. */
 	public static final String PASSWORD_EJEMPLO = "123456";
+
+	/** Correos de los usuarios de ejemplo, uno por rol y un segundo cliente. */
+	public static final List<String> CORREOS_EJEMPLO = List.of(
+		"cliente@travelgo.com", "ana@travelgo.com", "agente@travelgo.com", "admin@travelgo.com");
 
 	/** El mismo codificador BCrypt que usa SecurityConfig para la web. */
 	private static final PasswordEncoder ENCRIPTADOR = new BCryptPasswordEncoder();
@@ -77,6 +85,56 @@ public final class BackendConsola {
 			reserva.agregarServicio(servicio.aModelo());
 		}
 		return RESERVAS.guardar(reserva);
+	}
+
+	/**
+	 * Cliente y Agente reservan y pagan; para el Administrador "no aplica" (docs/matriz_permisos.md).
+	 */
+	public static boolean puedeReservar(Usuario usuario) {
+		return usuario.getRol() == RolUsuario.CLIENTE || usuario.getRol() == RolUsuario.AGENTE;
+	}
+
+	/**
+	 * El Cliente solo ve sus propias reservas; el Agente gestiona las de todos los clientes.
+	 */
+	public static List<Reserva> reservasVisibles(Usuario usuario) {
+		if (usuario.getRol() == RolUsuario.AGENTE) {
+			return RESERVAS.listarTodas();
+		}
+		return RESERVAS.listarPorUsuario(usuario.getId());
+	}
+
+	/**
+	 * Busca una reserva que el usuario puede ver: el Agente cualquiera, el Cliente solo las suyas.
+	 *
+	 * @return la reserva, o vacío si no existe o es de otro cliente
+	 */
+	public static Optional<Reserva> buscarReservaVisible(Usuario usuario, String reservaId) {
+		return reservasVisibles(usuario).stream()
+			.filter(reserva -> reserva.getId().equals(reservaId))
+			.findFirst();
+	}
+
+	/**
+	 * Busca la factura de una reserva con FacturaService. Vacío si la reserva no está pagada.
+	 */
+	public static Optional<Factura> buscarFactura(Reserva reserva) {
+		try {
+			return Optional.of(FACTURAS.obtenerPorReserva(reserva.getId()));
+		} catch (RecursoNoEncontradoException e) {
+			return Optional.empty();
+		}
+	}
+
+	/**
+	 * Busca el pago de una reserva con PagoService. Vacío si la reserva no tiene pago.
+	 */
+	public static Optional<Pago> buscarPago(Reserva reserva) {
+		try {
+			return Optional.of(PAGOS.obtenerPorReserva(reserva.getId()));
+		} catch (RecursoNoEncontradoException e) {
+			return Optional.empty();
+		}
 	}
 
 	/**
