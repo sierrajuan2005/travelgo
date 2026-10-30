@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head(${paquete.nombre})}"></head>
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
@@ -40,10 +41,18 @@
                     <p class="tg-precio fs-3 mb-1"
                        th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
                     <p class="text-muted small" th:text="${paquete.duracionDias + ' días'}">5 días</p>
-                    <a class="btn btn-tg w-100" th:href="@{/reserva(paquete=${paquete.id})}">
-                        <i class="bi bi-calendar-plus"></i> Reservar
-                    </a>
-                    <p class="text-muted small mt-2 mb-0">Necesitas iniciar sesión para reservar.</p>
+                    <!-- El Administrador no reserva (docs/matriz_permisos.md) -->
+                    <th:block sec:authorize="!hasRole('ADMINISTRADOR')">
+                        <a class="btn btn-tg w-100" th:href="@{/reserva(paquete=${paquete.id})}">
+                            <i class="bi bi-calendar-plus"></i> Reservar
+                        </a>
+                        <p class="text-muted small mt-2 mb-0" sec:authorize="isAnonymous()">
+                            Necesitas iniciar sesión para reservar.
+                        </p>
+                    </th:block>
+                    <p class="text-muted small mb-0" sec:authorize="hasRole('ADMINISTRADOR')">
+                        El administrador no hace reservas.
+                    </p>
                 </div>
             </div>
         </div>
