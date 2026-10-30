@@ -45,10 +45,6 @@ public class ReservaController {
                 service.obtenerPropia(id, autenticacion.getName()));
     }
 
-    @GetMapping("/usuario/{usuarioId}")
-    public List<ReservaRespuestaDTO> listarPorUsuario(@PathVariable String usuarioId) {
-        return service.listarPorUsuario(usuarioId).stream().map(ReservaRespuestaDTO::desde).toList();
-    }
 
     @PutMapping("/{id}/confirmar")
     public ReservaRespuestaDTO confirmar(
