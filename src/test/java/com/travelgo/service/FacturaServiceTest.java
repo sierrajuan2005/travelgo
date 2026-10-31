@@ -47,7 +47,7 @@ class FacturaServiceTest {
                 LocalDateTime.of(2026, 12, 1, 8, 0), LocalDateTime.of(2026, 12, 1, 9, 30));
         reserva = new Reserva(usuario, null);
         reserva.agregarServicio(vuelo);
-        factura = new Factura(new Pago(reserva, MetodoPago.TARJETA_CREDITO));
+        factura = new Factura(reserva);
     }
 
     @Test
