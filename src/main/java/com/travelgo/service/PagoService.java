@@ -43,8 +43,8 @@ public class PagoService {
             throw new IllegalStateException("No se puede pagar una reserva cancelada.");
         }
 
-        Factura factura = facturaDAO.buscarPorReservaId(reserva.getId())
-                .orElseGet(() -> new Factura(reserva)); // falla si la reserva no tiene servicios
+        Factura factura = facturaDAO.buscarPorReservaId(reserva.getId()) // busca la factura
+                .orElseGet(() -> new Factura(reserva)); // falla si la reserva no tiene servicios y si no exite la crea
         Pago pago = new Pago(factura, request.metodo()); // falla si la factura no está pendiente
 
         factura.marcarPagada();
