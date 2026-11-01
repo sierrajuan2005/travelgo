@@ -8,22 +8,25 @@ Datos de prueba: los de `data.sql`. Cliente `cliente@travelgo.com`, segundo clie
 
 ## 1. Facturación y pagos
 
+Flujo vigente (`PagoService.pagar`): valida la reserva → toma su factura pendiente o la emite → registra el pago (estado APROBADO) → marca la factura PAGADA → confirma la reserva. `POST /api/pagos` devuelve el **pago con su factura**.
+
 | ID | Caso | Entrada / pasos | Resultado esperado | Auto | Hoy |
 |---|---|---|---|---|---|
-| CP-FAC-01 | Pagar una reserva pendiente con servicios | `POST /api/pagos` con `reservaId` pendiente y `TARJETA_CREDITO` | 201. Se devuelve la factura; la reserva queda CONFIRMADA; el monto es el total de la reserva | JUnit `PagoServiceTest`, PM 03 | ✅ |
-| CP-FAC-02 | El total de la factura es la suma de los servicios | Reserva con vuelo 450.000 + hotel 200.000 × 3 noches | Total facturado = 1.050.000 | JUnit `PagoFacturaTest`, PM 03 | ✅ |
-| CP-FAC-03 | Número de factura | Pagar cualquier reserva | Número con formato `FAC-` + 8 caracteres hex en mayúscula; distinto en cada factura | JUnit `PagoFacturaTest` | ✅ |
-| CP-FAC-04 | Una reserva se paga una sola vez | Pagar dos veces la misma reserva | 2.º intento: 409; no se crea otro pago ni otra factura | JUnit `PagoServiceTest`, PM 03 | ✅ |
-| CP-FAC-05 | No se paga una reserva cancelada | Cancelar y luego pagar | 409; no se guarda pago ni factura | JUnit, PM 03 | ✅ |
-| CP-FAC-06 | No se paga una reserva sin servicios | Pagar la reserva `r-vacia` | 409; la reserva sigue PENDIENTE | JUnit | ✅ |
+| CP-FAC-01 | Pagar una reserva pendiente con servicios | `POST /api/pagos` con `reservaId` pendiente y `TARJETA_CREDITO` | 201. Devuelve el pago (estado APROBADO) con su factura (estado PAGADA); la reserva queda CONFIRMADA | JUnit `PagoServiceTest`, PM 03 | ✅ |
+| CP-FAC-02 | Subtotal y total de la factura | Reserva con vuelo 450.000 + hotel 200.000 × 3 noches | Subtotal = total = 1.050.000, y el monto del pago es el mismo | JUnit `PagoFacturaTest`, PM 03 | ✅ |
+| CP-FAC-03 | Número de factura | Pagar cualquier reserva | Formato `FAC-` + 8 caracteres hex en mayúscula; distinto en cada factura | JUnit `PagoFacturaTest` | ✅ |
+| CP-FAC-04 | Una reserva se paga una sola vez | Pagar dos veces la misma reserva | 2.º intento: 409; no se crea otro pago | JUnit `PagoServiceTest`, PM 03 | ✅ |
+| CP-FAC-05 | No se paga una reserva cancelada | Cancelar y luego pagar | 409; no se guarda factura ni pago | JUnit, PM 03 | ✅ |
+| CP-FAC-06 | No se paga una reserva sin servicios | Pagar una reserva vacía | 400 (no se puede facturar una reserva sin servicios); no se guarda nada | JUnit | ✅ |
 | CP-FAC-07 | Pagar una reserva que no existe | `reservaId` inventado | 404 | JUnit, PM 03 | ✅ |
 | CP-FAC-08 | Método de pago inválido o ausente | `"BITCOIN"` o sin método | 400 | PM 03 | ✅ |
 | CP-FAC-09 | Reserva ya confirmada por el agente y sin pago | Confirmar con `PUT /confirmar` y luego pagar | 201: se puede pagar | JUnit | ✅ |
-| CP-FAC-10 | Orden de guardado del pago | Pagar | Se guarda primero la reserva confirmada, luego el pago y al final la factura | JUnit | ✅ |
-| CP-FAC-11 | Consultar pago y factura | `GET /api/pagos/reserva/{id}`, `GET /api/facturas/{id}`, `GET /api/facturas/reserva/{id}` | 200 con los mismos datos; la factura **no** incluye la contraseña del usuario | PM 03 | ✅ |
-| CP-FAC-12 | Consultar lo que no existe | Pago o factura de una reserva sin pagar, o id inventado | 404 | JUnit, PM 03 | ✅ |
-| CP-FAC-13 | Persistencia | Pagar, reiniciar la app y consultar la factura | La factura sigue existiendo | manual / PM | ⏳ |
-| CP-FAC-14 | Restricciones de base de datos | Insertar un segundo pago de una misma reserva; un pago con método inexistente | La base rechaza ambos | SQL (ya probado en PostgreSQL 16) | ✅ |
+| CP-FAC-10 | Orden de guardado | Pagar | Se guarda la reserva confirmada, luego la factura y al final el pago | JUnit | ✅ |
+| CP-FAC-11 | Factura pendiente ya emitida | La reserva ya tiene una factura PENDIENTE y se paga | El pago usa esa factura y la deja PAGADA (no se crea otra) | JUnit | ✅ |
+| CP-FAC-12 | Consultar pago y factura | `GET /api/pagos/reserva/{id}`, `GET /api/facturas/{id}`, `GET /api/facturas/reserva/{id}` | 200; el pago incluye su factura; la factura **no** incluye la contraseña del usuario | PM 03 | ✅ |
+| CP-FAC-13 | Consultar lo que no existe | Pago o factura de una reserva sin pagar, o id inventado | 404 | JUnit, PM 03 | ✅ |
+| CP-FAC-14 | Persistencia | Pagar, reiniciar la app y consultar la factura y el pago | Siguen existiendo | manual / PM | ⏳ |
+| CP-FAC-15 | Restricciones de base de datos | Insertar una segunda factura para la misma reserva; un pago con método o estado inexistente; un pago sin factura | La base rechaza los tres | SQL (probado en PostgreSQL 16) | ✅ |
 
 ## 2. Reservas (base de los pagos)
 

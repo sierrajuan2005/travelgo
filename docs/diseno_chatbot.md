@@ -53,7 +53,7 @@ Las partes entre `{llaves}` se llenan con datos reales. Los precios se muestran 
 | MIS_RESERVAS | "mis reservas", "ver mis viajes" | `ReservaService.listarPropias(correo)` | «Tienes {n} reserva(s):\n1. {fecha} — {estado} — ${total}\n2. …\nEscribe «estado de la reserva 1» para ver el detalle.» Sin reservas: «Aún no tienes reservas. Escribe «ver paquetes» para empezar.» |
 | ESTADO_RESERVA | "estado de la reserva 2", "cómo va mi reserva 1" | la reserva elegida de la lista (si no hay lista previa, se pide «mis reservas» primero) | «Reserva {n}: {estado}.\nFecha: {fecha} · Total: ${total}\nServicios: {lista}.» + una **sugerencia según el estado** (ver 5.4) |
 | RESERVA_INEXISTENTE | número fuera de la lista | — | «No encontré esa reserva. Escribe «mis reservas» para ver la lista.» |
-| MI_FACTURA | "mi factura", "factura de la reserva 1" | `FacturaService.obtenerPorReserva(...)` de una reserva propia | «Factura {numero}, emitida el {fecha}.\nTotal: ${total} · Método de pago: {metodo}.» Si no tiene: «Esa reserva aún no tiene factura: se genera cuando pagas.» |
+| MI_FACTURA | "mi factura", "factura de la reserva 1" | `FacturaService.obtenerPorReserva(...)` de una reserva propia (y `PagoService.obtenerPorReserva(...)` para el método de pago) | «Factura {numero}, emitida el {fecha}.\nSubtotal: ${subtotal} · Total: ${total} · Estado: {estado}.\nMétodo de pago: {metodo}.» Si la factura está PENDIENTE: «Tu factura {numero} está pendiente de pago.» Si no existe: «Esa reserva aún no tiene factura: se emite cuando pagas.» |
 | SIN_SESION | cualquiera de las tres anteriores sin login | — | «Para ver tus reservas necesito que inicies sesión: {enlace /login}.» |
 
 ### 5.4 Sugerencia según el estado de la reserva
@@ -117,8 +117,9 @@ Las partes entre `{llaves}` se llenan con datos reales. Los precios se muestran 
 | CP-BOT-08 | "mis reservas" | sin sesión | Invitación a iniciar sesión |
 | CP-BOT-09 | "estado de la reserva 3" | solo tiene 2 | RESERVA_INEXISTENTE |
 | CP-BOT-10 | "estado de la reserva {id de otro usuario}" | id ajeno | Responde como inexistente; no revela nada |
-| CP-BOT-11 | "mi factura" | reserva pagada | Número de factura, total y método |
-| CP-BOT-12 | "mi factura" | reserva pendiente | «aún no tiene factura» |
+| CP-BOT-11 | "mi factura" | reserva pagada | Número de factura, total, estado PAGADA y método |
+| CP-BOT-12 | "mi factura" | reserva pendiente sin factura | «aún no tiene factura» |
+| CP-BOT-12b | "mi factura" | factura emitida y pendiente de pago | «está pendiente de pago» |
 | CP-BOT-13 | "asdfgh" | — | NO_ENTENDI |
 | CP-BOT-14 | "" o 301 caracteres | — | 400 |
 | CP-BOT-15 | `<script>alert(1)</script>` | — | Se muestra como texto, nunca como HTML |

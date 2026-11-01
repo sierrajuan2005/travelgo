@@ -6,9 +6,9 @@ Integrante 4 · Código revisado: `develop` en el commit `5166cf3` (merge de `fe
 
 | Qué | Estado |
 |---|---|
-| Pruebas unitarias (JUnit 5 + Mockito) de reservas, servicios, pagos, facturas, dominio y login por rol | **Escritas; hay que correr `./mvnw test` en la máquina del equipo.** El entorno donde se prepararon no puede descargar dependencias de Maven. Lo que sí se verificó: `ReservaTest`, `PagoFacturaTest` y `UsuarioDAOMemoriaTest` (33 pruebas) se compilaron contra el código real de `develop` y se ejecutaron con un lanzador propio: **pasan las 33**. Las pruebas con Mockito (`ReservaServiceTest`, `ServicioReservableServiceTest`, `PagoServiceTest`, `FacturaServiceTest`) se comprobaron solo a nivel de compilación contra el código real; `ServicioUsuarioDetallesTest` no se pudo ni compilar aquí (usa Spring Security). Ninguna de esas se ejecutó. |
+| Pruebas unitarias (JUnit 5 + Mockito) de reservas, servicios, pagos, facturas, dominio y login por rol (las de pagos y facturas las adaptó Integrante 2 al modelo nuevo; las vigentes son las de `develop`) | **Escritas; hay que correr `./mvnw test` en la máquina del equipo.** El entorno donde se prepararon no puede descargar dependencias de Maven. Lo que sí se verificó: `ReservaTest`, `PagoFacturaTest` y `UsuarioDAOMemoriaTest` (33 pruebas) se compilaron contra el código real de `develop` y se ejecutaron con un lanzador propio: **pasan las 33**. Las pruebas con Mockito (`ReservaServiceTest`, `ServicioReservableServiceTest`, `PagoServiceTest`, `FacturaServiceTest`) se comprobaron solo a nivel de compilación contra el código real; `ServicioUsuarioDetallesTest` no se pudo ni compilar aquí (usa Spring Security). Ninguna de esas se ejecutó. |
 | Defecto D1 y su arreglo | **Confirmado ejecutando el código real:** con un usuario registrado como lo hace `AuthController`, `crearReserva` lanza "Usuario no encontrado". Con el cambio a `buscarPorCorreo` el mismo escenario pasa. También se ejecutó el flujo reserva → pago → factura con los DAO en memoria reales: el pago confirma la reserva, genera una sola factura y un segundo pago se rechaza. |
-| `schema.sql` y `data.sql` | **Ejecutados en PostgreSQL 16**, dos veces seguidas sin errores (son repetibles). Se verificó que los totales de las reservas sembradas coinciden con la regla del dominio y que las restricciones rechazan lo que deben (segundo pago de una reserva, estado inválido, correo repetido, método de pago inexistente, vuelo con origen igual al destino). |
+| `schema.sql` y `data.sql` | **Ejecutados en PostgreSQL 16**, dos veces seguidas sin errores (son repetibles). Se verificó que los totales de las reservas sembradas coinciden con la regla del dominio y que las restricciones rechazan lo que deben (segunda factura de una reserva, estado inválido, correo repetido, método de pago inexistente, vuelo con origen igual al destino). |
 | Colección de Postman | JSON válido (85 peticiones). **No ejecutada contra la app.** |
 | Pruebas de integración end-to-end | Pendientes: necesitan la app corriendo con la base de datos y los usuarios de `data.sql`. |
 
@@ -24,7 +24,7 @@ Los defectos de abajo salen de **leer el código de `develop`**, no de ejecutarl
 | D4 | Media | Integrante 1 | El AGENTE no puede gestionar reservas de clientes |
 | D5 | Alta (bloquea pruebas) | Integrantes 1 y 2 | No existe forma de tener un AGENTE o ADMINISTRADOR en el sistema |
 | D6 | Media | Integrante 1 | CSRF activo: las peticiones POST/PUT/DELETE a `/api/**` sin token responden 403 |
-| D7 | Media | Integrante 2 | El ER y las clases `Pago`/`Factura` no coinciden |
+| D7 | Media (resuelto) | Integrante 2 | El ER y las clases `Pago`/`Factura` no coincidían |
 | D8 | Media | Todos | Contraseña de PostgreSQL publicada en el repositorio |
 | D9 | Baja | Integrante 1 | `Reserva` no valida el estado al rehidratarla desde la BD |
 
@@ -62,16 +62,8 @@ Los defectos de abajo salen de **leer el código de `develop`**, no de ejecutarl
 - `SecurityConfig` no desactiva CSRF. Cualquier POST/PUT/DELETE desde Postman, `fetch` o un script sin token responde 403.
 - La colección de Postman obtiene el token sola. Si el equipo prefiere simplificar, puede ignorar CSRF solo para `/api/**` con `csrf.ignoringRequestMatchers("/api/**")`, sabiendo que la autenticación sigue siendo por cookie de sesión (decisión de seguridad que le toca a Integrante 1).
 
-### D7 — ER y clases no coinciden
-| | ER (`ModeloER.md`) | Código |
-|---|---|---|
-| Relación Pago–Factura | `Pago.factura_id` (el pago apunta a la factura) | `Factura` contiene al `Pago` |
-| Relación Factura–Reserva | `Factura.reserva_id` | la reserva se obtiene por el pago |
-| Campos de Factura | `subtotal`, `estado` | no existen |
-| `Pago.estado` | existe | no existe |
-| ID de destino y paquete | `varchar(36)` | `Long` (JPA) |
-
-`schema.sql` sigue el **código** (así Integrante 2 puede reconstruir los objetos sin cambiar el dominio). Si el equipo prefiere el ER original, hay que cambiar las clases. Falta decidir y actualizar `ModeloER.md`.
+### D7 — ER y clases no coincidían (resuelto)
+Al revisar el sprint, `Pago` y `Factura` seguían un modelo distinto al de `ModeloER.md`. Integrante 2 alineó las clases con el ER (la factura pertenece a una reserva con `factura.reserva_id` único; el pago pertenece a una factura con `pago.factura_id`; la factura tiene subtotal y estado PENDIENTE, PAGADA o ANULADA; el pago tiene estado APROBADO o RECHAZADO y `fecha_pago` es DATE) y `schema.sql` / `data.sql` se actualizaron a ese modelo. Pendiente: que `ModeloER.md` siga igual de actualizado respecto a los ids de destino y paquete (`Long` en el código, `varchar(36)` en el ER).
 
 ### D8 — Contraseña publicada
 `application.properties` (línea 6) tiene la contraseña de PostgreSQL escrita y subida al repositorio. Conviene cambiar esa contraseña y leerla de una variable de entorno (`${DB_PASSWORD}`). También conviene quitar `logging.level.org.springframework.security=TRACE` antes de la entrega.
@@ -89,7 +81,7 @@ Los defectos de abajo salen de **leer el código de `develop`**, no de ejecutarl
 | Quién | Acción |
 |---|---|
 | Integrante 1 | D1 (una línea), D2, D3, D4 y D6; decidir con Integrante 2 el D5 |
-| Integrante 2 | D3 (parte de pagos), D5, decidir D7 al migrar a JDBC |
+| Integrante 2 | D3 (parte de pagos) y D5 |
 | Integrante 3 | Confirmar que el panel admin se oculta a no administradores (las rutas `/admin/**` todavía no existen) |
 | Todos | D8 antes de la entrega |
 | Integrante 4 | Ejecutar `./mvnw test` y la colección de Postman y actualizar este reporte con los resultados |
