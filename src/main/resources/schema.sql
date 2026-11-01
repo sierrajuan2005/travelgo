@@ -7,15 +7,14 @@
 --   1) destino, paquete_turistico y paquete_destino usan BIGSERIAL porque
 --      sus entidades JPA tienen id Long (el ER decía varchar(36)). Los
 --      nombres de tabla y columna son los que genera Hibernate.
---   2) Pago y Factura se relacionan como en las clases del dominio:
---        Pago.reserva  -> pago.reserva_id   (una reserva tiene un solo pago)
---        Factura.pago  -> factura.pago_id   (un pago tiene una sola factura)
---      El ER original tenía pago.factura_id y factura.reserva_id; con esa
---      forma no se puede reconstruir un Pago (que guarda su Reserva) sin
---      cambiar el dominio. La reserva de una factura se obtiene por el pago.
---   3) Factura no guarda subtotal ni estado: la clase Factura solo tiene
---      id, numero, pago, fechaEmision y total.
---   4) Pago.fechaPago es TIMESTAMP (el dominio usa LocalDateTime).
+--   2) Pago y Factura siguen el ER y las clases actuales del dominio:
+--        Factura.reserva -> factura.reserva_id (UNIQUE: una reserva, una factura)
+--        Pago.factura    -> pago.factura_id    (el pago pertenece a una factura)
+--      La factura se crea ANTES que el pago (el pago la referencia), por eso
+--      factura va primero en este archivo.
+--   3) Factura guarda subtotal y estado (PENDIENTE, PAGADA o ANULADA).
+--      Pago guarda estado (APROBADO o RECHAZADO).
+--   4) Pago.fechaPago es DATE (el dominio usa LocalDate).
 --   5) El estado de la reserva se valida con CHECK contra el enum EstadoReserva.
 --
 -- Es idempotente (IF NOT EXISTS): se puede ejecutar varias veces.
@@ -112,22 +111,28 @@ CREATE TABLE IF NOT EXISTS reserva_servicio (
     PRIMARY KEY (reserva_id, servicio_id)
 );
 
--- ---------- Pagos y facturas ----------
-CREATE TABLE IF NOT EXISTS pago (
-    id         VARCHAR(36)   PRIMARY KEY,
-    reserva_id VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id),  -- una reserva se paga una sola vez
-    monto      NUMERIC(10,2) NOT NULL CHECK (monto > 0),
-    metodo     VARCHAR(50)   NOT NULL
-               CHECK (metodo IN ('TARJETA_CREDITO', 'TARJETA_DEBITO', 'TRANSFERENCIA', 'EFECTIVO')),
-    fecha_pago TIMESTAMP     NOT NULL
-);
-
+-- ---------- Facturas y pagos ----------
+-- La factura va antes que el pago porque el pago la referencia.
 CREATE TABLE IF NOT EXISTS factura (
     id            VARCHAR(36)   PRIMARY KEY,
     numero        VARCHAR(50)   NOT NULL UNIQUE,
-    pago_id       VARCHAR(36)   NOT NULL UNIQUE REFERENCES pago (id), -- un pago, una factura
     fecha_emision DATE          NOT NULL,
-    total         NUMERIC(10,2) NOT NULL CHECK (total > 0)
+    subtotal      NUMERIC(10,2) NOT NULL CHECK (subtotal > 0),
+    total         NUMERIC(10,2) NOT NULL CHECK (total > 0),
+    estado        VARCHAR(30)   NOT NULL
+                  CHECK (estado IN ('PENDIENTE', 'PAGADA', 'ANULADA')),
+    reserva_id    VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id)  -- una reserva, una factura
+);
+
+CREATE TABLE IF NOT EXISTS pago (
+    id         VARCHAR(36)   PRIMARY KEY,
+    monto      NUMERIC(10,2) NOT NULL CHECK (monto > 0),
+    fecha_pago DATE          NOT NULL,
+    metodo     VARCHAR(50)   NOT NULL
+               CHECK (metodo IN ('TARJETA_CREDITO', 'TARJETA_DEBITO', 'TRANSFERENCIA', 'EFECTIVO')),
+    estado     VARCHAR(30)   NOT NULL
+               CHECK (estado IN ('APROBADO', 'RECHAZADO')),
+    factura_id VARCHAR(36)   NOT NULL REFERENCES factura (id)
 );
 
 -- ---------- Índices para las consultas de los DAO ----------
