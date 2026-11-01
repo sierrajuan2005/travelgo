@@ -92,11 +92,12 @@ INSERT INTO reserva_servicio (reserva_id, servicio_id) VALUES
  ('r-cancelada', 's-hotel-2')
 ON CONFLICT DO NOTHING;
 
--- ---------- Pago y factura de la reserva ya pagada ----------
-INSERT INTO pago (id, reserva_id, monto, metodo, fecha_pago) VALUES
- ('p-1', 'r-pagada', 450000.00, 'TARJETA_CREDITO', '2026-10-10 15:30:00')
+-- ---------- Factura y pago de la reserva ya pagada ----------
+-- La factura va primero porque el pago la referencia.
+INSERT INTO factura (id, numero, fecha_emision, subtotal, total, estado, reserva_id) VALUES
+ ('f-1', 'FAC-00000001', '2026-10-10', 450000.00, 450000.00, 'PAGADA', 'r-pagada')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO factura (id, numero, pago_id, fecha_emision, total) VALUES
- ('f-1', 'FAC-00000001', 'p-1', '2026-10-10', 450000.00)
+INSERT INTO pago (id, monto, fecha_pago, metodo, estado, factura_id) VALUES
+ ('p-1', 450000.00, '2026-10-10', 'TARJETA_CREDITO', 'APROBADO', 'f-1')
 ON CONFLICT (id) DO NOTHING;
