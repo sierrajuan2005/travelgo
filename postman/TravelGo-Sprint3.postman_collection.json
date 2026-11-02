@@ -1562,7 +1562,7 @@
           ]
         },
         {
-          "name": "Pagar mi reserva (genera la factura)",
+          "name": "Pagar mi reserva (registra el pago y emite la factura)",
           "request": {
             "method": "POST",
             "header": [
@@ -1596,11 +1596,12 @@
                 "exec": [
                   "pm.test('Responde 201', function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "pm.test('La factura tiene número FAC-', function () { pm.expect(json.numero).to.match(/^FAC-/); });",
-                  "pm.test('El total facturado es el total de la reserva', function () { pm.expect(json.total).to.eql(1050000); });",
-                  "pm.test('La factura es de mi reserva', function () { pm.expect(json.reservaId).to.eql(pm.collectionVariables.get('reservaId')); });",
-                  "pm.collectionVariables.set('facturaId', json.id);",
-                  "pm.collectionVariables.set('pagoId', json.pagoId);"
+                  "pm.test('El pago queda APROBADO por el total de la reserva', function () { pm.expect(json.estado).to.eql('APROBADO'); pm.expect(json.monto).to.eql(1050000); });",
+                  "pm.test('El pago es de mi reserva', function () { pm.expect(json.reservaId).to.eql(pm.collectionVariables.get('reservaId')); });",
+                  "pm.test('Incluye la factura, con número FAC- y estado PAGADA', function () { pm.expect(json.factura.numero).to.match(/^FAC-/); pm.expect(json.factura.estado).to.eql('PAGADA'); });",
+                  "pm.test('Subtotal y total de la factura = 1.050.000', function () { pm.expect(json.factura.subtotal).to.eql(1050000); pm.expect(json.factura.total).to.eql(1050000); });",
+                  "pm.collectionVariables.set('pagoId', json.id);",
+                  "pm.collectionVariables.set('facturaId', json.factura.id);"
                 ]
               }
             }
@@ -1685,7 +1686,8 @@
                 "exec": [
                   "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test('Monto 1.050.000', function () { pm.expect(json.monto).to.eql(1050000); });"
+                  "pm.test('Monto 1.050.000', function () { pm.expect(json.monto).to.eql(1050000); });",
+                  "pm.test('Trae la misma factura', function () { pm.expect(json.factura.id).to.eql(pm.collectionVariables.get('facturaId')); });"
                 ]
               }
             }
@@ -1750,7 +1752,7 @@
                 "exec": [
                   "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "pm.test('Mismo número de factura', function () { pm.expect(json.id).to.eql(pm.collectionVariables.get('facturaId')); });"
+                  "pm.test('Es la misma factura del pago y está PAGADA', function () { pm.expect(json.id).to.eql(pm.collectionVariables.get('facturaId')); pm.expect(json.estado).to.eql('PAGADA'); });"
                 ]
               }
             }
@@ -1774,6 +1776,7 @@
                   "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "pm.test('No expone la contraseña', function () { pm.expect(JSON.stringify(json)).to.not.include('password'); });",
+                  "pm.test('Subtotal = total = 1.050.000', function () { pm.expect(json.subtotal).to.eql(1050000); pm.expect(json.total).to.eql(1050000); });",
                   "pm.test('Detalla los 2 servicios', function () { pm.expect(json.servicios.length).to.eql(2); });"
                 ]
               }
@@ -1823,7 +1826,7 @@
           ]
         }
       ],
-      "description": "Flujo cliente → reserva → pago → factura. Sigue con la sesión de CLIENTE de la carpeta anterior."
+      "description": "Flujo cliente → reserva → pago → factura. POST /api/pagos devuelve el pago con su factura. Sigue con la sesión de CLIENTE de la carpeta anterior."
     },
     {
       "name": "04 Roles y permisos (matriz de docs/matriz_permisos.md)",

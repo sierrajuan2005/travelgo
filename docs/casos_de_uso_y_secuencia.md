@@ -28,7 +28,7 @@ flowchart LR
         CU07(CU-07 Confirmar reserva)
         CU08(CU-08 Pagar reserva)
         CU09(CU-09 Consultar factura)
-        CU10(CU-10 Generar factura)
+        CU10(CU-10 Emitir factura)
     end
 
     Cliente --- CU01
@@ -85,16 +85,17 @@ flowchart LR
 |---|---|
 | Actores | Cliente (sus reservas), Agente |
 | Precondición | Reserva con servicios, no cancelada y sin pago previo |
-| Flujo principal | 1. Elige el método de pago (tarjeta de crédito, tarjeta de débito, transferencia o efectivo). 2. El sistema confirma la reserva. 3. Registra el pago por el total de la reserva. 4. Genera la factura (CU-10). 5. Muestra la factura. |
-| Flujos alternos | A1. La reserva ya fue pagada → 409. A2. Está cancelada → 409. A3. No tiene servicios → 409. A4. No existe → 404. A5. Método inválido o ausente → 400. A6. Cliente pagando una reserva ajena → 403 (regla de la matriz; ver defecto D3). |
-| Postcondición | Reserva CONFIRMADA, un pago y una factura asociados |
-| Reglas | Una reserva se paga una sola vez. El monto es siempre el total de la reserva. |
+| Flujo principal | 1. Elige el método de pago (tarjeta de crédito, tarjeta de débito, transferencia o efectivo). 2. El sistema toma la factura de la reserva o la emite (CU-10). 3. Registra el pago (estado APROBADO) por el total de la factura. 4. Marca la factura como PAGADA. 5. Confirma la reserva. 6. Muestra el pago junto con su factura. |
+| Flujos alternos | A1. La reserva ya fue pagada → 409. A2. Está cancelada → 409. A3. No tiene servicios → 400 (no se puede facturar). A4. No existe → 404. A5. Método inválido o ausente → 400. A6. Cliente pagando una reserva ajena → 403 (regla de la matriz; ver defecto D3). |
+| Postcondición | Reserva CONFIRMADA, factura PAGADA y un pago APROBADO asociado |
+| Reglas | Una reserva se paga una sola vez. El monto es siempre el total de la factura. Todas las validaciones se hacen antes de guardar, para no dejar datos a medias. |
 
-### CU-10 Generar factura (incluido en CU-08)
+### CU-10 Emitir factura (incluido en CU-08)
 | | |
 |---|---|
 | Actor | Sistema |
-| Flujo | Crea la factura a partir del pago: número `FAC-` + 8 caracteres, fecha de emisión de hoy y total igual al monto del pago |
+| Flujo | Si la reserva no tiene factura, la crea: número `FAC-` + 8 caracteres, fecha de emisión de hoy, subtotal igual al total de la reserva, total igual al subtotal (sin impuestos ni descuentos por ahora) y estado PENDIENTE. Si ya tenía una factura pendiente, la reutiliza. |
+| Alterno | La reserva no tiene servicios → no se puede facturar (400) |
 
 ### CU-09 Consultar factura
 | | |
@@ -147,7 +148,7 @@ sequenceDiagram
     end
 ```
 
-### 4.2 Pagar una reserva (confirma y factura)
+### 4.2 Pagar una reserva (emite la factura, registra el pago y confirma)
 
 ```mermaid
 sequenceDiagram
@@ -157,10 +158,10 @@ sequenceDiagram
     participant PS as PagoService
     participant RD as ReservaDAO
     participant PD as PagoDAO
-    participant R as Reserva
-    participant P as Pago
-    participant F as Factura
     participant FD as FacturaDAO
+    participant R as Reserva
+    participant F as Factura
+    participant P as Pago
 
     C->>PC: POST /api/pagos (reservaId, metodo)
     PC->>PC: valida el cuerpo (@Valid)
@@ -169,18 +170,25 @@ sequenceDiagram
     RD-->>PS: Reserva
     PS->>PD: buscarPorReservaId(reservaId)
     PD-->>PS: vacío (no tiene pago)
+    PS->>PS: verifica que no esté cancelada
+    PS->>FD: buscarPorReservaId(reservaId)
+    alt la reserva ya tiene factura pendiente
+        FD-->>PS: Factura PENDIENTE
+    else no tiene factura
+        FD-->>PS: vacío
+        PS->>F: new Factura(reserva)
+        Note right of F: subtotal = total, estado PENDIENTE, número FAC-xxxxxxxx.<br/>Falla si la reserva no tiene servicios
+    end
+    PS->>P: new Pago(factura, metodo)
+    Note right of P: monto = total de la factura, estado APROBADO.<br/>Falla si la factura no está pendiente
+    PS->>F: marcarPagada()
     PS->>R: confirmarReserva()
-    Note right of R: falla si está cancelada o sin servicios
     PS->>RD: guardar(reserva)
-    PS->>P: new Pago(reserva, metodo)
-    Note right of P: monto = total de la reserva
-    PS->>PD: guardar(pago)
-    PS->>F: new Factura(pago)
-    Note right of F: número FAC-xxxxxxxx, total = monto
     PS->>FD: guardar(factura)
-    FD-->>PS: Factura
-    PS-->>PC: Factura
-    PC-->>C: 201 Created + FacturaRespuestaDTO
+    PS->>PD: guardar(pago)
+    PD-->>PS: Pago
+    PS-->>PC: Pago
+    PC-->>C: 201 Created + PagoRespuestaDTO (incluye la factura)
 
     alt reserva inexistente
         RD-->>PS: vacío
@@ -188,9 +196,11 @@ sequenceDiagram
     else ya tiene pago
         PD-->>PS: Pago existente
         PS-->>C: 409 (ya fue pagada)
-    else cancelada o sin servicios
-        R-->>PS: IllegalStateException
-        PS-->>C: 409 (no se guarda pago ni factura)
+    else cancelada
+        PS-->>C: 409 (no se paga una cancelada)
+    else sin servicios
+        F-->>PS: IllegalArgumentException
+        PS-->>C: 400 (no se puede facturar)
     end
 ```
 
@@ -221,7 +231,7 @@ sequenceDiagram
     end
 ```
 
-## 5. Estados de una reserva
+## 5. Estados de una reserva y de una factura
 
 ```mermaid
 stateDiagram-v2
@@ -231,6 +241,17 @@ stateDiagram-v2
     CONFIRMADA --> CANCELADA: cancelar
     CANCELADA --> [*]
     CONFIRMADA --> [*]
+```
+
+### Estados de una factura
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDIENTE: emitir factura
+    PENDIENTE --> PAGADA: registrar el pago
+    PENDIENTE --> ANULADA: anular
+    PAGADA --> [*]
+    ANULADA --> [*]
 ```
 
 ## 6. Trazabilidad con las historias de usuario
