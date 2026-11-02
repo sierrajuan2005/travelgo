@@ -11,7 +11,7 @@
 --   cliente2@travelgo.com  Cliente123*    CLIENTE   (sirve para probar "reserva ajena")
 --
 -- RESERVAS DE EJEMPLO:
---   r-pendiente   cliente   PENDIENTE  vuelo + hotel   total 1.050.000  (para probar el pago)
+--   r-pendiente   clie nte   PENDIENTE  vuelo + hotel   total 1.050.000  (para probar el pago)
 --   r-pagada      cliente   CONFIRMADA vuelo           total   450.000  (ya tiene pago y factura)
 --   r-cancelada   cliente   CANCELADA  hotel           total   600.000  (no se puede pagar)
 --   r-vacia       cliente2  PENDIENTE  sin servicios   total         0  (no se puede confirmar ni pagar)
