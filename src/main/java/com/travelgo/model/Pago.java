@@ -41,6 +41,27 @@ public class Pago {
         this.estado = EstadoPago.APROBADO; // pago simulado
     }
 
+
+    /** Reconstruye un pago con los datos guardados en la base de datos. */
+    public Pago(String id, Factura factura, double monto, MetodoPago metodo,
+                LocalDate fechaPago, EstadoPago estado) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("El id del pago es obligatorio.");
+        }
+        if (factura == null || metodo == null || fechaPago == null || estado == null) {
+            throw new IllegalArgumentException("La factura, el método, la fecha y el estado del pago son obligatorios.");
+        }
+        if (!Double.isFinite(monto) || monto < 0) {
+            throw new IllegalArgumentException("El monto debe ser un número válido y no negativo.");
+        }
+        this.id = id;
+        this.factura = factura;
+        this.monto = monto;
+        this.metodo = metodo;
+        this.fechaPago = fechaPago;
+        this.estado = estado;
+    }
+
     /** Obtiene el id del pago. */
     public String getId() {
         return id;

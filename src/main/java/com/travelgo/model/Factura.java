@@ -39,6 +39,30 @@ public class Factura {
         this.estado = EstadoFactura.PENDIENTE;
     }
 
+    /** Reconstruye una factura con los datos guardados en la base de datos. */
+    public Factura(String id, String numero, Reserva reserva, LocalDate fechaEmision,
+                   double subtotal, double total, EstadoFactura estado) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("El id de la factura es obligatorio.");
+        }
+        if (numero == null || numero.isBlank()) {
+            throw new IllegalArgumentException("El número de la factura es obligatorio.");
+        }
+        if (reserva == null || fechaEmision == null || estado == null) {
+            throw new IllegalArgumentException("La reserva, la fecha y el estado de la factura son obligatorios.");
+        }
+        if (!Double.isFinite(subtotal) || subtotal < 0 || !Double.isFinite(total) || total < 0) {
+            throw new IllegalArgumentException("El subtotal y el total deben ser números válidos y no negativos.");
+        }
+        this.id = id;
+        this.numero = numero;
+        this.reserva = reserva;
+        this.fechaEmision = fechaEmision;
+        this.subtotal = subtotal;
+        this.total = total;
+        this.estado = estado;
+    }
+
     /** Marca la factura como pagada. */
     public void marcarPagada() {
         if (estado == EstadoFactura.PAGADA) {
