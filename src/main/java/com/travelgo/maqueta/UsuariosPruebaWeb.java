@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * Son los mismos objetos Usuario, así sus reservas de ejemplo también aparecen en la web.
  * Se elimina cuando Integrante 4 cargue los usuarios de prueba en la base de datos.
  */
-@Component
+//@Component
 public class UsuariosPruebaWeb implements ApplicationRunner {
 
 	private final UsuarioService usuarioService;

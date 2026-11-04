@@ -9,6 +9,7 @@ import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.Usuario;
 import com.travelgo.model.Vuelo;
+import com.travelgo.travelgo.TravelgoApplication;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Prueba contra la base de datos real: guarda y recupera usuario, servicio, reserva, factura y pago. */
-@SpringBootTest
+@SpringBootTest(classes = TravelgoApplication.class)
 @Transactional
 class DaoJdbcIntegracionTest {
 
