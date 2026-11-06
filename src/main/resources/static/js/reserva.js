@@ -1,12 +1,13 @@
 // Recalcula el total de la reserva cuando el usuario elige vuelo, hotel o transporte.
 // Cada radio tiene su precio en data-precio; el precio del paquete está en #total[data-base].
+// Los precios están en pesos colombianos (COP), sin decimales: $ 1.200.000
 (function () {
     const total = document.getElementById('total');
     const extras = document.getElementById('extras');
     const base = parseFloat(total.dataset.base);
 
     function formatear(valor) {
-        return 'USD ' + valor.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return '$ ' + Math.round(valor).toLocaleString('es-CO', { maximumFractionDigits: 0 });
     }
 
     function recalcular() {
