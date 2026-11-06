@@ -25,35 +25,54 @@ public class Vuelo extends ServicioReservable {
         throws IllegalArgumentException si alguno de los parametros es nulo o vacio, o si el precio es negativo o nulo.
     */
 
-    public Vuelo(String id, double precio, boolean disponible, String aerolinea, String origen, String destino, LocalDateTime fechaSalida, LocalDateTime fechaLlegada) {
-        
-        super(id, precio, disponible);
+    public Vuelo(
+        String id,
+        double precio,
+        boolean disponible,
+        String aerolinea,
+        String origen,
+        String destino,
+        LocalDateTime fechaSalida,
+        LocalDateTime fechaLlegada) {
 
-        if(aerolinea==null || aerolinea.isBlank()){
-            throw new IllegalArgumentException(
-                "El nombre de la aerolinea es obligatorio."
-            );
+        this(id, precio, disponible, aerolinea, origen, destino,
+        fechaSalida, fechaLlegada, null, null, null, null);
+    }
+
+    public Vuelo(
+        String id,
+        double precio,
+        boolean disponible,
+        String aerolinea,
+        String origen,
+        String destino,
+        LocalDateTime fechaSalida,
+        LocalDateTime fechaLlegada,
+        String fuente,
+        String idExterno,
+        LocalDateTime fechaConsulta,
+        String enlaceReserva) {
+
+        super(id, precio, disponible, fuente, idExterno, fechaConsulta, enlaceReserva);
+
+        if (aerolinea == null || aerolinea.isBlank()) {
+            throw new IllegalArgumentException("El nombre de la aerolinea es obligatorio.");
         }
 
-        if(origen==null || origen.isBlank()){
-            throw new IllegalArgumentException(
-                "La ciudad de origen es obligatoria."
-            );
+        if (origen == null || origen.isBlank()) {
+            throw new IllegalArgumentException("La ciudad de origen es obligatoria.");
         }
 
-        if(destino==null || destino.isBlank()){
-            throw new IllegalArgumentException(
-                "La ciudad de destino es obligatoria."
-            );
+        if (destino == null || destino.isBlank()) {
+            throw new IllegalArgumentException("La ciudad de destino es obligatoria.");
         }
 
-        if(destino.trim().equalsIgnoreCase(origen.trim())){
+        if (destino.trim().equalsIgnoreCase(origen.trim())) {
             throw new IllegalArgumentException(
-                "La ciudad de destino no puede ser la misma que la ciudad de origen."
-            );
+                    "La ciudad de destino no puede ser la misma que la ciudad de origen.");
         }
 
-        if(fechaSalida==null || fechaLlegada==null){
+        if (fechaSalida == null || fechaLlegada == null) {
             throw new IllegalArgumentException(
                     "Las fechas de salida y llegada son obligatorias.");
         }
@@ -62,6 +81,7 @@ public class Vuelo extends ServicioReservable {
             throw new IllegalArgumentException(
                     "La llegada debe ser posterior a la salida.");
         }
+
         this.aerolinea = aerolinea.trim();
         this.origen = origen.trim();
         this.destino = destino.trim();
