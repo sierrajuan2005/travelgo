@@ -1,5 +1,7 @@
 package com.travelgo.model;
 
+import java.time.LocalDateTime;
+
 /*
     Representa la abstraccion de un servicio turistico que puede incluir una reserva
 */
@@ -8,6 +10,20 @@ public abstract  class ServicioReservable {
     private final double precio;
     private final boolean disponible;
     
+
+    /*Referencia de servicios externos */
+    private final String fuente;
+    private final String idExterno;
+    private final LocalDateTime fechaConsulta;
+    private final String enlaceReserva;
+
+    /*
+     * Constructor para servicios manuales.
+     * Se conserva para mantener compatibilidad con las subclases existentes.
+     */
+    protected ServicioReservable(String id, double precio, boolean disponible) {
+        this(id, precio, disponible, null, null, null, null);
+    }
     /*
         Construye un servicio reservable
         param id identificador unico del servicio
@@ -16,21 +32,38 @@ public abstract  class ServicioReservable {
         throws IllegalArgumentException si el identificador es nulo o vacio, o si el precio es negativo o nulo.
     */
 
-    protected ServicioReservable(String id, double precio, boolean disponible){
-        if(id==null || id.isBlank()){
+    /*
+     * Constructor para servicios provenientes de APIs externas.
+     */
+    protected ServicioReservable(
+            String id,
+            double precio,
+            boolean disponible,
+            String fuente,
+            String idExterno,
+            LocalDateTime fechaConsulta,
+            String enlaceReserva) {
+
+        if (id == null || id.isBlank()) {
             throw new IllegalArgumentException(
                 "El identificador del servicio es obligatorio."
             );
         }
-        if(!Double.isFinite(precio) || precio<0){
+
+        if (!Double.isFinite(precio) || precio < 0) {
             throw new IllegalArgumentException(
                 "El precio debe ser un numero finito mayor o igual que cero."
             );
         }
-        this.id=id.trim();
-        this.precio=precio;
-        this.disponible=disponible;
-        }
+
+        this.id = id.trim();
+        this.precio = precio;
+        this.disponible = disponible;
+        this.fuente = fuente;
+        this.idExterno = idExterno;
+        this.fechaConsulta = fechaConsulta;
+        this.enlaceReserva = enlaceReserva;
+    }
         
         /*
             Calcula el costo total del servicio
@@ -63,5 +96,19 @@ public abstract  class ServicioReservable {
             return disponible;
         }
 
-    
+        public String getFuente() {
+        return fuente;
+        }
+
+        public String getIdExterno() {
+            return idExterno;
+        }
+
+        public LocalDateTime getFechaConsulta() {
+            return fechaConsulta;
+        }
+
+        public String getEnlaceReserva() {
+            return enlaceReserva;
+        }
 }
