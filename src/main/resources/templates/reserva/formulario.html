@@ -15,12 +15,18 @@
         </ol>
     </nav>
 
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
-        <h1 class="h2 mb-0">Arma tu reserva</h1>
-        <span class="badge text-bg-warning align-self-start align-self-md-end">Catálogo de ejemplo</span>
+    <div class="mb-4">
+        <h1 class="h2 mb-1">Arma tu reserva</h1>
+        <p class="text-muted mb-0">Elige al menos un servicio. Se muestran los que llegan a
+            <span th:text="${@formato.destinos(paquete)}">destino</span>.</p>
     </div>
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <div class="alert alert-info"
+         th:if="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}">
+        <i class="bi bi-info-circle"></i> Por ahora este paquete no tiene vuelos, hoteles ni transportes disponibles.
+    </div>
 
     <form th:action="@{/reserva}" method="post">
         <input type="hidden" name="paqueteId" th:value="${paquete.id}">
@@ -35,7 +41,7 @@
                         <label class="card tg-opcion p-3 mb-2" th:each="vuelo : ${vuelos}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="vueloId"
-                                       th:value="${vuelo.id}" th:attr="data-precio=${vuelo.calcularPrecio()}">
+                                       th:value="${vuelo.id}" th:attr="data-precio=${vuelo.calcularCosto()}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold"
                                          th:text="${vuelo.aerolinea + ' · ' + vuelo.origen + ' → ' + vuelo.destino}">Vuelo</div>
@@ -43,7 +49,7 @@
                                          th:text="${'Sale ' + #temporals.format(vuelo.fechaSalida, 'dd/MM/yyyy HH:mm') + ' · llega ' + #temporals.format(vuelo.fechaLlegada, 'HH:mm')}">Fechas</div>
                                 </div>
                                 <span class="fw-semibold"
-                                      th:text="${'+ USD ' + #numbers.formatDecimal(vuelo.calcularPrecio(), 1, 'COMMA', 2, 'POINT')}">+ USD 0.00</span>
+                                      th:text="${'+ ' + @formato.cop(vuelo.calcularCosto())}">+ $ 0</span>
                             </div>
                         </label>
                         <label class="card tg-opcion p-3">
@@ -61,16 +67,16 @@
                         <label class="card tg-opcion p-3 mb-2" th:each="hotel : ${hoteles}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="hotelId"
-                                       th:value="${hotel.id}" th:attr="data-precio=${hotel.calcularPrecio()}">
+                                       th:value="${hotel.id}" th:attr="data-precio=${hotel.calcularCosto()}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${hotel.nombre}">Hotel</div>
                                     <div class="text-muted small"
                                          th:text="${hotel.tipoHabitacion + ' · ' + hotel.direccion}">Detalle</div>
                                     <div class="text-muted small"
-                                         th:text="${'USD ' + #numbers.formatDecimal(hotel.precio, 1, 'COMMA', 2, 'POINT') + ' / noche · ' + hotel.noches + ' noches'}">Precio por noche</div>
+                                         th:text="${@formato.cop(hotel.precio) + ' / noche · ' + hotel.noches + ' noches'}">Precio por noche</div>
                                 </div>
                                 <span class="fw-semibold"
-                                      th:text="${'+ USD ' + #numbers.formatDecimal(hotel.calcularPrecio(), 1, 'COMMA', 2, 'POINT')}">+ USD 0.00</span>
+                                      th:text="${'+ ' + @formato.cop(hotel.calcularCosto())}">+ $ 0</span>
                             </div>
                         </label>
                         <label class="card tg-opcion p-3">
@@ -88,14 +94,14 @@
                         <label class="card tg-opcion p-3 mb-2" th:each="transporte : ${transportes}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="transporteId"
-                                       th:value="${transporte.id}" th:attr="data-precio=${transporte.calcularPrecio()}">
+                                       th:value="${transporte.id}" th:attr="data-precio=${transporte.calcularCosto()}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${transporte.tipo}">Transporte</div>
                                     <div class="text-muted small"
                                          th:text="${transporte.origen + ' → ' + transporte.destino + ' · ' + #temporals.format(transporte.fecha, 'dd/MM/yyyy HH:mm')}">Detalle</div>
                                 </div>
                                 <span class="fw-semibold"
-                                      th:text="${'+ USD ' + #numbers.formatDecimal(transporte.calcularPrecio(), 1, 'COMMA', 2, 'POINT')}">+ USD 0.00</span>
+                                      th:text="${'+ ' + @formato.cop(transporte.calcularCosto())}">+ $ 0</span>
                             </div>
                         </label>
                         <label class="card tg-opcion p-3">
@@ -114,21 +120,21 @@
                         <h2 class="h5">Resumen</h2>
                         <p class="mb-1 fw-semibold" th:text="${paquete.nombre}">Paquete</p>
                         <p class="text-muted small"
-                           th:text="${paquete.destino.ciudad + ' · ' + paquete.duracionDias + ' días'}">Destino · días</p>
+                           th:text="${@formato.destinos(paquete) + ' · ' + paquete.duracionDias + ' días'}">Destino · días</p>
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span>Paquete</span>
-                            <span th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                            <span th:text="${@formato.cop(paquete.precio)}">$ 0</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span>Servicios extra</span>
-                            <span id="extras">USD 0.00</span>
+                            <span id="extras">$ 0</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="fw-semibold">Total</span>
                             <span id="total" class="tg-precio" th:attr="data-base=${paquete.precio}"
-                                  th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                                  th:text="${@formato.cop(paquete.precio)}">$ 0</span>
                         </div>
                         <button type="submit" class="btn btn-tg w-100">Confirmar reserva</button>
                         <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->

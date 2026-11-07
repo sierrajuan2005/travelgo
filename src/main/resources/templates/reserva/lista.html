@@ -41,7 +41,7 @@
                     <td th:text="${r.paquete()}">Paquete</td>
                     <td th:if="${esAgente}" th:text="${r.cliente()}">Cliente</td>
                     <td class="text-end"
-                        th:text="${'USD ' + #numbers.formatDecimal(r.total(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                        th:text="${@formato.cop(r.total())}">$ 0</td>
                     <td>
                         <span class="badge"
                               th:classappend="${r.estado() == 'CONFIRMADA' ? 'text-bg-success'

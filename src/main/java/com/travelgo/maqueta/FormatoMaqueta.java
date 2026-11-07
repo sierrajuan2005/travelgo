@@ -1,15 +1,13 @@
 package com.travelgo.maqueta;
 
-import com.travelgo.model.Hotel;
 import com.travelgo.model.MetodoPago;
 import com.travelgo.model.Reserva;
 import com.travelgo.model.ServicioReservable;
-import com.travelgo.model.Transporte;
-import com.travelgo.model.Vuelo;
+import com.travelgo.web.FormatoWeb;
 
 /**
- * Textos que muestran la consola y la web para reservas, servicios y pagos. Están en un solo lugar para que las dos
- * interfaces digan lo mismo.
+ * Textos que muestra la consola para reservas, servicios y pagos. Los toma de {@link FormatoWeb} para que la
+ * consola y la web digan lo mismo.
  */
 public final class FormatoMaqueta {
 
@@ -20,33 +18,22 @@ public final class FormatoMaqueta {
 	 * Texto corto de un servicio para la factura. Cada tipo usa sus propios datos.
 	 */
 	public static String describir(ServicioReservable servicio) {
-		return switch (servicio) {
-			case Vuelo vuelo -> "Vuelo " + vuelo.getAerolinea() + ", " + vuelo.getOrigen() + " -> " + vuelo.getDestino();
-			case Hotel hotel -> hotel.getNombre() + ", " + hotel.getNoches() + " noches";
-			case Transporte transporte -> transporte.getTipo() + ", " + transporte.getOrigen() + " -> "
-				+ transporte.getDestino();
-			default -> "Servicio " + servicio.getId();
-		};
+		return FormatoWeb.describir(servicio);
 	}
 
 	public static String nombreMetodo(MetodoPago metodo) {
-		return switch (metodo) {
-			case TARJETA_CREDITO -> "Tarjeta de crédito";
-			case TARJETA_DEBITO -> "Tarjeta de débito";
-			case TRANSFERENCIA -> "Transferencia";
-			case EFECTIVO -> "Efectivo";
-		};
+		return FormatoWeb.nombreMetodo(metodo);
 	}
 
 	public static String nombrePaquete(Reserva reserva) {
-		return reserva.getPaqueteTuristico() == null ? "Sin paquete" : reserva.getPaqueteTuristico().getNombre();
+		return FormatoWeb.nombrePaquete(reserva);
 	}
 
 	/**
-	 * Primeros 8 caracteres del id de la reserva (es un UUID), para que se pueda leer en pantalla.
+	 * Primeros 8 caracteres del id de la reserva, para que se pueda leer en pantalla.
 	 */
 	public static String idCorto(String id) {
-		return id.substring(0, 8);
+		return FormatoWeb.idCorto(id);
 	}
 
 }
