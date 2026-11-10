@@ -13,6 +13,10 @@ import java.time.ZoneId;
 import java.util.UUID;
 import org.springframework.web.client.HttpClientErrorException;
 import java.util.Map;
+import java.time.Instant;
+import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class IgnavProveedorVuelos implements ProveedorVuelos {
@@ -20,6 +24,16 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
     private final RestClient restClient;
     private final String apiKey;
     private final String market;
+    
+    private static final Duration TIEMPO_CACHE = Duration.ofMinutes(30);
+
+    private final ConcurrentMap<String, EntradaCache> cacheVuelos =
+        new ConcurrentHashMap<>();
+
+    private record EntradaCache(
+        List<Vuelo> vuelos,
+        Instant expiracion
+) {}
 
     public IgnavProveedorVuelos(
             RestClient ignavRestClient,
@@ -32,11 +46,11 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
     }
 
     @Override
-     public List<Vuelo> buscarVuelos(
-            String origen,
-            String destino,
-            LocalDate fechaSalida,
-            String codigoAerolinea) {
+    public List<Vuelo> buscarVuelos(
+        String origen,
+        String destino,
+        LocalDate fechaSalida,
+        String codigoAerolinea) {
 
         if (origen == null || origen.isBlank()
                 || destino == null || destino.isBlank()
@@ -52,14 +66,38 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
             );
         }
 
+        String origenNormalizado = origen.trim().toUpperCase();
+        String destinoNormalizado = destino.trim().toUpperCase();
+
+        String aerolineaNormalizada =
+                codigoAerolinea == null || codigoAerolinea.isBlank()
+                        ? ""
+                        : codigoAerolinea.trim().toUpperCase();
+
+        String clave = String.join("|",
+                origenNormalizado,
+                destinoNormalizado,
+                fechaSalida.toString(),
+                aerolineaNormalizada,
+                market
+        );
+
+        EntradaCache entrada = cacheVuelos.get(clave);
+
+        if (entrada != null) {
+            if (Instant.now().isBefore(entrada.expiracion())) {
+                return entrada.vuelos();
+            }
+
+            cacheVuelos.remove(clave, entrada);
+        }
+
         IgnavSolicitud solicitud = new IgnavSolicitud(
-                origen.trim().toUpperCase(),
-                destino.trim().toUpperCase(),
+                origenNormalizado,
+                destinoNormalizado,
                 fechaSalida.toString(),
                 market,
-                codigoAerolinea == null || codigoAerolinea.isBlank()
-                        ? null
-                        : codigoAerolinea.trim().toUpperCase()
+                aerolineaNormalizada.isEmpty() ? null : aerolineaNormalizada
         );
 
         IgnavRespuesta respuesta = restClient.post()
@@ -74,10 +112,20 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
             return List.of();
         }
 
-        return respuesta.itineraries().stream()
+        List<Vuelo> vuelos = respuesta.itineraries().stream()
                 .map(itinerario -> convertirVuelo(itinerario, respuesta))
                 .filter(vuelo -> vuelo != null)
                 .toList();
+
+        cacheVuelos.put(
+            clave,
+            new EntradaCache(
+                    vuelos,
+                    Instant.now().plus(TIEMPO_CACHE)
+            )
+        );
+
+        return vuelos;
     }
 
     private Vuelo convertirVuelo(
