@@ -7,6 +7,10 @@ import org.springframework.web.client.RestClient;
 import org.springframework.http.MediaType;
 import java.time.LocalDate;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.UUID;
 
 @Service
 public class IgnavProveedorVuelos implements ProveedorVuelos {
@@ -64,11 +68,80 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
                 .retrieve()
                 .body(IgnavRespuesta.class);
 
-        // La conversión de itinerarios a objetos Vuelo
-        // se implementará en el siguiente paso.
-        return List.of();
+        if (respuesta == null || respuesta.itineraries() == null) {
+            return List.of();
+        }
+
+        return respuesta.itineraries().stream()
+                .map(itinerario -> convertirVuelo(itinerario, respuesta))
+                .filter(vuelo -> vuelo != null)
+                .toList();
     }
 
+    private Vuelo convertirVuelo(
+            IgnavRespuesta.Itinerario itinerario,
+            IgnavRespuesta respuesta) {
+
+        if (itinerario == null
+                || itinerario.price() == null
+                || itinerario.outbound() == null
+                || itinerario.outbound().segments() == null
+                || itinerario.outbound().segments().size() != 1
+                || itinerario.ignav_id() == null
+                || itinerario.ignav_id().isBlank()) {
+            return null;
+        }
+
+        IgnavRespuesta.Precio precio = itinerario.price();
+        IgnavRespuesta.Trayecto trayecto = itinerario.outbound();
+
+        // TravelGo todavía maneja precios únicamente en COP.
+        if (!"COP".equalsIgnoreCase(precio.currency())) {
+            return null;
+        }
+
+        if (!Double.isFinite(precio.amount()) || precio.amount() < 0) {
+            return null;
+        }
+
+        IgnavRespuesta.Segmento segmento = trayecto.segments().get(0);
+
+        if (segmento == null
+                || segmento.departure_time_local() == null
+                || segmento.arrival_time_local() == null) {
+            return null;
+        }
+
+        LocalDateTime fechaSalida =
+                LocalDateTime.parse(segmento.departure_time_local());
+
+        LocalDateTime fechaLlegada =
+                LocalDateTime.parse(segmento.arrival_time_local());
+
+        LocalDateTime fechaConsulta =
+                OffsetDateTime.parse(respuesta.observed_at())
+                        .atZoneSameInstant(ZoneId.of("America/Bogota"))
+                        .toLocalDateTime();
+
+        boolean disponible =
+                "verified".equalsIgnoreCase(precio.status());
+
+        return new Vuelo(
+                UUID.randomUUID().toString(),
+                precio.amount(),
+                disponible,
+                trayecto.carrier(),
+                segmento.departure_airport(),
+                segmento.arrival_airport(),
+                fechaSalida,
+                fechaLlegada,
+                "IGNAV",
+                itinerario.ignav_id(),
+                fechaConsulta,
+                null
+        );
+        
+    }
     @Override
     public String obtenerEnlaceReserva(String idExterno) {
         return null;
