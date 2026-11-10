@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
+import org.springframework.web.client.HttpClientErrorException;
+import java.util.Map;
 
 @Service
 public class IgnavProveedorVuelos implements ProveedorVuelos {
@@ -143,7 +145,54 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
         
     }
     @Override
-    public String obtenerEnlaceReserva(String idExterno) {
+public String obtenerEnlaceReserva(String idExterno) {
+
+    if (idExterno == null || idExterno.isBlank()) {
+        throw new IllegalArgumentException(
+                "El identificador externo del vuelo es obligatorio."
+        );
+    }
+
+    if (apiKey == null || apiKey.isBlank()) {
+        throw new IllegalStateException(
+                "La API Key de Ignav no está configurada."
+        );
+    }
+
+    try {
+        IgnavEnlacesRespuesta respuesta = restClient.post()
+                .uri("/fares/booking-links")
+                .header("X-Api-Key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("ignav_id", idExterno.trim()))
+                .retrieve()
+                .body(IgnavEnlacesRespuesta.class);
+
+        if (respuesta == null || respuesta.booking_options() == null) {
+            return null;
+        }
+
+        List<IgnavEnlacesRespuesta.Enlace> enlaces =
+                respuesta.booking_options().stream()
+                        .filter(opcion -> opcion.links() != null)
+                        .flatMap(opcion -> opcion.links().stream())
+                        .filter(enlace -> enlace.url() != null
+                                && !enlace.url().isBlank())
+                        .toList();
+
+        // Priorizar el enlace de la aerolínea.
+        return enlaces.stream()
+                .filter(enlace -> "airline".equalsIgnoreCase(
+                        enlace.provider_type()))
+                .map(IgnavEnlacesRespuesta.Enlace::url)
+                .findFirst()
+                .orElseGet(() -> enlaces.stream()
+                        .map(IgnavEnlacesRespuesta.Enlace::url)
+                        .findFirst()
+                        .orElse(null));
+
+    } catch (HttpClientErrorException.NotFound e) {
         return null;
     }
+}
 }
