@@ -38,4 +38,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> estadoInvalido(IllegalStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
     }
+    @ExceptionHandler(ProveedorNoDisponibleException.class)
+    public ResponseEntity<Map<String, String>> proveedorNoDisponible(ProveedorNoDisponibleException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", e.getMessage()));
+    }
 }
