@@ -21,31 +21,48 @@ public class Hotel extends ServicioReservable {
         throws IllegalArgumentException si alguno de los parametros es nulo o vacio, o si el precio es negativo o nulo.
     */
 
-    public Hotel(String id, double precio, boolean disponible, String nombre, String direccion, String tipoHabitacion, int noches) {
-        super(id, precio, disponible);
+    public Hotel(
+        String id,
+        double precio,
+        boolean disponible,
+        String nombre,
+        String direccion,
+        String tipoHabitacion,
+        int noches) {
 
-        if(nombre==null || nombre.isBlank()){
-            throw new IllegalArgumentException(
-                "El nombre del hotel es obligatorio."
-            );
+        this(id, precio, disponible, nombre, direccion, tipoHabitacion,
+        noches, null, null, null, null);
+    }
+
+    public Hotel(
+        String id,
+        double precio,
+        boolean disponible,
+        String nombre,
+        String direccion,
+        String tipoHabitacion,
+        int noches,
+        String fuente,
+        String idExterno,
+        java.time.LocalDateTime fechaConsulta,
+        String enlaceReserva) {
+
+        super(id, precio, disponible, fuente, idExterno, fechaConsulta, enlaceReserva);
+
+        if (nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("El nombre del hotel es obligatorio.");
         }
 
-        if(direccion==null || direccion.isBlank()){
-            throw new IllegalArgumentException(
-                "La direccion del hotel es obligatoria."
-            );
+        if (direccion == null || direccion.isBlank()) {
+            throw new IllegalArgumentException("La direccion del hotel es obligatoria.");
         }
 
-        if(tipoHabitacion==null || tipoHabitacion.isBlank()){
-            throw new IllegalArgumentException(
-                "El tipo de habitacion es obligatorio."
-            );
+        if (tipoHabitacion == null || tipoHabitacion.isBlank()) {
+            throw new IllegalArgumentException("El tipo de habitacion es obligatorio.");
         }
 
-        if(noches<=0){
-            throw new IllegalArgumentException(
-                "La cantidad de noches debe ser mayor a cero."
-            );
+        if (noches <= 0) {
+            throw new IllegalArgumentException("La cantidad de noches debe ser mayor a cero.");
         }
 
         this.nombre = nombre;

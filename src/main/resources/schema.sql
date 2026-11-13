@@ -58,13 +58,25 @@ CREATE TABLE IF NOT EXISTS paquete_destino (
     PRIMARY KEY (paquete_id, destino_id)
 );
 
--- ---------- Servicios reservables (herencia: tabla base + una por tipo) ----------
+
 CREATE TABLE IF NOT EXISTS servicio_reservable (
-    id         VARCHAR(36)   PRIMARY KEY,
-    precio     NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
-    disponible BOOLEAN       NOT NULL DEFAULT TRUE,
-    tipo       VARCHAR(30)   NOT NULL CHECK (tipo IN ('VUELO', 'HOTEL', 'TRANSPORTE'))
+    id              VARCHAR(36)   PRIMARY KEY,
+    precio          NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+    disponible      BOOLEAN       NOT NULL DEFAULT TRUE,
+    tipo            VARCHAR(30)   NOT NULL CHECK (tipo IN ('VUELO', 'HOTEL', 'TRANSPORTE')),
+    fuente          VARCHAR(100),
+    id_externo      VARCHAR(255),
+    fecha_consulta  TIMESTAMP,
+    enlace_reserva  TEXT
 );
+
+-- Compatibilidad con bases de datos existentes
+ALTER TABLE servicio_reservable
+    ADD COLUMN IF NOT EXISTS fuente VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS id_externo VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS fecha_consulta TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS enlace_reserva TEXT;
+
 
 CREATE TABLE IF NOT EXISTS vuelo (
     id            VARCHAR(36)  PRIMARY KEY REFERENCES servicio_reservable (id) ON DELETE CASCADE,
