@@ -23,37 +23,54 @@ public class Transporte extends ServicioReservable {
         param fecha fecha y hora de salida del transporte
         throws IllegalArgumentException si alguno de los parametros es nulo o vacio, o si el precio es negativo o nulo.
     */
-    public Transporte(String id, double precio, boolean disponible, String tipo, String origen, String destino, LocalDateTime fecha) {
-        super(id, precio, disponible);
+    public Transporte(
+        String id,
+        double precio,
+        boolean disponible,
+        String tipo,
+        String origen,
+        String destino,
+        LocalDateTime fecha) {
 
-        if(tipo==null || tipo.isBlank()){
-            throw new IllegalArgumentException(
-                "El tipo de transporte es obligatorio."
-            );
+        this(id, precio, disponible, tipo, origen, destino, fecha,
+            null, null, null, null);
+    }
+
+    public Transporte(
+        String id,
+        double precio,
+        boolean disponible,
+        String tipo,
+        String origen,
+        String destino,
+        LocalDateTime fecha,
+        String fuente,
+        String idExterno,
+        LocalDateTime fechaConsulta,
+        String enlaceReserva) {
+
+        super(id, precio, disponible, fuente, idExterno,fechaConsulta, enlaceReserva);
+
+        if (tipo == null || tipo.isBlank()) {
+            throw new IllegalArgumentException("El tipo de transporte es obligatorio.");
         }
 
-        if(origen==null || origen.isBlank()){
-            throw new IllegalArgumentException(
-                "La ciudad de origen es obligatoria."
-            );
+        if (origen == null || origen.isBlank()) {
+            throw new IllegalArgumentException("La ciudad de origen es obligatoria.");
         }
 
-        if(destino==null || destino.isBlank()){
-            throw new IllegalArgumentException(
-                "La ciudad de destino es obligatoria."
-            );
+        if (destino == null || destino.isBlank()) {
+            throw new IllegalArgumentException("La ciudad de destino es obligatoria.");
         }
 
         if (origen.trim().equalsIgnoreCase(destino.trim())) {
             throw new IllegalArgumentException(
-                "La ciudad de destino no puede ser la misma que la ciudad de origen."
-            );
+                    "La ciudad de destino no puede ser la misma que la ciudad de origen.");
         }
 
         if (fecha == null) {
             throw new IllegalArgumentException(
-                "La fecha y hora de salida es obligatoria."
-            );
+                    "La fecha y hora de salida es obligatoria.");
         }
 
         this.tipo = tipo.trim();
