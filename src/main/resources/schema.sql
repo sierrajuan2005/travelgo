@@ -151,3 +151,25 @@ CREATE TABLE IF NOT EXISTS pago (
 CREATE INDEX IF NOT EXISTS idx_reserva_usuario       ON reserva (usuario_id);
 CREATE INDEX IF NOT EXISTS idx_servicio_disponible   ON servicio_reservable (disponible);
 CREATE INDEX IF NOT EXISTS idx_paquete_activo        ON paquete_turistico (activo);
+
+-- =====================================================================
+-- Sprint 4 - Integrante 4: cupones de descuento (los aplica la factura; DAO de Integrante 2)
+-- =====================================================================
+CREATE INDEX IF NOT EXISTS idx_servicio_fuente_externo ON servicio_reservable (fuente, id_externo);
+
+CREATE TABLE IF NOT EXISTS cupon (
+    id              VARCHAR(36)  PRIMARY KEY,
+    codigo          VARCHAR(30)  NOT NULL UNIQUE,
+    porcentaje      NUMERIC(5,2) NOT NULL CHECK (porcentaje > 0 AND porcentaje <= 100),
+    fecha_inicio    DATE         NOT NULL,
+    fecha_fin       DATE         NOT NULL,
+    usos_maximos    INTEGER      CHECK (usos_maximos IS NULL OR usos_maximos > 0),
+    usos_actuales   INTEGER      NOT NULL DEFAULT 0 CHECK (usos_actuales >= 0),
+    activo          BOOLEAN      NOT NULL DEFAULT TRUE,
+    CHECK (fecha_fin >= fecha_inicio)
+);
+
+-- Pendiente de decisión del equipo (moneda): si se guarda la moneda original de la API, agregar
+--   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS moneda VARCHAR(3);
+--   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS precio_original NUMERIC(12,2);
+-- y que Integrante 1 las lea/escriba en ServicioReservableDAOJdbc.
