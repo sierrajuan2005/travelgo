@@ -17,9 +17,15 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class IgnavProveedorVuelos implements ProveedorVuelos {
+
+    private static final Logger logger =
+        LoggerFactory.getLogger(IgnavProveedorVuelos.class);
 
     private final RestClient restClient;
     private final String apiKey;
@@ -100,13 +106,26 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
                 aerolineaNormalizada.isEmpty() ? null : aerolineaNormalizada
         );
 
-        IgnavRespuesta respuesta = restClient.post()
-                .uri("/fares/one-way")
-                .header("X-Api-Key", apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(solicitud)
-                .retrieve()
-                .body(IgnavRespuesta.class);
+                IgnavRespuesta respuesta;
+
+        try {
+            respuesta = restClient.post()
+                    .uri("/fares/one-way")
+                    .header("X-Api-Key", apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(solicitud)
+                    .retrieve()
+                    .body(IgnavRespuesta.class);
+
+        } catch (RestClientException e) {
+
+            logger.error(
+                    "Error al consultar vuelos en Ignav: {}",
+                    e.getMessage()
+            );
+
+            return List.of();
+        }
 
         if (respuesta == null || respuesta.itineraries() == null) {
             return List.of();
@@ -158,7 +177,12 @@ public class IgnavProveedorVuelos implements ProveedorVuelos {
 
         if (segmento == null
                 || segmento.departure_time_local() == null
-                || segmento.arrival_time_local() == null) {
+                || segmento.arrival_time_local() == null
+                || respuesta.observed_at() == null
+                || trayecto.carrier() == null
+                || segmento.departure_airport() == null
+                || segmento.arrival_airport() == null) {
+
             return null;
         }
 
@@ -207,40 +231,57 @@ public String obtenerEnlaceReserva(String idExterno) {
         );
     }
 
+    
     try {
-        IgnavEnlacesRespuesta respuesta = restClient.post()
-                .uri("/fares/booking-links")
-                .header("X-Api-Key", apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("ignav_id", idExterno.trim()))
-                .retrieve()
-                .body(IgnavEnlacesRespuesta.class);
+            IgnavEnlacesRespuesta respuesta = restClient.post()
+                    .uri("/fares/booking-links")
+                    .header("X-Api-Key", apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("ignav_id", idExterno.trim()))
+                    .retrieve()
+                    .body(IgnavEnlacesRespuesta.class);
 
-        if (respuesta == null || respuesta.booking_options() == null) {
+            if (respuesta == null
+                    || respuesta.booking_options() == null) {
+                return null;
+            }
+
+            List<IgnavEnlacesRespuesta.Enlace> enlaces =
+                    respuesta.booking_options().stream()
+                            .filter(opcion -> opcion.links() != null)
+                            .flatMap(opcion -> opcion.links().stream())
+                            .filter(enlace -> enlace.url() != null
+                                    && !enlace.url().isBlank())
+                            .toList();
+
+            // Priorizar el enlace de la aerolínea.
+            return enlaces.stream()
+                    .filter(enlace -> "airline".equalsIgnoreCase(
+                            enlace.provider_type()))
+                    .map(IgnavEnlacesRespuesta.Enlace::url)
+                    .findFirst()
+                    .orElseGet(() -> enlaces.stream()
+                            .map(IgnavEnlacesRespuesta.Enlace::url)
+                            .findFirst()
+                            .orElse(null));
+
+        } catch (HttpClientErrorException.NotFound e) {
+
+            logger.warn(
+                    "Ignav no encontró enlaces para el vuelo: {}",
+                    idExterno
+            );
+
+            return null;
+
+        } catch (RestClientException e) {
+
+            logger.error(
+                    "Error al consultar enlaces de reserva en Ignav: {}",
+                    e.getMessage()
+            );
+
             return null;
         }
-
-        List<IgnavEnlacesRespuesta.Enlace> enlaces =
-                respuesta.booking_options().stream()
-                        .filter(opcion -> opcion.links() != null)
-                        .flatMap(opcion -> opcion.links().stream())
-                        .filter(enlace -> enlace.url() != null
-                                && !enlace.url().isBlank())
-                        .toList();
-
-        // Priorizar el enlace de la aerolínea.
-        return enlaces.stream()
-                .filter(enlace -> "airline".equalsIgnoreCase(
-                        enlace.provider_type()))
-                .map(IgnavEnlacesRespuesta.Enlace::url)
-                .findFirst()
-                .orElseGet(() -> enlaces.stream()
-                        .map(IgnavEnlacesRespuesta.Enlace::url)
-                        .findFirst()
-                        .orElse(null));
-
-    } catch (HttpClientErrorException.NotFound e) {
-        return null;
-    }
 }
 }
