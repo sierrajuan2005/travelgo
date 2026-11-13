@@ -1,0 +1,441 @@
+{
+  "info": {
+    "name": "TravelGo - Sprint 4 (búsqueda, destinos y hoteles reales)",
+    "description": "Colección de Integrante 4. Arrancar la app con DB_PASSWORD (y IGNAV_API_KEY si se prueban vuelos). Ejecutar primero '00 Sesión'. No guardar llaves de APIs en esta colección. Los endpoints de vuelos y paquetes reales se agregan cuando existan.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Sesión",
+      "item": [
+        {
+          "name": "Login como ADMINISTRADOR",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/login"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{emailAdmin}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{passAdmin}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/login', method: 'GET' }, function (err, res) {",
+                  "  if (err) { console.error(err); return; }",
+                  "  const t = /name=\"_csrf\"[^>]*value=\"([^\"]+)\"/.exec(res.text()) || /value=\"([^\"]+)\"[^>]*name=\"_csrf\"/.exec(res.text());",
+                  "  if (t) { pm.collectionVariables.set('csrf', t[1]); } else { console.warn('No se encontró el token CSRF en /login'); }",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login correcto: redirige fuera de /login?error', function () {",
+                  "  pm.response.to.have.status(302);",
+                  "  pm.expect(pm.response.headers.get('Location') || '').to.not.include('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Búsqueda y filtros de paquetes",
+      "item": [
+        {
+          "name": "Sin filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Devuelve una lista', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Por destino (sin tildes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=bogota"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Solo Bogotá', function () { pm.response.json().forEach(p => pm.expect(JSON.stringify(p.destinos).toLowerCase()).to.include('bogot')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Por rango de precio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?precioMin=800000&precioMax=1500000"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Precios dentro del rango', function () { pm.response.json().forEach(p => pm.expect(p.precio).to.be.within(800000,1500000)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Por duración",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?duracionMin=4&duracionMax=5"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Duración dentro del rango', function () { pm.response.json().forEach(p => pm.expect(p.duracionDias).to.be.within(4,5)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtros combinados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=colombia&precioMax=2000000&duracionMin=3"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin resultados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=tokio"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Lista vacía', function () { pm.expect(pm.response.json()).to.have.lengthOf(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango de precio al revés (error)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/paquetes/buscar?precioMin=5000000&precioMax=100"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Destinos reales (Integrante 3)",
+      "item": [
+        {
+          "name": "Información completa del destino",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/1/info"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atracciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/1/atracciones"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clima",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/1/clima"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Foto con atribución",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/1/foto"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destino que no existe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/destinos/99999/info"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 si no existe', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Hoteles reales (Integrante 2)",
+      "item": [
+        {
+          "name": "Hoteles de una ciudad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hoteles-reales?ciudad={{ciudadClave}}&limite=5"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Trae hoteles', function () { const l = pm.response.json(); pm.expect(l).to.be.an('array'); if (l.length) { pm.collectionVariables.set('hotelClave', l[0].clave); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tarifa de un hotel (usa el primero de la lista)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hoteles-reales/{{hotelClave}}/tarifa?entrada={{fechaEntrada}}&salida={{fechaSalida}}&habitaciones=1&adultos=2"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con tarifa o 204/404 si la fuente no tiene', function () { pm.expect([200,204,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fechas inválidas (salida antes de entrada)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hoteles-reales/{{hotelClave}}/tarifa?entrada=2030-01-10&salida=2030-01-05"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 por fechas inválidas', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "emailAdmin",
+      "value": "admin@travelgo.com"
+    },
+    {
+      "key": "passAdmin",
+      "value": "Admin123*"
+    },
+    {
+      "key": "csrf",
+      "value": ""
+    },
+    {
+      "key": "ciudadClave",
+      "value": "g297476"
+    },
+    {
+      "key": "hotelClave",
+      "value": ""
+    },
+    {
+      "key": "fechaEntrada",
+      "value": "2026-12-10"
+    },
+    {
+      "key": "fechaSalida",
+      "value": "2026-12-13"
+    }
+  ]
+}
