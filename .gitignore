@@ -37,3 +37,4 @@ mis_docs/
 
 ### Configuración local de cada PC (contraseña de la base de datos) ###
 /config/
+src/main/resources/application.properties
