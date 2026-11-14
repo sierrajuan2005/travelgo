@@ -123,6 +123,21 @@ CREATE TABLE IF NOT EXISTS reserva_servicio (
     PRIMARY KEY (reserva_id, servicio_id)
 );
 
+-- ---------- Cupones de descuento ----------
+-- El cupón va antes que la factura porque la factura lo referencia (cupon_id).
+CREATE TABLE IF NOT EXISTS cupon (
+    id            VARCHAR(36)   PRIMARY KEY,
+    codigo        VARCHAR(30)   NOT NULL UNIQUE,
+    tipo          VARCHAR(20)   NOT NULL CHECK (tipo IN ('PORCENTAJE', 'VALOR_FIJO')),
+    valor         NUMERIC(10,2) NOT NULL CHECK (valor > 0),
+    fecha_inicio  DATE          NOT NULL,
+    fecha_fin     DATE          NOT NULL,
+    usos_maximos  INTEGER       NOT NULL CHECK (usos_maximos >= 1),
+    usos_actuales INTEGER       NOT NULL DEFAULT 0 CHECK (usos_actuales >= 0),
+    activo        BOOLEAN       NOT NULL DEFAULT TRUE,
+    CHECK (fecha_fin >= fecha_inicio)
+);
+
 -- ---------- Facturas y pagos ----------
 -- La factura va antes que el pago porque el pago la referencia.
 CREATE TABLE IF NOT EXISTS factura (
@@ -153,21 +168,9 @@ CREATE INDEX IF NOT EXISTS idx_servicio_disponible   ON servicio_reservable (dis
 CREATE INDEX IF NOT EXISTS idx_paquete_activo        ON paquete_turistico (activo);
 
 -- =====================================================================
--- Sprint 4 - Integrante 4: cupones de descuento (los aplica la factura; DAO de Integrante 2)
+-- Sprint 4 - Integrante 4: índice para buscar servicios por su referencia externa
 -- =====================================================================
 CREATE INDEX IF NOT EXISTS idx_servicio_fuente_externo ON servicio_reservable (fuente, id_externo);
-
-CREATE TABLE IF NOT EXISTS cupon (
-    id              VARCHAR(36)  PRIMARY KEY,
-    codigo          VARCHAR(30)  NOT NULL UNIQUE,
-    porcentaje      NUMERIC(5,2) NOT NULL CHECK (porcentaje > 0 AND porcentaje <= 100),
-    fecha_inicio    DATE         NOT NULL,
-    fecha_fin       DATE         NOT NULL,
-    usos_maximos    INTEGER      CHECK (usos_maximos IS NULL OR usos_maximos > 0),
-    usos_actuales   INTEGER      NOT NULL DEFAULT 0 CHECK (usos_actuales >= 0),
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE,
-    CHECK (fecha_fin >= fecha_inicio)
-);
 
 -- Pendiente de decisión del equipo (moneda): si se guarda la moneda original de la API, agregar
 --   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS moneda VARCHAR(3);
