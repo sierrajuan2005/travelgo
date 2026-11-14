@@ -92,6 +92,12 @@ INSERT INTO reserva_servicio (reserva_id, servicio_id) VALUES
  ('r-cancelada', 's-hotel-2')
 ON CONFLICT DO NOTHING;
 
+-- ---------- Cupón de ejemplo ----------
+-- Debe ir antes que cualquier factura que lo use (cupon_id).
+INSERT INTO cupon (id, codigo, tipo, valor, fecha_inicio, fecha_fin, usos_maximos, usos_actuales, activo) VALUES
+ ('c-1', 'VERANO10', 'PORCENTAJE', 10.00, '2026-11-01', '2027-03-31', 100, 0, TRUE)
+ON CONFLICT (id) DO NOTHING;
+
 -- ---------- Factura y pago de la reserva ya pagada ----------
 -- La factura va primero porque el pago la referencia.
 INSERT INTO factura (id, numero, fecha_emision, subtotal, total, estado, reserva_id) VALUES

@@ -148,8 +148,14 @@ CREATE TABLE IF NOT EXISTS factura (
     total         NUMERIC(10,2) NOT NULL CHECK (total > 0),
     estado        VARCHAR(30)   NOT NULL
                   CHECK (estado IN ('PENDIENTE', 'PAGADA', 'ANULADA')),
-    reserva_id    VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id)  -- una reserva, una factura
+    reserva_id    VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id),  -- una reserva, una factura
+    descuento     NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+    cupon_id      VARCHAR(36)   REFERENCES cupon (id)                     -- cupón aplicado (opcional)
 );
+
+-- Compatibilidad con bases de datos existentes (CREATE TABLE IF NOT EXISTS no agrega columnas nuevas)
+ALTER TABLE factura ADD COLUMN IF NOT EXISTS descuento NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0);
+ALTER TABLE factura ADD COLUMN IF NOT EXISTS cupon_id  VARCHAR(36) REFERENCES cupon (id);
 
 CREATE TABLE IF NOT EXISTS pago (
     id         VARCHAR(36)   PRIMARY KEY,
