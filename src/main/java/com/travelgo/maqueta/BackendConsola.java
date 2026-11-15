@@ -172,7 +172,10 @@ public final class BackendConsola {
 		PaqueteMaqueta cancun = PaqueteMaqueta.buscar("3");
 		Reserva pagada = guardarReserva(cliente, cancun,
 			List.of(ServiciosPaqueteMaqueta.de(cancun).hotelesDisponibles().get(0)));
-		PAGOS.pagar(new PagoRequest(pagada.getId(), MetodoPago.TARJETA_CREDITO));
+		PAGOS.pagar(
+        new PagoRequest(pagada.getId(), MetodoPago.TARJETA_CREDITO),
+        cliente.getCorreo()
+		);
 
 		guardarReserva(ana, cartagena, List.of(ServiciosPaqueteMaqueta.de(cartagena).hotelesDisponibles().get(0)));
 	}

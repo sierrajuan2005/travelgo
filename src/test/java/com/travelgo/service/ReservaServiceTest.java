@@ -268,6 +268,8 @@ class ReservaServiceTest {
     void confirmarPropia() {
         Reserva reserva = reservaConServicios();
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId()))
+        .thenReturn(Optional.of(pagoAprobado(reserva)));
         when(reservaDAO.guardar(reserva)).thenReturn(reserva);
 
         Reserva confirmada = service.confirmarPropia(reserva.getId(), CORREO);
@@ -334,6 +336,8 @@ class ReservaServiceTest {
     void confirmarValida() {
         Reserva reserva = reservaConServicios();
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId()))
+        .thenReturn(Optional.of(pagoAprobado(reserva)));
         when(reservaDAO.guardar(reserva)).thenReturn(reserva);
 
         Reserva confirmada = service.confirmarReserva(reserva.getId());

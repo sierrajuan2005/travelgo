@@ -11,6 +11,7 @@ import com.travelgo.model.Pago;
 import com.travelgo.model.Reserva;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -35,11 +36,15 @@ public class PagoService {
      * hace que se guarde todo o nada.
      */
     @Transactional
-    public Pago pagar(PagoRequest request) {
+    public Pago pagar(PagoRequest request, String correoAutenticado) {
         Reserva reserva = reservaDAO.buscarPorId(request.reservaId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Reserva no encontrada: " + request.reservaId()));
 
+        if (!reserva.getUsuario().getCorreo().equalsIgnoreCase(correoAutenticado)) {
+            throw new AccessDeniedException(
+                "No tienes permiso para pagar esta reserva.");
+        }
         if (pagoDAO.buscarPorReservaId(reserva.getId()).isPresent()) {
             throw new IllegalStateException("La reserva " + reserva.getId() + " ya fue pagada.");
         }

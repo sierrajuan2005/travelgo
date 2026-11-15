@@ -158,7 +158,10 @@ public class ReservaMaquetaController {
 			return "redirect:/reservas/" + id + "/pagar";
 		}
 		try {
-			BackendConsola.PAGOS.pagar(new PagoRequest(reserva.getId(), metodo));
+			BackendConsola.PAGOS.pagar(
+        		new PagoRequest(reserva.getId(), metodo),
+        		reserva.getUsuario().getCorreo()
+			);
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirect.addFlashAttribute("error", "No se pudo pagar: " + e.getMessage());
 			return "redirect:/reservas/" + id + "/pagar";
