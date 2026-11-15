@@ -24,11 +24,17 @@ public class PagoController {
 
     /** Paga una reserva y devuelve el pago junto con su factura. */
     @PostMapping
-    public ResponseEntity<PagoRespuestaDTO> pagar(@Valid @RequestBody PagoRequest request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(PagoRespuestaDTO.desde(service.pagar(request, authentication.getName())));
-    }
+     public ResponseEntity<PagoRespuestaDTO> pagar(
+            @Valid @RequestBody PagoRequest request,
+            Authentication authentication) {
 
+        boolean esAgente = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(PagoRespuestaDTO.desde(
+                        service.pagar(request, authentication.getName(), esAgente)));
+    }
     @GetMapping
     public List<PagoRespuestaDTO> listar() {
         return service.listar().stream().map(PagoRespuestaDTO::desde).toList();

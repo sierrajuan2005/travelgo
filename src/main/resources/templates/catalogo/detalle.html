@@ -15,21 +15,104 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card tg-card">
-                <div class="tg-card-img" style="height: 240px;">
+            <div class="card tg-card mb-4">
+                <!-- Foto real del destino con su atribución (autor, licencia y enlace a la fuente) -->
+                <figure th:if="${info != null and info.foto() != null}" class="tg-foto-destino mb-0"
+                        th:with="foto=${info.foto().datos()}">
+                    <img th:src="${foto.url()}" th:alt="${'Foto de ' + destino.nombre}">
+                    <figcaption class="tg-credito">
+                        Foto: <span th:text="${foto.autor()}">Autor</span>
+                        <th:block th:if="${foto.licencia() != null}">·
+                            <a th:if="${foto.enlaceLicencia() != null}" th:href="${foto.enlaceLicencia()}"
+                               target="_blank" rel="noopener" th:text="${foto.licencia()}">CC BY-SA 4.0</a>
+                            <span th:unless="${foto.enlaceLicencia() != null}" th:text="${foto.licencia()}">Licencia</span>
+                        </th:block>
+                        · <a th:href="${foto.enlaceFuente()}" target="_blank" rel="noopener">Wikimedia Commons</a>
+                    </figcaption>
+                </figure>
+                <div th:unless="${info != null and info.foto() != null}" class="tg-card-img" style="height: 240px;">
                     <i class="bi bi-geo-alt"></i>
                 </div>
+
                 <div class="card-body p-4">
                     <h1 class="h3" th:text="${paquete.nombre}">Nombre del paquete</h1>
                     <p class="text-muted">
                         <i class="bi bi-geo-alt"></i>
-                        <span th:text="${paquete.destino.ciudad + ', ' + paquete.destino.pais}">Destino, País</span>
+                        <span th:text="${@formato.destinos(paquete)}">Destino, País</span>
                     </p>
                     <p th:text="${paquete.descripcion}">Descripción del paquete.</p>
 
-                    <h2 class="h5 mt-4">Sobre el destino</h2>
-                    <p class="fw-semibold mb-1" th:text="${paquete.destino.nombre}">Destino</p>
-                    <p class="mb-0" th:text="${paquete.destino.descripcion}">Descripción del destino.</p>
+                    <th:block th:if="${destino != null}">
+                        <h2 class="h5 mt-4">Sobre el destino</h2>
+                        <p class="fw-semibold mb-1" th:text="${destino.nombre}">Destino</p>
+                        <p class="mb-0" th:text="${destino.descripcion}">Descripción del destino.</p>
+                    </th:block>
+                </div>
+            </div>
+
+            <!-- Lo que no se pudo consultar (una API caída no tumba la página) -->
+            <div th:if="${info != null and !#lists.isEmpty(info.avisos())}" class="alert alert-warning small">
+                <i class="bi bi-info-circle"></i> Parte de la información del destino no está disponible ahora:
+                <ul class="mb-0 mt-1">
+                    <li th:each="aviso : ${info.avisos()}" th:text="${aviso}">Aviso</li>
+                </ul>
+            </div>
+
+            <!-- Clima actual y pronóstico (Open-Meteo) -->
+            <div th:if="${info != null and info.clima() != null}" class="card tg-card mb-4"
+                 th:with="clima=${info.clima().datos()}">
+                <div class="card-body p-4">
+                    <h2 class="h5"><i class="bi bi-thermometer-sun"></i> Clima en <span th:text="${destino.ciudad}">Ciudad</span></h2>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi tg-clima-icono" th:classappend="${clima.icono()}"></i>
+                        <div>
+                            <div class="fs-3 fw-bold" th:text="${#numbers.formatDecimal(clima.temperaturaActual(), 1, 0) + ' °C'}">28 °C</div>
+                            <div class="text-muted" th:text="${clima.descripcion() + ' ahora'}">Despejado ahora</div>
+                        </div>
+                    </div>
+                    <div class="row g-2 text-center">
+                        <div class="col-6 col-md-3" th:each="dia, estado : ${clima.dias()}">
+                            <div class="border rounded-3 p-2 h-100">
+                                <div class="small fw-semibold"
+                                     th:text="${estado.first ? 'Hoy' : @formato.diaCorto(dia.fecha())}">Hoy</div>
+                                <i class="bi fs-4" th:classappend="${dia.icono()}" th:title="${dia.descripcion()}"></i>
+                                <div class="small" th:text="${dia.descripcion()}">Lluvia</div>
+                                <div class="small text-muted"
+                                     th:text="${#numbers.formatDecimal(dia.minima(), 1, 0) + '° / ' + #numbers.formatDecimal(dia.maxima(), 1, 0) + '°'}">24° / 29°</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        <a th:href="${info.clima().enlaceFuente()}" target="_blank" rel="noopener"
+                           th:text="${info.clima().atribucion()}">Open-Meteo</a>
+                        · consultado el <span th:text="${@formato.fechaHora(info.clima().consultadoEn())}">fecha</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Atracciones reales cerca del centro (OpenTripMap o Wikipedia) -->
+            <div th:if="${info != null and info.atracciones() != null}" class="card tg-card">
+                <div class="card-body p-4">
+                    <h2 class="h5"><i class="bi bi-pin-map"></i> Qué visitar</h2>
+                    <p th:if="${#lists.isEmpty(info.atracciones().datos())}" class="text-muted mb-0">
+                        No se encontraron atracciones cerca del centro.
+                    </p>
+                    <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(info.atracciones().datos())}">
+                        <li class="list-group-item px-0" th:each="lugar : ${info.atracciones().datos()}">
+                            <a class="fw-semibold" th:href="${lugar.enlace()}" target="_blank" rel="noopener"
+                               th:text="${lugar.nombre()}">Lugar</a>
+                            <div class="small text-muted">
+                                <span th:if="${lugar.tipo() != null}" th:text="${lugar.tipo()}">tipo</span>
+                                <span th:if="${lugar.tipo() != null and lugar.direccion() != null}"> · </span>
+                                <span th:if="${lugar.direccion() != null}" th:text="${lugar.direccion()}">dirección</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <p class="text-muted small mt-3 mb-0">
+                        <a th:href="${info.atracciones().enlaceFuente()}" target="_blank" rel="noopener"
+                           th:text="${info.atracciones().atribucion()}">Fuente</a>
+                        · consultado el <span th:text="${@formato.fechaHora(info.atracciones().consultadoEn())}">fecha</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -37,9 +120,8 @@
         <div class="col-lg-4">
             <div class="card tg-card tg-resumen">
                 <div class="card-body p-4">
-                    <p class="text-muted mb-1">Precio por persona</p>
-                    <p class="tg-precio fs-3 mb-1"
-                       th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+                    <p class="text-muted mb-1">Precio de referencia por persona</p>
+                    <p class="tg-precio fs-3 mb-1" th:text="${@formato.cop(paquete.precio)}">$ 0</p>
                     <p class="text-muted small" th:text="${paquete.duracionDias + ' días'}">5 días</p>
                     <!-- El Administrador no reserva (docs/matriz_permisos.md) -->
                     <th:block sec:authorize="!hasRole('ADMINISTRADOR')">
@@ -52,6 +134,11 @@
                     </th:block>
                     <p class="text-muted small mb-0" sec:authorize="hasRole('ADMINISTRADOR')">
                         El administrador no hace reservas.
+                    </p>
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        El precio es una referencia, no una oferta garantizada. La reserva se registra en TravelGo
+                        y el pago es simulado.
                     </p>
                 </div>
             </div>

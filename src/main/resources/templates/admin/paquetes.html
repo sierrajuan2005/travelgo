@@ -5,10 +5,7 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <main class="container py-5">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
-        <h1 class="h2 mb-0">Panel de administración</h1>
-        <span class="badge text-bg-warning align-self-start align-self-md-end">Catálogo de ejemplo</span>
-    </div>
+    <h1 class="h2 mb-4">Panel de administración</h1>
     <ul th:replace="~{fragments/layout :: adminTabs('paquetes')}"></ul>
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
@@ -33,21 +30,22 @@
                             <td><code th:text="${paquete.id}">1</code></td>
                             <td>
                                 <div class="fw-semibold" th:text="${paquete.nombre}">Nombre</div>
-                                <div class="text-muted small" th:text="${paquete.destino.ciudad}">Ciudad</div>
+                                <div class="text-muted small" th:text="${@formato.destinos(paquete)}">Ciudad</div>
                             </td>
                             <td class="text-end"
-                                th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                                th:text="${@formato.cop(paquete.precio)}">$ 0</td>
                             <td th:text="${paquete.duracionDias}">5</td>
                             <td>
                                 <span class="badge" th:classappend="${paquete.activo} ? 'text-bg-success' : 'text-bg-secondary'"
                                       th:text="${paquete.activo} ? 'Activo' : 'Inactivo'">Activo</span>
                             </td>
                             <td class="text-end">
-                                <!-- No se elimina un paquete que tiene reservas: el controlador muestra el motivo -->
-                                <form th:action="@{/admin/paquetes/{id}/eliminar(id=${paquete.id})}" method="post"
-                                      onsubmit="return confirm('¿Eliminar este paquete?')">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-trash"></i> Eliminar
+                                <!-- Los paquetes no se borran (las reservas viejas los usan): se desactivan -->
+                                <form th:action="@{/admin/paquetes/{id}/activo(id=${paquete.id})}" method="post">
+                                    <button type="submit" class="btn btn-sm"
+                                            th:classappend="${paquete.activo} ? 'btn-outline-danger' : 'btn-outline-success'">
+                                        <i class="bi" th:classappend="${paquete.activo} ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                        <span th:text="${paquete.activo} ? 'Desactivar' : 'Activar'">Desactivar</span>
                                     </button>
                                 </form>
                             </td>
@@ -69,13 +67,13 @@
                         </div>
                         <div class="mb-2">
                             <label for="descripcion" class="form-label small">Descripción</label>
-                            <textarea id="descripcion" name="descripcion" class="form-control" rows="2" required></textarea>
+                            <textarea id="descripcion" name="descripcion" class="form-control" rows="2" maxlength="500"></textarea>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
-                                <label for="precio" class="form-label small">Precio (USD)</label>
+                                <label for="precio" class="form-label small">Precio (COP)</label>
                                 <input type="number" id="precio" name="precio" class="form-control"
-                                       min="0.01" step="0.01" required>
+                                       min="1" step="1" required>
                             </div>
                             <div class="col-6">
                                 <label for="duracionDias" class="form-label small">Duración (días)</label>
@@ -87,7 +85,7 @@
                             <label for="destinoId" class="form-label small">Destino</label>
                             <select id="destinoId" name="destinoId" class="form-select" required>
                                 <option th:each="destino : ${destinos}" th:value="${destino.id}"
-                                        th:text="${destino.nombre + ' (' + destino.id + ')'}">Destino</option>
+                                        th:text="${destino.nombre + ' - ' + destino.ciudad + ', ' + destino.pais}">Destino</option>
                             </select>
                         </div>
                         <div class="form-check mb-3">

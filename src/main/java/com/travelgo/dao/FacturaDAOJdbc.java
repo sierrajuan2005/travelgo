@@ -1,6 +1,7 @@
 package com.travelgo.dao;
 
 import com.travelgo.exception.AccesoDatosException;
+import com.travelgo.model.Cupon;
 import com.travelgo.model.EstadoFactura;
 import com.travelgo.model.Factura;
 import com.travelgo.model.Reserva;
@@ -21,29 +22,35 @@ import java.util.Optional;
 public class FacturaDAOJdbc implements FacturaDAO {
 
     private static final String SELECT_FACTURA = """
-            SELECT f.id, f.numero, f.fecha_emision, f.subtotal, f.total, f.estado, f.reserva_id
+            SELECT f.id, f.numero, f.fecha_emision, f.subtotal, f.descuento, f.total,
+                   f.estado, f.reserva_id, f.cupon_id
             FROM factura f
             """;
 
     private final JdbcTemplate jdbc;
     private final ReservaDAO reservaDAO;
+    private final CuponDAO cuponDAO;
 
-    public FacturaDAOJdbc(JdbcTemplate jdbc, ReservaDAO reservaDAO) {
+    public FacturaDAOJdbc(JdbcTemplate jdbc, ReservaDAO reservaDAO, CuponDAO cuponDAO) {
         this.jdbc = jdbc;
         this.reservaDAO = reservaDAO;
+        this.cuponDAO = cuponDAO;
     }
 
     @Override
     public Factura guardar(Factura factura) {
         try {
+            String cuponId = factura.getCupon() == null ? null : factura.getCupon().getId();
             jdbc.update("""
-                    INSERT INTO factura (id, numero, fecha_emision, subtotal, total, estado, reserva_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO factura (id, numero, fecha_emision, subtotal, descuento, total,
+                                         estado, reserva_id, cupon_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET
-                        subtotal = EXCLUDED.subtotal, total = EXCLUDED.total, estado = EXCLUDED.estado
+                        subtotal = EXCLUDED.subtotal, descuento = EXCLUDED.descuento,
+                        total = EXCLUDED.total, estado = EXCLUDED.estado, cupon_id = EXCLUDED.cupon_id
                     """, factura.getId(), factura.getNumero(), factura.getFechaEmision(),
-                    factura.getSubtotal(), factura.getTotal(), factura.getEstado().name(),
-                    factura.getReserva().getId());
+                    factura.getSubtotal(), factura.getDescuento(), factura.getTotal(),
+                    factura.getEstado().name(), factura.getReserva().getId(), cuponId);
             return factura;
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo guardar la factura", e);
@@ -95,9 +102,13 @@ public class FacturaDAOJdbc implements FacturaDAO {
                 .orElseThrow(() -> new IllegalStateException(
                         "La factura " + id + " apunta a una reserva que no existe"));
 
+        String cuponId = rs.getString("cupon_id");
+        Cupon cupon = cuponId == null ? null : cuponDAO.buscarPorId(cuponId).orElse(null);
+
         return new Factura(id, rs.getString("numero"), reserva,
                 rs.getObject("fecha_emision", LocalDate.class),
                 rs.getDouble("subtotal"), rs.getDouble("total"),
-                EstadoFactura.valueOf(rs.getString("estado")));
+                EstadoFactura.valueOf(rs.getString("estado")),
+                rs.getDouble("descuento"), cupon);
     }
 }

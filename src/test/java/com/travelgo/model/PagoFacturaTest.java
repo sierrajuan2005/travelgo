@@ -147,4 +147,64 @@ class PagoFacturaTest {
 
         assertThrows(IllegalStateException.class, () -> new Pago(factura, MetodoPago.EFECTIVO));
     }
+    // ---------- Cupón en la factura ----------
+
+    @Test
+    @DisplayName("Aplicar un cupón calcula el descuento y deja el nuevo total")
+    void aplicarCupon() {
+        Factura factura = new Factura(reserva); // subtotal 600
+        Cupon cupon = new Cupon("VERANO10", TipoCupon.PORCENTAJE, 10,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5);
+
+        factura.aplicarCupon(cupon);
+
+        assertEquals(600.0, factura.getSubtotal(), 0.001);
+        assertEquals(60.0, factura.getDescuento(), 0.001);
+        assertEquals(540.0, factura.getTotal(), 0.001);
+        assertSame(cupon, factura.getCupon());
+    }
+
+    @Test
+    @DisplayName("No se puede aplicar un segundo cupón a la misma factura")
+    void aplicarDosCupones() {
+        Factura factura = new Factura(reserva);
+        Cupon cupon = new Cupon("VERANO10", TipoCupon.PORCENTAJE, 10,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5);
+        factura.aplicarCupon(cupon);
+
+        assertThrows(IllegalStateException.class, () -> factura.aplicarCupon(cupon));
+    }
+
+    @Test
+    @DisplayName("No se puede aplicar un cupón a una factura ya pagada")
+    void aplicarCuponFacturaPagada() {
+        Factura factura = new Factura(reserva);
+        factura.marcarPagada();
+        Cupon cupon = new Cupon("VERANO10", TipoCupon.PORCENTAJE, 10,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5);
+
+        assertThrows(IllegalStateException.class, () -> factura.aplicarCupon(cupon));
+    }
+
+    @Test
+    @DisplayName("Un cupón que cubre todo el total lanza IllegalArgumentException")
+    void cuponCubreTodo() {
+        Factura factura = new Factura(reserva);
+        Cupon total = new Cupon("GRATIS", TipoCupon.PORCENTAJE, 100,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5);
+
+        assertThrows(IllegalArgumentException.class, () -> factura.aplicarCupon(total));
+    }
+
+    @Test
+    @DisplayName("El pago de una factura con cupón cobra el total con descuento")
+    void pagoConCupon() {
+        Factura factura = new Factura(reserva);
+        factura.aplicarCupon(new Cupon("VERANO10", TipoCupon.PORCENTAJE, 10,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5));
+
+        Pago pago = new Pago(factura, MetodoPago.EFECTIVO);
+
+        assertEquals(540.0, pago.getMonto(), 0.001);
+    }
 }

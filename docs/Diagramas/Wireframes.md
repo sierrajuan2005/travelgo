@@ -299,6 +299,120 @@ El servicio v1 ahora está no disponible.
 ## 6. Consideraciones técnicas
 
 - Las pantallas web se construyen con Thymeleaf y Bootstrap 5.
-- El pago, la factura y el panel de administración se muestran en consola (`ConsolaMaqueta`), sin Spring ni base de datos.
-- El login, las reservas, los pagos y las facturas de la consola usan las clases y los services reales, con los DAO en memoria (`BackendConsola`).
-- El catálogo y el panel de administración todavía usan datos de ejemplo del paquete `maqueta/`, con los mismos atributos que el diagrama de clases.
+- **Desde el Sprint 4 la web usa PostgreSQL**: catálogo, reservas, pagos, facturas y panel de administración
+  llaman a los services de Spring (controladores en `com.travelgo.web`). Ver la sección 7.
+- La consola (`ConsolaMaqueta`) sigue sin Spring ni base de datos: usa las clases y los services reales con los
+  DAO en memoria (`BackendConsola`) y los datos de ejemplo del paquete `maqueta/`.
+
+## 7. Web con datos reales (Sprint 4)
+
+### 7.1 Flujo de pantallas web
+
+```mermaid
+flowchart TD
+    Inicio[Inicio] --> Catalogo[/catalogo<br/>foto real, filtros/]
+    Catalogo --> Detalle[/catalogo/id<br/>foto, clima, atracciones/]
+    Detalle -->|Cliente o Agente| Reserva[/reserva?paquete=id/]
+    Reserva -->|guardar| Reservas[/reservas/]
+    Reservas -->|PENDIENTE| Pagar[/reservas/id/pagar/]
+    Pagar -->|pago simulado| Factura[/reservas/id/factura/]
+    Reservas -->|pagada| Factura
+    Inicio -->|Administrador| Admin[/admin/destinos · paquetes · servicios/]
+    Admin -.->|pendiente: Integrantes 1 y 2| Constructor[/admin/paquetes/nuevo<br/>constructor de paquetes/]
+```
+
+### 7.2 Catálogo
+
+```text
++--------------------------------------------------+
+| Paquetes turísticos                              |
+| Precios de referencia en pesos colombianos (COP) |
+| Destino [____] Mín [__] Máx [__] Días [__] [Filtrar] [X]
+| +--------------+ +--------------+ +-----------+  |
+| | [ foto real ]| | [ foto real ]| | ...       |  |
+| | Foto: autor · CC BY-SA        | |           |  |
+| | Nombre       | | Nombre       | |           |  |
+| | Ciudad, País · N días         | |           |  |
+| | $ 1.200.000  | | $ 800.000    | |           |  |
+| | Precio de referencia [Ver]    | |           |  |
+| +--------------+ +--------------+ +-----------+  |
++--------------------------------------------------+
+```
+
+Si la API de fotos falla, la tarjeta muestra el degradado con el ícono de siempre.
+
+### 7.3 Detalle del paquete con información real del destino
+
+```text
++--------------------------------------------------+
+| Catálogo > Machu Picchu Aventura                 |
+| +----------------------------+ +---------------+ |
+| | [ foto grande del destino ]| | Precio de     | |
+| | Foto: autor · licencia ·   | | referencia    | |
+| |       Wikimedia Commons    | | $ 3.500.000   | |
+| | Nombre, Ciudad, País       | | 7 días        | |
+| | Descripción / Sobre el     | | [Reservar]    | |
+| | destino                    | | No es una     | |
+| +----------------------------+ | oferta        | |
+| | ! Aviso si una API falló   | | garantizada   | |
+| +----------------------------+ +---------------+ |
+| | Clima en Cusco   20 °C     |                   |
+| | Hoy | sáb | dom | lun      |                   |
+| | Open-Meteo · consultado el dd/MM/yyyy HH:mm    |
+| +----------------------------+                   |
+| | Qué visitar                |                   |
+| | - Coricancha (templo inca) |                   |
+| | - Iglesia de Santo Domingo |                   |
+| | Fuente · consultado el ... |                   |
+| +----------------------------+                   |
++--------------------------------------------------+
+```
+
+### 7.4 Panel de administración (base de datos)
+
+```text
++--------------------------------------------------+
+| Panel de administración                          |
+| [Destinos] [Paquetes] [Servicios]                |
+| Paquetes:                                        |
+| Id | Paquete (ciudad) | Precio | Días | Estado | [Desactivar]/[Activar]
+| Agregar paquete: nombre, descripción, precio COP, días, destino, activo
+| Servicios: filtro [Todos/Vuelos/Hoteles/Transportes]
+| Id | Tipo | Servicio | Costo | Estado | [Marcar no disponible]
++--------------------------------------------------+
+```
+
+Los paquetes no se borran (las reservas viejas los usan): se desactivan y dejan de salir en el catálogo.
+Un destino que usa un paquete no se puede borrar.
+
+### 7.5 Constructor de paquetes (pendiente)
+
+Se construye cuando estén mergeados `ProveedorVuelos` (Integrante 1) y `ProveedorHoteles` con el armado de
+paquetes en `PaqueteService` (Integrante 2).
+
+```text
++--------------------------------------------------+
+| Nuevo paquete con datos reales                   |
+| Origen [Bogotá v] Destino [Cusco v]              |
+| Ida [2026-12-15] Vuelta [2026-12-22] [Buscar]    |
+| +----------------------+ +---------------------+ |
+| | Vuelos encontrados   | | Hoteles encontrados | |
+| | ( ) Avianca 06:30    | | ( ) Hotel X         | |
+| |     $ 520.000        | |     $ 300.000/noche | |
+| |     [ver en avianca] | |     [ver en sitio]  | |
+| | ( ) LATAM 09:10 ...  | | ( ) Hotel Y ...     | |
+| | Fuente · consultado  | | Fuente · consultado | |
+| +----------------------+ +---------------------+ |
+| Nombre [______] Descripción [______]             |
+| Precio de referencia = vuelo + hotel x noches    |
+| [Guardar paquete]  (guarda la copia con su fecha)|
++--------------------------------------------------+
+```
+
+### 7.6 Relación entre pantallas y clases (Sprint 4)
+
+| Pantalla | Controlador | Services | Datos |
+|---|---|---|---|
+| Catálogo y detalle | `CatalogoWebController` | `PaqueteService`, `InfoDestinoService` | Paquetes de PostgreSQL; foto, clima y atracciones de las APIs (en caché) |
+| Reserva, reservas, pago y factura | `ReservaWebController` | `ReservaService`, `PagoService`, `FacturaService`, `ServicioReservableService` | PostgreSQL |
+| Administración | `AdminWebController` | `DestinoService`, `PaqueteService`, `ServicioReservableService` | PostgreSQL |

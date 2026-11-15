@@ -5,54 +5,68 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <main class="container py-5">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
-        <div>
-            <h1 class="h2 mb-1">Paquetes turísticos</h1>
-            <p class="text-muted mb-0">Elige tu próximo destino.</p>
-        </div>
-        <span class="badge text-bg-warning align-self-start align-self-md-end">Maqueta · datos de ejemplo</span>
+    <div class="mb-4">
+        <h1 class="h2 mb-1">Paquetes turísticos</h1>
+        <p class="text-muted mb-0">Elige tu próximo destino. Precios de referencia en pesos colombianos (COP).</p>
     </div>
 
-
-    <form th:action="@{/catalogo}" method="get" class="row g-2 align-items-end mb-4">
-        <div class="col-md-4">
-            <label for="destino" class="form-label small">Destino</label>
-            <input type="text" id="destino" name="destino" class="form-control" th:value="${destino}"
-                   placeholder="Ciudad o país">
-        </div>
-        <div class="col-6 col-md-3">
-            <label for="precioMin" class="form-label small">Precio mínimo (USD)</label>
-            <input type="number" id="precioMin" name="precioMin" class="form-control" min="0" step="1"
-                   th:value="${precioMin}">
-        </div>
-        <div class="col-6 col-md-3">
-            <label for="precioMax" class="form-label small">Precio máximo (USD)</label>
-            <input type="number" id="precioMax" name="precioMax" class="form-control" min="0" step="1"
-                   th:value="${precioMax}">
-        </div>
-        <div class="col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-tg flex-grow-1"><i class="bi bi-search"></i> Filtrar</button>
-            <a th:href="@{/catalogo}" class="btn btn-outline-secondary" title="Quitar filtros"><i class="bi bi-x-lg"></i></a>
+    <!-- Filtros de la interfaz: destino, precio y duración -->
+    <form th:action="@{/catalogo}" method="get" class="card tg-card tg-filtros p-3 mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="destino" class="form-label small">Destino</label>
+                <input type="text" id="destino" name="destino" class="form-control" th:value="${destino}"
+                       placeholder="Ciudad o país">
+            </div>
+            <div class="col-6 col-md-2">
+                <label for="precioMin" class="form-label small">Precio mínimo</label>
+                <input type="number" id="precioMin" name="precioMin" class="form-control" min="0" step="1000"
+                       th:value="${precioMin}" placeholder="$">
+            </div>
+            <div class="col-6 col-md-2">
+                <label for="precioMax" class="form-label small">Precio máximo</label>
+                <input type="number" id="precioMax" name="precioMax" class="form-control" min="0" step="1000"
+                       th:value="${precioMax}" placeholder="$">
+            </div>
+            <div class="col-6 col-md-2">
+                <label for="duracionMax" class="form-label small">Máximo de días</label>
+                <input type="number" id="duracionMax" name="duracionMax" class="form-control" min="1" max="60"
+                       th:value="${duracionMax}">
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-tg flex-grow-1"><i class="bi bi-search"></i> Filtrar</button>
+                <a th:href="@{/catalogo}" class="btn btn-outline-secondary" title="Quitar filtros"
+                   aria-label="Quitar filtros"><i class="bi bi-x-lg"></i></a>
+            </div>
         </div>
     </form>
 
     <p th:if="${#lists.isEmpty(paquetes)}" class="text-muted">No hay paquetes con esos filtros.</p>
 
     <div class="row g-4">
-        <div class="col-sm-6 col-lg-4" th:each="paquete : ${paquetes}">
+        <div class="col-sm-6 col-lg-4" th:each="paquete : ${paquetes}"
+             th:with="foto=${fotos.get(paquete.id)}">
             <div class="card tg-card h-100">
-                <div class="tg-card-img"><i class="bi bi-geo-alt"></i></div>
+                <!-- Foto real del destino (Wikimedia Commons); si no hay, el degradado con un ícono -->
+                <div th:if="${foto != null}" class="tg-card-foto">
+                    <img th:src="${foto.url()}" th:alt="${'Foto de ' + @formato.destinos(paquete)}" loading="lazy">
+                    <span class="tg-credito" th:text="${'Foto: ' + foto.autor() + (foto.licencia() != null ? ' · ' + foto.licencia() : '')}">Foto: autor · licencia</span>
+                </div>
+                <div th:unless="${foto != null}" class="tg-card-img"><i class="bi bi-geo-alt"></i></div>
+
                 <div class="card-body d-flex flex-column">
                     <h2 class="h5 card-title" th:text="${paquete.nombre}">Nombre del paquete</h2>
                     <p class="text-muted small mb-2">
                         <i class="bi bi-geo-alt"></i>
-                        <span th:text="${paquete.destino.ciudad + ', ' + paquete.destino.pais}">Destino, País</span>
+                        <span th:text="${@formato.destinos(paquete)}">Destino, País</span>
                         · <span th:text="${paquete.duracionDias + ' días'}">5 días</span>
                     </p>
                     <p class="card-text small flex-grow-1" th:text="${paquete.descripcion}">Descripción</p>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="tg-precio"
-                              th:text="${'USD ' + #numbers.formatDecimal(paquete.precio, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                    <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+                        <div>
+                            <span class="tg-precio" th:text="${@formato.cop(paquete.precio)}">$ 0</span>
+                            <div class="text-muted small">Precio de referencia</div>
+                        </div>
                         <a class="btn btn-tg btn-sm" th:href="@{/catalogo/{id}(id=${paquete.id})}">Ver detalle</a>
                     </div>
                 </div>

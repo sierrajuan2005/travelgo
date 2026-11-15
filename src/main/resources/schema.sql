@@ -123,6 +123,21 @@ CREATE TABLE IF NOT EXISTS reserva_servicio (
     PRIMARY KEY (reserva_id, servicio_id)
 );
 
+-- ---------- Cupones de descuento ----------
+-- El cupón va antes que la factura porque la factura lo referencia (cupon_id).
+CREATE TABLE IF NOT EXISTS cupon (
+    id            VARCHAR(36)   PRIMARY KEY,
+    codigo        VARCHAR(30)   NOT NULL UNIQUE,
+    tipo          VARCHAR(20)   NOT NULL CHECK (tipo IN ('PORCENTAJE', 'VALOR_FIJO')),
+    valor         NUMERIC(10,2) NOT NULL CHECK (valor > 0),
+    fecha_inicio  DATE          NOT NULL,
+    fecha_fin     DATE          NOT NULL,
+    usos_maximos  INTEGER       NOT NULL CHECK (usos_maximos >= 1),
+    usos_actuales INTEGER       NOT NULL DEFAULT 0 CHECK (usos_actuales >= 0),
+    activo        BOOLEAN       NOT NULL DEFAULT TRUE,
+    CHECK (fecha_fin >= fecha_inicio)
+);
+
 -- ---------- Facturas y pagos ----------
 -- La factura va antes que el pago porque el pago la referencia.
 CREATE TABLE IF NOT EXISTS factura (
@@ -133,8 +148,14 @@ CREATE TABLE IF NOT EXISTS factura (
     total         NUMERIC(10,2) NOT NULL CHECK (total > 0),
     estado        VARCHAR(30)   NOT NULL
                   CHECK (estado IN ('PENDIENTE', 'PAGADA', 'ANULADA')),
-    reserva_id    VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id)  -- una reserva, una factura
+    reserva_id    VARCHAR(36)   NOT NULL UNIQUE REFERENCES reserva (id),  -- una reserva, una factura
+    descuento     NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0),
+    cupon_id      VARCHAR(36)   REFERENCES cupon (id)                     -- cupón aplicado (opcional)
 );
+
+-- Compatibilidad con bases de datos existentes (CREATE TABLE IF NOT EXISTS no agrega columnas nuevas)
+ALTER TABLE factura ADD COLUMN IF NOT EXISTS descuento NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (descuento >= 0);
+ALTER TABLE factura ADD COLUMN IF NOT EXISTS cupon_id  VARCHAR(36) REFERENCES cupon (id);
 
 CREATE TABLE IF NOT EXISTS pago (
     id         VARCHAR(36)   PRIMARY KEY,
@@ -151,3 +172,13 @@ CREATE TABLE IF NOT EXISTS pago (
 CREATE INDEX IF NOT EXISTS idx_reserva_usuario       ON reserva (usuario_id);
 CREATE INDEX IF NOT EXISTS idx_servicio_disponible   ON servicio_reservable (disponible);
 CREATE INDEX IF NOT EXISTS idx_paquete_activo        ON paquete_turistico (activo);
+
+-- =====================================================================
+-- Sprint 4 - Integrante 4: índice para buscar servicios por su referencia externa
+-- =====================================================================
+CREATE INDEX IF NOT EXISTS idx_servicio_fuente_externo ON servicio_reservable (fuente, id_externo);
+
+-- Pendiente de decisión del equipo (moneda): si se guarda la moneda original de la API, agregar
+--   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS moneda VARCHAR(3);
+--   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS precio_original NUMERIC(12,2);
+-- y que Integrante 1 las lea/escriba en ServicioReservableDAOJdbc.

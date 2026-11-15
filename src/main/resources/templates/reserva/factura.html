@@ -55,14 +55,14 @@
                 <tr th:each="linea : ${lineas}">
                     <td th:text="${linea.descripcion()}">Servicio</td>
                     <td class="text-end"
-                        th:text="${'USD ' + #numbers.formatDecimal(linea.valor(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                        th:text="${@formato.cop(linea.valor())}">$ 0</td>
                 </tr>
                 </tbody>
                 <tfoot>
                 <tr>
                     <th>Total</th>
                     <th class="text-end tg-precio"
-                        th:text="${'USD ' + #numbers.formatDecimal(factura.total, 1, 'COMMA', 2, 'POINT')}">USD 0.00</th>
+                        th:text="${@formato.cop(factura.total)}">$ 0</th>
                 </tr>
                 </tfoot>
             </table>
