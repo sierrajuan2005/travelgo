@@ -71,6 +71,30 @@ public class SecurityConfig {
                 .requestMatchers("/api/reservas/**")
                     .denyAll()
 
+                // Pagos: clientes y agentes pueden registrar pagos.
+                // Solo agentes y administradores pueden consultar pagos.
+                .requestMatchers(HttpMethod.POST, "/api/pagos")
+                .hasAnyRole("CLIENTE", "AGENTE")
+
+                .requestMatchers(HttpMethod.GET, "/api/pagos/**")
+                    .hasAnyRole("AGENTE", "ADMINISTRADOR")
+
+                .requestMatchers("/api/pagos/**")
+                    .denyAll()
+
+                // Cupones: consulta para usuarios autenticados.
+                .requestMatchers(HttpMethod.GET, "/api/cupones/**")
+                    .authenticated()
+
+                // Crear y desactivar cupones: solo administrador.
+                .requestMatchers(HttpMethod.POST, "/api/cupones")
+                    .hasRole("ADMINISTRADOR")
+
+                .requestMatchers(HttpMethod.PUT, "/api/cupones/*/desactivar")
+                    .hasRole("ADMINISTRADOR")
+
+                .requestMatchers("/api/cupones/**")
+                    .denyAll()
                 // Cualquier otra ruta
                 .anyRequest().authenticated()
             )

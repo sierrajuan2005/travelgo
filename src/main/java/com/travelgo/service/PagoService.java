@@ -13,6 +13,7 @@ import com.travelgo.model.Reserva;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -44,43 +45,74 @@ public class PagoService {
      * marca la factura como pagada, confirma la reserva y gasta un uso del cupón.
      * Todo va en una transacción: se guarda todo o nada.
      */
+    /**
+ * Paga una reserva verificando que el usuario autenticado sea su propietario.
+ * Se conserva para las llamadas existentes de consola y pruebas.
+ */
     @Transactional
-    public Pago pagar(PagoRequest request) {
+    public Pago pagar(PagoRequest request, String correoAutenticado) {
+        return pagar(request, correoAutenticado, false);
+    }
+
+/**
+ * Paga una reserva.
+ * Los agentes pueden pagar reservas de otros clientes.
+ */
+    @Transactional
+    public Pago pagar(PagoRequest request, String correoAutenticado,
+                      boolean puedePagarReservasAjena) {
+
         Reserva reserva = reservaDAO.buscarPorId(request.reservaId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Reserva no encontrada: " + request.reservaId()));
 
+        // Validar propietario, excepto cuando el usuario sea agente autorizado.
+        if (!puedePagarReservasAjena
+                && !reserva.getUsuario().getCorreo().equalsIgnoreCase(correoAutenticado)) {
+            throw new AccessDeniedException(
+                    "No tienes permiso para pagar esta reserva.");
+        }
+
         if (pagoDAO.buscarPorReservaId(reserva.getId()).isPresent()) {
-            throw new IllegalStateException("La reserva " + reserva.getId() + " ya fue pagada.");
+            throw new IllegalStateException(
+                    "La reserva " + reserva.getId() + " ya fue pagada.");
         }
+
         if (reserva.getEstadoEnum() == EstadoReserva.CANCELADA) {
-            throw new IllegalStateException("No se puede pagar una reserva cancelada.");
+            throw new IllegalStateException(
+                    "No se puede pagar una reserva cancelada.");
         }
 
-        Factura factura = facturaDAO.buscarPorReservaId(reserva.getId())
-                .orElseGet(() -> new Factura(reserva)); // falla si la reserva no tiene servicios
+            Factura factura = facturaDAO.buscarPorReservaId(reserva.getId())
+                .orElseGet(() -> new Factura(reserva));
 
-        Cupon cupon = null;
+            Cupon cupon = null;
+
         if (request.codigoCupon() != null && !request.codigoCupon().isBlank()) {
             if (cuponService == null) {
-                throw new IllegalStateException("Los cupones no están disponibles en este contexto.");
+                throw new IllegalStateException(
+                        "Los cupones no están disponibles en este contexto.");
             }
-            cupon = cuponService.obtenerVigente(request.codigoCupon()); // falla si no está vigente
+
+            cupon = cuponService.obtenerVigente(request.codigoCupon());
             factura.aplicarCupon(cupon);
         }
 
-        Pago pago = new Pago(factura, request.metodo()); // cobra el total ya descontado
+        Pago pago = new Pago(factura, request.metodo());
 
         factura.marcarPagada();
         reserva.confirmarReserva();
+
         if (cupon != null) {
             cuponService.registrarUso(cupon);
         }
 
         reservaDAO.guardar(reserva);
         facturaDAO.guardar(factura);
+
         return pagoDAO.guardar(pago);
     }
+
 
     public Pago obtener(String id) {
         return pagoDAO.buscarPorId(id)

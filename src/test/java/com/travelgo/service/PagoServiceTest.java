@@ -24,6 +24,8 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+
 import com.travelgo.model.Cupon;
 import com.travelgo.model.TipoCupon;
 import java.time.LocalDate;
@@ -100,7 +102,7 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
         guardadosDevuelvenElMismo();
 
-        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_CREDITO));
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_CREDITO), usuario.getCorreo());
 
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstadoEnum());
         assertEquals(EstadoPago.APROBADO, pago.getEstado());
@@ -120,7 +122,7 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
         guardadosDevuelvenElMismo();
 
-        service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO));
+        service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO), usuario.getCorreo());
 
         InOrder orden = inOrder(reservaDAO, facturaDAO, pagoDAO);
         orden.verify(reservaDAO).guardar(reserva);
@@ -138,7 +140,7 @@ class PagoServiceTest {
         when(facturaDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.of(pendiente));
         guardadosDevuelvenElMismo();
 
-        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO));
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO), usuario.getCorreo());
 
         assertSame(pendiente, pago.getFactura());
         assertEquals(EstadoFactura.PAGADA, pendiente.getEstado());
@@ -153,7 +155,7 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
         guardadosDevuelvenElMismo();
 
-        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TRANSFERENCIA));
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TRANSFERENCIA), usuario.getCorreo());
 
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstadoEnum());
         assertEquals(600.0, pago.getMonto(), 0.001);
@@ -167,7 +169,9 @@ class PagoServiceTest {
         when(reservaDAO.buscarPorId("no-existe")).thenReturn(Optional.empty());
 
         assertThrows(RecursoNoEncontradoException.class,
-                () -> service.pagar(new PagoRequest("no-existe", MetodoPago.EFECTIVO)));
+                () -> service.pagar(
+                            new PagoRequest("no-existe", MetodoPago.EFECTIVO),usuario.getCorreo()
+                        ));
 
         verify(reservaDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
@@ -183,7 +187,9 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.of(pagoExistente));
 
         assertThrows(IllegalStateException.class,
-                () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO)));
+                () -> service.pagar(
+                            new PagoRequest(reserva.getId(), MetodoPago.TARJETA_DEBITO),usuario.getCorreo()
+                        ));
 
         verify(reservaDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
@@ -199,7 +205,9 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class,
-                () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO)));
+                () -> service.pagar(
+                            new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO),usuario.getCorreo()
+                        ));
 
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstadoEnum());
         verify(reservaDAO, never()).guardar(any());
@@ -216,7 +224,10 @@ class PagoServiceTest {
 
         // La excepción la lanza new Factura(reserva): no se puede facturar una reserva sin servicios
         assertThrows(IllegalArgumentException.class,
-                () -> service.pagar(new PagoRequest(vacia.getId(), MetodoPago.EFECTIVO)));
+        () -> service.pagar(
+                new PagoRequest(vacia.getId(), MetodoPago.EFECTIVO),
+                usuario.getCorreo()
+        ));
 
         assertEquals(EstadoReserva.PENDIENTE, vacia.getEstadoEnum());
         verify(reservaDAO, never()).guardar(any());
@@ -224,6 +235,24 @@ class PagoServiceTest {
         verify(pagoDAO, never()).guardar(any());
     }
 
+    @Test
+    @DisplayName("Un usuario no puede pagar una reserva ajena")
+    void pagarReservaAjena() {
+        Reserva reserva = reservaConServicios();
+
+        when(reservaDAO.buscarPorId(reserva.getId()))
+            .thenReturn(Optional.of(reserva));
+
+        assertThrows(AccessDeniedException.class,
+                () -> service.pagar(
+                        new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO),
+                        "otro@correo.com"
+                ));
+
+        verify(reservaDAO, never()).guardar(any());
+        verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
+    }
     // ---------- consultas ----------
 
     @Test
@@ -281,7 +310,10 @@ class PagoServiceTest {
         when(cuponService.obtenerVigente("verano10")).thenReturn(cupon);
         guardadosDevuelvenElMismo();
 
-        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "verano10"));
+        Pago pago = service.pagar(
+        new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "verano10"),
+        reserva.getUsuario().getCorreo()
+);
 
         assertEquals(540.0, pago.getMonto(), 0.001);
         assertEquals(60.0, pago.getFactura().getDescuento(), 0.001);
@@ -298,7 +330,7 @@ class PagoServiceTest {
         when(cuponService.obtenerVigente("VENCIDO")).thenThrow(new IllegalStateException("no vigente"));
 
         assertThrows(IllegalStateException.class,
-                () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VENCIDO")));
+                () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VENCIDO"), reserva.getUsuario().getCorreo()));
 
         verify(reservaDAO, never()).guardar(any());
         verify(facturaDAO, never()).guardar(any());
@@ -315,7 +347,7 @@ class PagoServiceTest {
         when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class,
-                () -> sinCupones.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VERANO10")));
+                () -> sinCupones.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VERANO10"), reserva.getUsuario().getCorreo()));
     }
 
 }

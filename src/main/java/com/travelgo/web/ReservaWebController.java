@@ -186,7 +186,14 @@ public class ReservaWebController {
 			return "redirect:/reservas/" + id + "/pagar";
 		}
 		try {
-			pagoService.pagar(new PagoRequest(reserva.getId(), metodo));
+			boolean esAgente = autenticacion.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
+
+pagoService.pagar(
+        new PagoRequest(reserva.getId(), metodo),
+        autenticacion.getName(),
+        esAgente
+);
 		} catch (IllegalArgumentException | IllegalStateException | RecursoNoEncontradoException e) {
 			redirect.addFlashAttribute("error", "No se pudo pagar: " + e.getMessage());
 			return "redirect:/reservas/" + id + "/pagar";

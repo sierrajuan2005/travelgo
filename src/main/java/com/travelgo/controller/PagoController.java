@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -23,11 +24,17 @@ public class PagoController {
 
     /** Paga una reserva y devuelve el pago junto con su factura. */
     @PostMapping
-    public ResponseEntity<PagoRespuestaDTO> pagar(@Valid @RequestBody PagoRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(PagoRespuestaDTO.desde(service.pagar(request)));
-    }
+     public ResponseEntity<PagoRespuestaDTO> pagar(
+            @Valid @RequestBody PagoRequest request,
+            Authentication authentication) {
 
+        boolean esAgente = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(PagoRespuestaDTO.desde(
+                        service.pagar(request, authentication.getName(), esAgente)));
+    }
     @GetMapping
     public List<PagoRespuestaDTO> listar() {
         return service.listar().stream().map(PagoRespuestaDTO::desde).toList();

@@ -308,7 +308,10 @@ public class ConsolaMaqueta {
 		MetodoPago metodo = metodos[leerNumero("Elige el método de pago: ", 1, metodos.length) - 1];
 
 		try {
-			Pago pago = BackendConsola.PAGOS.pagar(new PagoRequest(reserva.getId(), metodo));
+			Pago pago = BackendConsola.PAGOS.pagar(
+        		new PagoRequest(reserva.getId(), metodo),
+				reserva.getUsuario().getCorreo()
+			);
 			System.out.println("Pago registrado.");
 			imprimirFactura(pago.getFactura());
 		} catch (IllegalArgumentException | IllegalStateException e) {

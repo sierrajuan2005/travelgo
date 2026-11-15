@@ -12,6 +12,9 @@ import com.travelgo.model.Usuario;
 import org.springframework.stereotype.Service;
 import com.travelgo.model.PaqueteTuristico;
 import org.springframework.security.access.AccessDeniedException;
+import com.travelgo.dao.PagoDAO;
+import com.travelgo.model.EstadoPago;
+import com.travelgo.model.Pago;
 
 
 import java.util.List;
@@ -24,12 +27,14 @@ public class ReservaService {
     private final ServicioReservableDAO servicioDAO;
     private final UsuarioDAO usuarioDAO;
     private final PaqueteDAO paqueteDAO;
+    private final PagoDAO pagoDAO;
 
-    public ReservaService(ReservaDAO reservaDAO,ServicioReservableDAO servicioDAO,UsuarioDAO usuarioDAO,PaqueteDAO paqueteDAO) {
+    public ReservaService(ReservaDAO reservaDAO,ServicioReservableDAO servicioDAO,UsuarioDAO usuarioDAO,PaqueteDAO paqueteDAO,PagoDAO pagoDAO) {
         this.reservaDAO = reservaDAO;
         this.servicioDAO = servicioDAO;
         this.usuarioDAO = usuarioDAO;
         this.paqueteDAO = paqueteDAO;
+        this.pagoDAO = pagoDAO;
     }
 
     /** Crea la reserva; si un servicio no existe o no está disponible, no se guarda nada. */
@@ -86,6 +91,7 @@ public class ReservaService {
 
     public Reserva confirmarPropia(String id, String correo) {
         Reserva reserva = obtenerPropia(id, correo);
+        verificarPagoAprobado(reserva);
         reserva.confirmarReserva();
         return reservaDAO.guardar(reserva);
     }
@@ -105,6 +111,7 @@ public class ReservaService {
 
     public Reserva confirmarReserva(String id) {
         Reserva reserva = obtener(id);
+        verificarPagoAprobado(reserva);
         reserva.confirmarReserva();
         return reservaDAO.guardar(reserva);
     }
@@ -113,5 +120,17 @@ public class ReservaService {
         Reserva reserva = obtener(id);
         reserva.cancelarReserva();
         return reservaDAO.guardar(reserva);
+    }
+
+    private void verificarPagoAprobado(Reserva reserva) {
+        Pago pago = pagoDAO.buscarPorReservaId(reserva.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No se puede confirmar una reserva sin pagar."));
+
+        if (pago.getEstado() != EstadoPago.APROBADO) {
+            throw new IllegalStateException(
+                    "No se puede confirmar una reserva con un pago no aprobado.");
+        }
+
     }
 }
