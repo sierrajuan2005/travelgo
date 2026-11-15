@@ -1,41 +1,45 @@
 package com.travelgo.service;
 
 import com.travelgo.dao.PaqueteDAO;
+import com.travelgo.dao.PagoDAO;
 import com.travelgo.dao.ReservaDAO;
 import com.travelgo.dao.ServicioReservableDAO;
 import com.travelgo.dao.UsuarioDAO;
 import com.travelgo.dto.ReservaRequest;
 import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.EstadoPago;
 import com.travelgo.model.EstadoReserva;
+import com.travelgo.model.Factura;
 import com.travelgo.model.Hotel;
+import com.travelgo.model.MetodoPago;
+import com.travelgo.model.Pago;
 import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.Transporte;
 import com.travelgo.model.Usuario;
 import com.travelgo.model.Vuelo;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Pruebas unitarias de ReservaService. Los DAO se simulan con Mockito, así que solo
@@ -59,6 +63,8 @@ class ReservaServiceTest {
     private UsuarioDAO usuarioDAO;
     @Mock
     private PaqueteDAO paqueteDAO;
+    @Mock
+    private PagoDAO pagoDAO;
 
     @InjectMocks
     private ReservaService service;
@@ -79,6 +85,10 @@ class ReservaServiceTest {
         Reserva reserva = new Reserva(usuario, null);
         reserva.agregarServicio(vuelo);
         return reserva;
+    }
+    private Pago pagoAprobado(Reserva reserva) {
+        Factura factura = new Factura(reserva);
+        return new Pago(factura, MetodoPago.TARJETA_CREDITO);
     }
 
     // ---------- crearReserva ----------
@@ -117,10 +127,9 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Crear reserva con usuario autenticado inexistente lanza RecursoNoEncontradoException y no guarda")
+    @DisplayName("Crear reserva con usuario autenticado inexistente")
     void crearReservaUsuarioInexistente() {
         when(usuarioDAO.buscarPorCorreo("nadie@correo.com")).thenReturn(Optional.empty());
-
         assertThrows(RecursoNoEncontradoException.class,
                 () -> service.crearReserva(new ReservaRequest(List.of("v1"), null), "nadie@correo.com"));
 
@@ -128,7 +137,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Crear reserva con paquete inexistente lanza RecursoNoEncontradoException y no guarda")
+    @DisplayName("Crear reserva con paquete inexistente")
     void crearReservaPaqueteInexistente() {
         when(usuarioDAO.buscarPorCorreo(CORREO)).thenReturn(Optional.of(usuario));
         when(paqueteDAO.buscarPorId(99L)).thenReturn(Optional.empty());
@@ -140,7 +149,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Crear reserva con un servicio inexistente lanza RecursoNoEncontradoException y no guarda")
+    @DisplayName("Crear reserva con un servicio inexistente")
     void crearReservaServicioInexistente() {
         when(usuarioDAO.buscarPorCorreo(CORREO)).thenReturn(Optional.of(usuario));
         when(servicioDAO.buscarPorId("x")).thenReturn(Optional.empty());
@@ -152,7 +161,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Crear reserva con un servicio no disponible lanza IllegalStateException y no guarda")
+    @DisplayName("Crear reserva con un servicio no disponible")
     void crearReservaServicioNoDisponible() {
         Transporte agotado = new Transporte("t1", 50.0, false, "Bus", "Bogotá", "Tunja",
                 LocalDateTime.of(2026, 12, 2, 6, 0));
@@ -190,7 +199,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Obtener una reserva inexistente lanza RecursoNoEncontradoException")
+    @DisplayName("Obtener una reserva inexistente")
     void obtenerInexistente() {
         when(reservaDAO.buscarPorId("no-existe")).thenReturn(Optional.empty());
 
@@ -227,7 +236,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Obtener la reserva de otro usuario lanza AccessDeniedException")
+    @DisplayName("Obtener la reserva de otro usuario es denegado")
     void obtenerPropiaAjena() {
         Reserva reserva = reservaConServicios();
         when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
@@ -247,7 +256,7 @@ class ReservaServiceTest {
     }
 
     @Test
-    @DisplayName("Listar propias con un usuario inexistente lanza RecursoNoEncontradoException")
+    @DisplayName("Listar propias con un usuario inexistente")
     void listarPropiasUsuarioInexistente() {
         when(usuarioDAO.buscarPorCorreo("nadie@correo.com")).thenReturn(Optional.empty());
 
@@ -265,6 +274,19 @@ class ReservaServiceTest {
 
         assertEquals(EstadoReserva.CONFIRMADA, confirmada.getEstadoEnum());
         verify(reservaDAO).guardar(reserva);
+    }
+
+    @Test
+    @DisplayName("No permite confirmar reserva propia sin pago")
+    void confirmarPropiaSinPago() {
+        Reserva reserva = reservaConServicios();
+        when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.confirmarPropia(reserva.getId(), CORREO));
+
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstadoEnum());
+        verify(reservaDAO, never()).guardar(any());
     }
 
     @Test
