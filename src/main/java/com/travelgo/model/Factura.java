@@ -5,6 +5,7 @@ import java.util.UUID;
 
 /**
  * Representa la factura de una reserva. Nace pendiente y pasa a pagada cuando se registra su pago.
+ * Puede llevar un cupón de descuento, que se aplica mientras está pendiente.
  */
 public class Factura {
     private final String id;
@@ -12,7 +13,9 @@ public class Factura {
     private final Reserva reserva;
     private final LocalDate fechaEmision;
     private final double subtotal;
-    private final double total;
+    private double total;
+    private double descuento;
+    private Cupon cupon;
     private EstadoFactura estado;
 
     /**
@@ -35,13 +38,21 @@ public class Factura {
         this.reserva = reserva;
         this.fechaEmision = LocalDate.now();
         this.subtotal = subtotal;
-        this.total = subtotal; // sin impuestos ni descuentos por ahora
+        this.total = subtotal;
+        this.descuento = 0.0;
+        this.cupon = null;
         this.estado = EstadoFactura.PENDIENTE;
     }
 
-    /** Reconstruye una factura con los datos guardados en la base de datos. */
+    /** Reconstruye una factura sin cupón con los datos guardados en la base de datos. */
     public Factura(String id, String numero, Reserva reserva, LocalDate fechaEmision,
                    double subtotal, double total, EstadoFactura estado) {
+        this(id, numero, reserva, fechaEmision, subtotal, total, estado, 0.0, null);
+    }
+
+    /** Reconstruye una factura con los datos guardados en la base de datos, incluido su cupón. */
+    public Factura(String id, String numero, Reserva reserva, LocalDate fechaEmision,
+                   double subtotal, double total, EstadoFactura estado, double descuento, Cupon cupon) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("El id de la factura es obligatorio.");
         }
@@ -54,13 +65,41 @@ public class Factura {
         if (!Double.isFinite(subtotal) || subtotal < 0 || !Double.isFinite(total) || total < 0) {
             throw new IllegalArgumentException("El subtotal y el total deben ser números válidos y no negativos.");
         }
+        if (!Double.isFinite(descuento) || descuento < 0) {
+            throw new IllegalArgumentException("El descuento debe ser un número válido y no negativo.");
+        }
         this.id = id;
         this.numero = numero;
         this.reserva = reserva;
         this.fechaEmision = fechaEmision;
         this.subtotal = subtotal;
         this.total = total;
+        this.descuento = descuento;
+        this.cupon = cupon;
         this.estado = estado;
+    }
+
+    /**
+     * Aplica un cupón: calcula el descuento sobre el subtotal y deja el nuevo total.
+     * Solo se puede mientras la factura está pendiente y una sola vez.
+     */
+    public void aplicarCupon(Cupon cupon) {
+        if (cupon == null) {
+            throw new IllegalArgumentException("El cupón es obligatorio.");
+        }
+        if (estado != EstadoFactura.PENDIENTE) {
+            throw new IllegalStateException("Solo se puede aplicar un cupón a una factura pendiente.");
+        }
+        if (this.cupon != null) {
+            throw new IllegalStateException("La factura ya tiene un cupón aplicado.");
+        }
+        double calculado = cupon.calcularDescuento(subtotal);
+        if (calculado >= subtotal) {
+            throw new IllegalArgumentException("El descuento no puede cubrir el total de la factura.");
+        }
+        this.descuento = calculado;
+        this.total = Math.round((subtotal - calculado) * 100.0) / 100.0;
+        this.cupon = cupon;
     }
 
     /** Marca la factura como pagada. */
@@ -74,38 +113,13 @@ public class Factura {
         estado = EstadoFactura.PAGADA;
     }
 
-    /** Obtiene el id de la factura. */
-    public String getId() {
-        return id;
-    }
-
-    /** Obtiene el número de factura. */
-    public String getNumero() {
-        return numero;
-    }
-
-    /** Obtiene la reserva facturada. */
-    public Reserva getReserva() {
-        return reserva;
-    }
-
-    /** Obtiene la fecha de emisión. */
-    public LocalDate getFechaEmision() {
-        return fechaEmision;
-    }
-
-    /** Obtiene el subtotal. */
-    public double getSubtotal() {
-        return subtotal;
-    }
-
-    /** Obtiene el total. */
-    public double getTotal() {
-        return total;
-    }
-
-    /** Obtiene el estado de la factura. */
-    public EstadoFactura getEstado() {
-        return estado;
-    }
+    public String getId() { return id; }
+    public String getNumero() { return numero; }
+    public Reserva getReserva() { return reserva; }
+    public LocalDate getFechaEmision() { return fechaEmision; }
+    public double getSubtotal() { return subtotal; }
+    public double getTotal() { return total; }
+    public double getDescuento() { return descuento; }
+    public Cupon getCupon() { return cupon; }
+    public EstadoFactura getEstado() { return estado; }
 }

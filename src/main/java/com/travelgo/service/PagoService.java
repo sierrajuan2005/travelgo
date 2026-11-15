@@ -5,10 +5,12 @@ import com.travelgo.dao.PagoDAO;
 import com.travelgo.dao.ReservaDAO;
 import com.travelgo.dto.PagoRequest;
 import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.Cupon;
 import com.travelgo.model.EstadoReserva;
 import com.travelgo.model.Factura;
 import com.travelgo.model.Pago;
 import com.travelgo.model.Reserva;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,18 +23,26 @@ public class PagoService {
     private final PagoDAO pagoDAO;
     private final FacturaDAO facturaDAO;
     private final ReservaDAO reservaDAO;
+    private final CuponService cuponService;
 
+    /** Versión sin cupones (la usa la consola de pruebas, que arma los objetos a mano). */
     public PagoService(PagoDAO pagoDAO, FacturaDAO facturaDAO, ReservaDAO reservaDAO) {
+        this(pagoDAO, facturaDAO, reservaDAO, null);
+    }
+
+    @Autowired
+    public PagoService(PagoDAO pagoDAO, FacturaDAO facturaDAO, ReservaDAO reservaDAO,
+                       CuponService cuponService) {
         this.pagoDAO = pagoDAO;
         this.facturaDAO = facturaDAO;
         this.reservaDAO = reservaDAO;
+        this.cuponService = cuponService;
     }
 
     /**
-     * Paga una reserva: obtiene (o emite) su factura, registra el pago,
-     * marca la factura como pagada y confirma la reserva.
-     * Todas las validaciones van antes de modificar algo, y @Transactional
-     * hace que se guarde todo o nada.
+     * Paga una reserva: obtiene (o emite) su factura, aplica el cupón si viene uno, registra el pago,
+     * marca la factura como pagada, confirma la reserva y gasta un uso del cupón.
+     * Todo va en una transacción: se guarda todo o nada.
      */
     @Transactional
     public Pago pagar(PagoRequest request) {
@@ -49,10 +59,23 @@ public class PagoService {
 
         Factura factura = facturaDAO.buscarPorReservaId(reserva.getId())
                 .orElseGet(() -> new Factura(reserva)); // falla si la reserva no tiene servicios
-        Pago pago = new Pago(factura, request.metodo()); // falla si la factura no está pendiente
+
+        Cupon cupon = null;
+        if (request.codigoCupon() != null && !request.codigoCupon().isBlank()) {
+            if (cuponService == null) {
+                throw new IllegalStateException("Los cupones no están disponibles en este contexto.");
+            }
+            cupon = cuponService.obtenerVigente(request.codigoCupon()); // falla si no está vigente
+            factura.aplicarCupon(cupon);
+        }
+
+        Pago pago = new Pago(factura, request.metodo()); // cobra el total ya descontado
 
         factura.marcarPagada();
         reserva.confirmarReserva();
+        if (cupon != null) {
+            cuponService.registrarUso(cupon);
+        }
 
         reservaDAO.guardar(reserva);
         facturaDAO.guardar(factura);
