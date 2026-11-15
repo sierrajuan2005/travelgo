@@ -24,7 +24,9 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import com.travelgo.model.Cupon;
+import com.travelgo.model.TipoCupon;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -52,9 +54,12 @@ class PagoServiceTest {
     private FacturaDAO facturaDAO;
     @Mock
     private ReservaDAO reservaDAO;
+    @Mock
+    private CuponService cuponService;
 
     @InjectMocks
     private PagoService service;
+
 
     private Usuario usuario;
     private Vuelo vuelo;
@@ -264,4 +269,53 @@ class PagoServiceTest {
 
         assertEquals(pagos, service.listar());
     }
+
+    @Test
+    @DisplayName("Pagar con cupón vigente: cobra el total con descuento y gasta un uso")
+    void pagarConCupon() {
+        Reserva reserva = reservaConServicios(); // total 600
+        Cupon cupon = new Cupon("VERANO10", TipoCupon.PORCENTAJE, 10,
+                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), 5);
+        when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
+        when(cuponService.obtenerVigente("verano10")).thenReturn(cupon);
+        guardadosDevuelvenElMismo();
+
+        Pago pago = service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "verano10"));
+
+        assertEquals(540.0, pago.getMonto(), 0.001);
+        assertEquals(60.0, pago.getFactura().getDescuento(), 0.001);
+        assertSame(cupon, pago.getFactura().getCupon());
+        verify(cuponService).registrarUso(cupon);
+    }
+
+    @Test
+    @DisplayName("Un cupón no vigente impide el pago y no guarda nada")
+    void pagarConCuponNoVigente() {
+        Reserva reserva = reservaConServicios();
+        when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
+        when(cuponService.obtenerVigente("VENCIDO")).thenThrow(new IllegalStateException("no vigente"));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VENCIDO")));
+
+        verify(reservaDAO, never()).guardar(any());
+        verify(facturaDAO, never()).guardar(any());
+        verify(pagoDAO, never()).guardar(any());
+        verify(cuponService, never()).registrarUso(any());
+    }
+
+    @Test
+    @DisplayName("Sin servicio de cupones (consola), pedir un cupón lanza IllegalStateException")
+    void pagarConCuponSinServicio() {
+        PagoService sinCupones = new PagoService(pagoDAO, facturaDAO, reservaDAO);
+        Reserva reserva = reservaConServicios();
+        when(reservaDAO.buscarPorId(reserva.getId())).thenReturn(Optional.of(reserva));
+        when(pagoDAO.buscarPorReservaId(reserva.getId())).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class,
+                () -> sinCupones.pagar(new PagoRequest(reserva.getId(), MetodoPago.EFECTIVO, "VERANO10")));
+    }
+
 }
