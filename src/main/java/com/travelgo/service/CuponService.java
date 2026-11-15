@@ -62,4 +62,9 @@ public class CuponService {
         cupon.desactivar();
         return cuponDAO.guardar(cupon);
     }
+    /** Gasta un uso del cupón y lo guarda. */
+    public Cupon registrarUso(Cupon cupon) {
+        cupon.registrarUso();
+        return cuponDAO.guardar(cupon);
+    }
 }
