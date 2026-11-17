@@ -78,6 +78,14 @@ ALTER TABLE servicio_reservable
     ADD COLUMN IF NOT EXISTS enlace_reserva TEXT;
 
 
+-- Servicios (vuelos, hoteles, transportes) que componen un paquete.
+-- Va después de paquete_turistico y servicio_reservable porque referencia a las dos.
+CREATE TABLE IF NOT EXISTS paquete_servicio (
+    paquete_id  BIGINT      NOT NULL REFERENCES paquete_turistico (id) ON DELETE CASCADE,
+    servicio_id VARCHAR(36) NOT NULL REFERENCES servicio_reservable (id),
+    PRIMARY KEY (paquete_id, servicio_id)
+);
+
 CREATE TABLE IF NOT EXISTS vuelo (
     id            VARCHAR(36)  PRIMARY KEY REFERENCES servicio_reservable (id) ON DELETE CASCADE,
     aerolinea     VARCHAR(100) NOT NULL,
