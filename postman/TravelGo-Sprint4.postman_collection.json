@@ -1,8 +1,11 @@
 {
   "info": {
+    "_postman_id": "63badf63-73d9-4c5a-b92a-91b00f832c22",
     "name": "TravelGo - Sprint 4 (búsqueda, destinos y hoteles reales)",
     "description": "Colección de Integrante 4. Arrancar la app con DB_PASSWORD (y IGNAV_API_KEY si se prueban vuelos). Ejecutar primero '00 Sesión'. No guardar llaves de APIs en esta colección. Los endpoints de vuelos y paquetes reales se agregan cuando existan.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "60214475",
+    "_collection_link": "https://go.postman.co/collection/60214475-63badf63-73d9-4c5a-b92a-91b00f832c22?source=collection_link"
   },
   "item": [
     {
@@ -10,30 +13,6 @@
       "item": [
         {
           "name": "Login como ADMINISTRADOR",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/login"
-            },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "username",
-                  "value": "{{emailAdmin}}"
-                },
-                {
-                  "key": "password",
-                  "value": "{{passAdmin}}"
-                },
-                {
-                  "key": "_csrf",
-                  "value": "{{csrf}}"
-                }
-              ]
-            }
-          },
           "event": [
             {
               "listen": "prerequest",
@@ -63,7 +42,32 @@
           ],
           "protocolProfileBehavior": {
             "followRedirects": false
-          }
+          },
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "{{emailAdmin}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{passAdmin}}"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrf}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -72,13 +76,6 @@
       "item": [
         {
           "name": "Sin filtros",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -90,17 +87,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Por destino (sin tildes)",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=bogota"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Por destino (sin tildes)",
           "event": [
             {
               "listen": "test",
@@ -112,17 +110,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Por rango de precio",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?precioMin=800000&precioMax=1500000"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Por rango de precio",
           "event": [
             {
               "listen": "test",
@@ -134,17 +133,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Por duración",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?duracionMin=4&duracionMax=5"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Por duración",
           "event": [
             {
               "listen": "test",
@@ -156,17 +156,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Filtros combinados",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=colombia&precioMax=2000000&duracionMin=3"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Filtros combinados",
           "event": [
             {
               "listen": "test",
@@ -177,17 +178,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Sin resultados",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?destino=tokio"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Sin resultados",
           "event": [
             {
               "listen": "test",
@@ -199,17 +201,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Rango de precio al revés (error)",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/paquetes/buscar?precioMin=5000000&precioMax=100"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Rango de precio al revés (error)",
           "event": [
             {
               "listen": "test",
@@ -220,7 +223,15 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -229,13 +240,6 @@
       "item": [
         {
           "name": "Información completa del destino",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/destinos/1/info"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -246,17 +250,18 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         },
         {
           "name": "Atracciones",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/destinos/1/atracciones"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -267,17 +272,18 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         },
         {
           "name": "Clima",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/destinos/1/clima"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -288,17 +294,18 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         },
         {
           "name": "Foto con atribución",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/destinos/1/foto"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -309,17 +316,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Destino que no existe",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/destinos/99999/info"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Destino que no existe",
           "event": [
             {
               "listen": "test",
@@ -330,7 +338,15 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -339,13 +355,6 @@
       "item": [
         {
           "name": "Hoteles de una ciudad",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/hoteles-reales?ciudad={{ciudadClave}}&limite=5"
-            }
-          },
           "event": [
             {
               "listen": "test",
@@ -357,17 +366,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Tarifa de un hotel (usa el primero de la lista)",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/hoteles-reales/{{hotelClave}}/tarifa?entrada={{fechaEntrada}}&salida={{fechaSalida}}&habitaciones=1&adultos=2"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Tarifa de un hotel (usa el primero de la lista)",
           "event": [
             {
               "listen": "test",
@@ -378,17 +388,18 @@
                 ]
               }
             }
-          ]
-        },
-        {
-          "name": "Fechas inválidas (salida antes de entrada)",
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/hoteles-reales/{{hotelClave}}/tarifa?entrada=2030-01-10&salida=2030-01-05"
+              "raw": ""
             }
           },
+          "response": []
+        },
+        {
+          "name": "Fechas inválidas (salida antes de entrada)",
           "event": [
             {
               "listen": "test",
@@ -399,7 +410,42 @@
                 ]
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Vuelos Reales",
+      "item": [
+        {
+          "name": "Buscar vuelos reales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+                "raw": "{{baseUrl}}/api/vuelos-reales?origen=BOG&destino=MDE&fechaSalida=2026-12-10"
+              }
+            },
+          "response": []
+        },
+        {
+          "name": "Obtener enlace de reserva de vuelo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+                "raw": "{{baseUrl}}/api/vuelos-reales/{{idExterno}}/enlace-reserva"
+            }
+          },
+          "response": []
         }
       ]
     }
@@ -415,7 +461,7 @@
     },
     {
       "key": "passAdmin",
-      "value": "Admin123*"
+      "value": ""
     },
     {
       "key": "csrf",
@@ -436,6 +482,10 @@
     {
       "key": "fechaSalida",
       "value": "2026-12-13"
+    },
+    {
+      "key": "idExterno",
+      "value": ""
     }
   ]
 }
