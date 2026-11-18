@@ -82,6 +82,18 @@ public class SecurityConfig {
                 .requestMatchers("/api/pagos/**")
                     .denyAll()
 
+                // Vuelos reales: consulta para usuarios autenticados.
+                .requestMatchers(HttpMethod.GET, "/api/vuelos-reales/**")
+                    .authenticated()
+                .requestMatchers("/api/vuelos-reales/**")
+                    .denyAll()
+
+                // Hoteles reales: consulta para usuarios autenticados.
+                .requestMatchers(HttpMethod.GET, "/api/hoteles-reales/**")
+                    .authenticated()
+                .requestMatchers("/api/hoteles-reales/**")
+                    .denyAll()
+
                 // Cupones: consulta para usuarios autenticados.
                 .requestMatchers(HttpMethod.GET, "/api/cupones/**")
                     .authenticated()
