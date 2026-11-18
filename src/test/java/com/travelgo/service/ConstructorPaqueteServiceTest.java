@@ -1,20 +1,22 @@
 package com.travelgo.service;
 
 import com.travelgo.dao.DestinoDAO;
-import com.travelgo.dao.PaqueteDAO;
 import com.travelgo.dao.PaqueteServicioDAO;
 import com.travelgo.dao.ServicioReservableDAO;
+import com.travelgo.dto.ArmarPaqueteRequest;
+import com.travelgo.dto.PaqueteRealRespuestaDTO;
 import com.travelgo.exception.ProveedorNoDisponibleException;
 import com.travelgo.integracion.ProveedorVuelos;
 import com.travelgo.model.Destino;
 import com.travelgo.model.Hotel;
-import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.model.ServicioReservable;
 import com.travelgo.model.Vuelo;
 import com.travelgo.proveedor.hotel.HotelResumen;
 import com.travelgo.proveedor.hotel.OfertaHotel;
 import com.travelgo.proveedor.hotel.ProveedorHoteles;
 import com.travelgo.proveedor.hotel.TarifaAgencia;
+import com.travelgo.proveedor.moneda.ProveedorTasaCambio;
+import com.travelgo.proveedor.moneda.TasaCambio;
 import com.travelgo.service.ConstructorPaqueteService.Resultado;
 import com.travelgo.service.ConstructorPaqueteService.Solicitud;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +27,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,11 +42,13 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** Pruebas del constructor de paquetes con datos reales (Sprint 4, Integrante 3). Sin APIs ni base de datos. */
+/**
+ * Pruebas del constructor de paquetes de la web (Sprint 4, Integrante 3). Sin APIs ni base de datos:
+ * los proveedores y PaqueteRealService son simulados.
+ */
 @ExtendWith(MockitoExtension.class)
 class ConstructorPaqueteServiceTest {
 
@@ -54,8 +58,9 @@ class ConstructorPaqueteServiceTest {
 
 	@Mock private ProveedorVuelos proveedorVuelos;
 	@Mock private ProveedorHoteles proveedorHoteles;
+	@Mock private ProveedorTasaCambio proveedorTasa;
+	@Mock private PaqueteRealService paqueteRealService;
 	@Mock private DestinoDAO destinoDAO;
-	@Mock private PaqueteDAO paqueteDAO;
 	@Mock private ServicioReservableDAO servicioDAO;
 	@Mock private PaqueteServicioDAO paqueteServicioDAO;
 
@@ -66,17 +71,19 @@ class ConstructorPaqueteServiceTest {
 
 	@BeforeEach
 	void preparar() {
-		service = new ConstructorPaqueteService(proveedorVuelos, proveedorHoteles, destinoDAO, paqueteDAO,
-			servicioDAO, paqueteServicioDAO, new BigDecimal("4000"));
+		service = new ConstructorPaqueteService(proveedorVuelos, proveedorHoteles, proveedorTasa, paqueteRealService,
+			destinoDAO, servicioDAO, paqueteServicioDAO);
 		Destino cartagena = new Destino("Cartagena de Indias", "Playas", "Colombia", "Cartagena");
 		cartagena.setId(1L);
 		lenient().when(destinoDAO.buscarPorId(1L)).thenReturn(Optional.of(cartagena));
+		lenient().when(proveedorTasa.obtenerUsdACop())
+			.thenReturn(new TasaCambio(4000, "open.er-api.com", Instant.now()));
 		lenient().when(proveedorVuelos.buscarVuelos("BOG", "CTG", IDA, null)).thenReturn(List.of(vueloCaro, vueloBarato));
 		lenient().when(proveedorHoteles.buscarHoteles("g297476", ConstructorPaqueteService.LIMITE_HOTELES))
-			.thenReturn(List.of(hotel("h-1", "Hotel Caribe"), hotel("h-2", "Hotel Sin Tarifa")));
-		lenient().when(proveedorHoteles.consultarTarifa(eq("h-1"), eq(IDA), eq(VUELTA), anyInt(), anyInt()))
-			.thenReturn(Optional.of(oferta("h-1", 100.0)));
-		lenient().when(proveedorHoteles.consultarTarifa(eq("h-2"), eq(IDA), eq(VUELTA), anyInt(), anyInt()))
+			.thenReturn(List.of(hotel("g297476-d1", "Hotel Caribe"), hotel("g297476-d2", "Hotel Sin Tarifa")));
+		lenient().when(proveedorHoteles.consultarTarifa(eq("g297476-d1"), eq(IDA), eq(VUELTA), anyInt(), anyInt()))
+			.thenReturn(Optional.of(oferta("g297476-d1", 100.0)));
+		lenient().when(proveedorHoteles.consultarTarifa(eq("g297476-d2"), eq(IDA), eq(VUELTA), anyInt(), anyInt()))
 			.thenReturn(Optional.empty());
 	}
 
@@ -95,8 +102,13 @@ class ConstructorPaqueteServiceTest {
 			4, 1, 2, Instant.now(), "Xotelo (precios de TripAdvisor)");
 	}
 
+	private static PaqueteRealRespuestaDTO respuesta() {
+		return new PaqueteRealRespuestaDTO(10L, "Cartagena 4 noches", "desc", 1950000, "COP", 5, true,
+			List.of("Cartagena de Indias"), List.of());
+	}
+
 	@Test
-	@DisplayName("La búsqueda ordena los vuelos por precio y convierte los hoteles de USD a COP")
+	@DisplayName("La búsqueda ordena los vuelos por precio y pasa los hoteles de USD a COP con la tasa real")
 	void buscaYConvierte() {
 		Resultado resultado = service.buscar(SOLICITUD);
 
@@ -104,6 +116,7 @@ class ConstructorPaqueteServiceTest {
 		assertEquals(1, resultado.hoteles().size());
 		assertEquals(400000, resultado.hoteles().get(0).precioNocheCop());   // 100 USD x 4.000
 		assertEquals(1600000, resultado.hoteles().get(0).totalCop());        // 4 noches
+		assertEquals(4000, resultado.tasa().copPorUsd());
 		assertTrue(resultado.avisos().get(0).contains("1 de 2 hoteles"));
 	}
 
@@ -134,53 +147,75 @@ class ConstructorPaqueteServiceTest {
 	}
 
 	@Test
-	@DisplayName("Armar guarda la copia del vuelo y del hotel, calcula el precio y los une al paquete")
+	@DisplayName("Sin tasa de cambio no se muestran hoteles (no hay cómo dar su precio en pesos)")
+	void sinTasaDeCambio() {
+		when(proveedorTasa.obtenerUsdACop()).thenThrow(new ProveedorNoDisponibleException("sin conexión"));
+
+		Resultado resultado = service.buscar(SOLICITUD);
+
+		assertEquals(2, resultado.vuelos().size());
+		assertTrue(resultado.hoteles().isEmpty());
+		assertNull(resultado.tasa());
+		assertTrue(resultado.avisos().stream().anyMatch(a -> a.contains("tasa de cambio")));
+	}
+
+	@Test
+	@DisplayName("Armar guarda la copia del vuelo y delega el hotel en PaqueteRealService con el vuelo como extra")
 	void armaElPaquete() {
 		when(proveedorVuelos.obtenerEnlaceReserva("ignav-v-barato")).thenReturn("https://avianca.com/reserva");
-		when(paqueteDAO.guardar(any())).thenAnswer(inv -> {
-			PaqueteTuristico p = inv.getArgument(0);
-			p.setId(10L);
-			return p;
-		});
+		when(paqueteRealService.armar(any())).thenReturn(respuesta());
 
-		PaqueteTuristico paquete = service.armar(SOLICITUD, "v-barato", "h-1", "Cartagena 4 noches", "");
+		PaqueteRealRespuestaDTO paquete = service.armar(SOLICITUD, "v-barato", "g297476-d1", "Cartagena 4 noches", "");
 
-		// 350.000 del vuelo + 400.000 x 4 noches
-		assertEquals(0, new BigDecimal("1950000").compareTo(paquete.getPrecio()));
-		assertEquals(5, paquete.getDuracionDias());
-		assertEquals("Cartagena", paquete.getDestinos().get(0).getCiudad());
-		assertTrue(paquete.getDescripcion().contains("Hotel Caribe"));
+		assertEquals(10L, paquete.id());
+		ArgumentCaptor<Vuelo> vuelo = ArgumentCaptor.forClass(Vuelo.class);
+		verify(servicioDAO).guardar(vuelo.capture());
+		assertEquals("https://avianca.com/reserva", vuelo.getValue().getEnlaceReserva());
+		assertEquals("ignav-v-barato", vuelo.getValue().getIdExterno());
+		assertEquals(350000, vuelo.getValue().getPrecio());
+		assertTrue(vuelo.getValue().isDisponible());
 
-		ArgumentCaptor<ServicioReservable> guardados = ArgumentCaptor.forClass(ServicioReservable.class);
-		verify(servicioDAO, times(2)).guardar(guardados.capture());
-		Vuelo vuelo = (Vuelo) guardados.getAllValues().get(0);
-		Hotel hotel = (Hotel) guardados.getAllValues().get(1);
-		assertEquals("https://avianca.com/reserva", vuelo.getEnlaceReserva());
-		assertEquals("ignav-v-barato", vuelo.getIdExterno());
-		assertTrue(vuelo.isDisponible());
-		assertEquals(400000, hotel.getPrecio());
-		assertEquals("XOTELO", hotel.getFuente());
-		assertEquals("https://tripadvisor.com/h-1", hotel.getEnlaceReserva());
-		verify(paqueteServicioDAO, times(2)).asociar(eq(10L), any());
+		ArgumentCaptor<ArmarPaqueteRequest> request = ArgumentCaptor.forClass(ArmarPaqueteRequest.class);
+		verify(paqueteRealService).armar(request.capture());
+		assertEquals(List.of(1L), request.getValue().destinosIds());
+		assertEquals("Cartagena", request.getValue().ciudadNombre());
+		assertEquals("g297476-d1", request.getValue().hotelClave());
+		assertEquals(IDA, request.getValue().entrada());
+		assertEquals(VUELTA, request.getValue().salida());
+		assertEquals(List.of(vuelo.getValue().getId()), request.getValue().serviciosExtraIds());
+		assertTrue(request.getValue().descripcion().contains("Avianca"));
+	}
+
+	@Test
+	@DisplayName("Se puede armar solo con hotel")
+	void soloHotel() {
+		when(paqueteRealService.armar(any())).thenReturn(respuesta());
+
+		service.armar(SOLICITUD, null, "g297476-d1", "Solo hotel", null);
+
+		verify(servicioDAO, never()).guardar(any());
+		ArgumentCaptor<ArmarPaqueteRequest> request = ArgumentCaptor.forClass(ArmarPaqueteRequest.class);
+		verify(paqueteRealService).armar(request.capture());
+		assertTrue(request.getValue().serviciosExtraIds().isEmpty());
 	}
 
 	@Test
 	@DisplayName("Si la búsqueda de vuelos venció, no se guarda nada")
 	void busquedaVencida() {
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-			() -> service.armar(SOLICITUD, "id-que-ya-no-existe", "h-1", "Paquete", null));
+			() -> service.armar(SOLICITUD, "id-que-ya-no-existe", "g297476-d1", "Paquete", null));
 
 		assertTrue(e.getMessage().contains("venció"));
-		verify(paqueteDAO, never()).guardar(any());
-		verify(paqueteServicioDAO, never()).asociar(any(), any());
+		verify(servicioDAO, never()).guardar(any());
+		verify(paqueteRealService, never()).armar(any());
 	}
 
 	@Test
-	@DisplayName("Hay que elegir al menos un vuelo o un hotel, y poner nombre")
-	void sinEleccion() {
-		assertThrows(IllegalArgumentException.class, () -> service.armar(SOLICITUD, "", null, "Paquete", null));
-		assertThrows(IllegalArgumentException.class, () -> service.armar(SOLICITUD, "v-barato", null, " ", null));
-		verify(paqueteDAO, never()).guardar(any());
+	@DisplayName("El hotel y el nombre son obligatorios")
+	void hotelYNombreObligatorios() {
+		assertThrows(IllegalArgumentException.class, () -> service.armar(SOLICITUD, "v-barato", "", "Paquete", null));
+		assertThrows(IllegalArgumentException.class, () -> service.armar(SOLICITUD, null, "g297476-d1", " ", null));
+		verify(paqueteRealService, never()).armar(any());
 	}
 
 	@Test
@@ -196,10 +231,13 @@ class ConstructorPaqueteServiceTest {
 	}
 
 	@Test
-	@DisplayName("Solo convierte COP y USD")
-	void conversion() {
-		assertEquals(Optional.of(250000.0), service.aCop(250000.4, "COP"));
-		assertEquals(Optional.of(402000.0), service.aCop(100.5, "USD"));
-		assertTrue(service.aCop(100, "EUR").isEmpty());
+	@DisplayName("Los servicios del paquete salen ordenados: primero el vuelo y luego el hotel")
+	void serviciosOrdenados() {
+		Hotel hotel = new Hotel("h", 400000, true, "Hotel Caribe", "Cartagena", "Doble", 4);
+		when(paqueteServicioDAO.listarServicios(10L)).thenReturn(List.of(hotel, vueloBarato));
+
+		List<ServicioReservable> servicios = service.serviciosDe(10L);
+
+		assertEquals(List.of(vueloBarato, hotel), servicios);
 	}
 }

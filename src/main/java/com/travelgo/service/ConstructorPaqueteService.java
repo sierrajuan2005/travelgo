@@ -1,30 +1,29 @@
 package com.travelgo.service;
 
 import com.travelgo.dao.DestinoDAO;
-import com.travelgo.dao.PaqueteDAO;
 import com.travelgo.dao.PaqueteServicioDAO;
 import com.travelgo.dao.ServicioReservableDAO;
+import com.travelgo.dto.ArmarPaqueteRequest;
+import com.travelgo.dto.PaqueteRealRespuestaDTO;
 import com.travelgo.exception.ProveedorNoDisponibleException;
 import com.travelgo.exception.RecursoNoEncontradoException;
 import com.travelgo.integracion.ProveedorVuelos;
 import com.travelgo.model.Destino;
 import com.travelgo.model.Hotel;
-import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.model.ServicioReservable;
+import com.travelgo.model.Transporte;
 import com.travelgo.model.Vuelo;
 import com.travelgo.proveedor.hotel.HotelResumen;
 import com.travelgo.proveedor.hotel.OfertaHotel;
 import com.travelgo.proveedor.hotel.ProveedorHoteles;
+import com.travelgo.proveedor.moneda.ProveedorTasaCambio;
+import com.travelgo.proveedor.moneda.TasaCambio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -35,16 +34,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Constructor de paquetes con datos reales (Sprint 4). El administrador busca vuelos (Ignav) y hoteles (Xotelo)
- * para una ruta y unas fechas, elige uno de cada uno y el paquete se guarda con una <b>copia</b> de lo consultado:
- * precio, fecha de consulta, fuente y enlace de reserva. El catálogo ya no vuelve a llamar a las APIs.
+ * Constructor de paquetes de la web (Sprint 4, Integrante 3). Agrega a {@link PaqueteRealService}
+ * (Integrante 2, que arma el paquete con el hotel real) lo que necesita la pantalla:
+ * <ul>
+ *   <li><b>Buscar</b>: vuelos (Ignav) y hoteles con su tarifa ya en pesos (Xotelo + tasa de cambio real),
+ *       para que el administrador compare y elija.</li>
+ *   <li><b>Armar</b>: guarda una copia del vuelo elegido (con su enlace de reserva) y luego delega en
+ *       {@code PaqueteRealService.armar}, pasándole el vuelo como servicio extra. Todo en una transacción.</li>
+ * </ul>
+ * Precio de referencia = vuelo de ida (1 adulto) + hotel (1 habitación, 2 adultos) × noches.
  * <p>
- * Precio de referencia del paquete = vuelo de ida (1 adulto) + hotel (1 habitación, 2 adultos) × noches.
- * Xotelo responde en USD; se convierte a COP con una tasa fija configurable ({@code travelgo.moneda.usd-cop}).
- * <p>
- * GRASP: es una Fabricación Pura que coordina dos proveedores y cuatro DAO, para que ni el controlador ni
- * {@code PaqueteService} tengan que conocer las APIs. SOLID (D): depende de {@link ProveedorVuelos} y
- * {@link ProveedorHoteles}, no de Ignav ni de Xotelo.
+ * GRASP: Fabricación Pura que coordina proveedores y services para la pantalla; no repite el armado del
+ * hotel, que es de PaqueteRealService. SOLID (D): depende de interfaces ({@link ProveedorVuelos},
+ * {@link ProveedorHoteles}, {@link ProveedorTasaCambio}), no de Ignav, Xotelo ni open.er-api.
  */
 @Service
 public class ConstructorPaqueteService {
@@ -55,27 +57,25 @@ public class ConstructorPaqueteService {
 
     /** Hoteles que se piden a Xotelo (luego se consulta la tarifa de cada uno). */
     static final int LIMITE_HOTELES = 8;
-    static final String TIPO_HABITACION = "Doble (2 adultos)";
 
     private final ProveedorVuelos proveedorVuelos;
     private final ProveedorHoteles proveedorHoteles;
+    private final ProveedorTasaCambio proveedorTasa;
+    private final PaqueteRealService paqueteRealService;
     private final DestinoDAO destinoDAO;
-    private final PaqueteDAO paqueteDAO;
     private final ServicioReservableDAO servicioDAO;
     private final PaqueteServicioDAO paqueteServicioDAO;
-    private final BigDecimal tasaUsdCop;
 
     public ConstructorPaqueteService(ProveedorVuelos proveedorVuelos, ProveedorHoteles proveedorHoteles,
-            DestinoDAO destinoDAO, PaqueteDAO paqueteDAO, ServicioReservableDAO servicioDAO,
-            PaqueteServicioDAO paqueteServicioDAO,
-            @Value("${travelgo.moneda.usd-cop:4000}") BigDecimal tasaUsdCop) {
+            ProveedorTasaCambio proveedorTasa, PaqueteRealService paqueteRealService, DestinoDAO destinoDAO,
+            ServicioReservableDAO servicioDAO, PaqueteServicioDAO paqueteServicioDAO) {
         this.proveedorVuelos = proveedorVuelos;
         this.proveedorHoteles = proveedorHoteles;
+        this.proveedorTasa = proveedorTasa;
+        this.paqueteRealService = paqueteRealService;
         this.destinoDAO = destinoDAO;
-        this.paqueteDAO = paqueteDAO;
         this.servicioDAO = servicioDAO;
         this.paqueteServicioDAO = paqueteServicioDAO;
-        this.tasaUsdCop = tasaUsdCop;
     }
 
     /**
@@ -122,13 +122,12 @@ public class ConstructorPaqueteService {
     public record OpcionHotel(HotelResumen hotel, OfertaHotel oferta, double precioNocheCop, double totalCop) {
     }
 
-    /** Lo que encontró la búsqueda. Los avisos explican por qué falta algo (sin llave, API caída...). */
-    public record Resultado(Destino destino, List<Vuelo> vuelos, List<OpcionHotel> hoteles, List<String> avisos) {
-    }
-
-    /** Tasa con la que se convierten los precios en USD. */
-    public BigDecimal tasaUsdCop() {
-        return tasaUsdCop;
+    /**
+     * Lo que encontró la búsqueda. {@code tasa} es la tasa USD→COP usada (null si no se pudo consultar).
+     * Los avisos explican por qué falta algo (sin llave, API caída...).
+     */
+    public record Resultado(Destino destino, List<Vuelo> vuelos, List<OpcionHotel> hoteles, TasaCambio tasa,
+                            List<String> avisos) {
     }
 
     /**
@@ -144,61 +143,77 @@ public class ConstructorPaqueteService {
         List<String> avisos = new ArrayList<>();
 
         List<Vuelo> vuelos = buscarVuelos(solicitud, avisos);
-        List<OpcionHotel> hoteles = buscarHoteles(solicitud, avisos);
-        return new Resultado(destino, vuelos, hoteles, avisos);
+        TasaCambio tasa = null;
+        List<OpcionHotel> hoteles = List.of();
+        try {
+            tasa = proveedorTasa.obtenerUsdACop();
+            hoteles = buscarHoteles(solicitud, tasa, avisos);
+        } catch (RuntimeException e) {
+            log.warn("Sin tasa de cambio: {}", e.getMessage());
+            avisos.add("No se pudo consultar la tasa de cambio USD → COP, así que no se pueden mostrar los precios "
+                    + "de los hoteles. Intenta de nuevo en un momento.");
+        }
+        return new Resultado(destino, vuelos, hoteles, tasa, avisos);
     }
 
     /**
-     * Guarda el paquete con una copia del vuelo y del hotel elegidos (con su fecha de consulta, fuente y enlace),
-     * y los une al paquete en la tabla paquete_servicio. Todo o nada.
+     * Guarda una copia del vuelo elegido y arma el paquete con el hotel elegido usando
+     * {@link PaqueteRealService#armar}. Todo o nada.
      *
-     * @param vueloId    id del vuelo elegido en la búsqueda (puede ser null si solo se elige hotel)
-     * @param hotelClave clave del hotel elegido (puede ser null si solo se elige vuelo)
-     * @throws IllegalArgumentException si no se eligió nada o faltan datos
-     * @throws IllegalStateException    si la búsqueda venció (Ignav guarda los resultados 30 minutos)
+     * @param vueloId    id del vuelo elegido en la búsqueda (puede ser null: paquete solo con hotel)
+     * @param hotelClave clave del hotel elegido (obligatoria: PaqueteRealService arma alrededor del hotel)
+     * @throws IllegalArgumentException si faltan datos
+     * @throws IllegalStateException    si la búsqueda de vuelos venció (Ignav guarda los resultados 30 minutos)
      */
     @Transactional
-    public PaqueteTuristico armar(Solicitud solicitud, String vueloId, String hotelClave, String nombre,
+    public PaqueteRealRespuestaDTO armar(Solicitud solicitud, String vueloId, String hotelClave, String nombre,
             String descripcion) {
         solicitud.validar();
         if (vacio(nombre)) {
             throw new IllegalArgumentException("El nombre del paquete es obligatorio.");
         }
-        if (vacio(vueloId) && vacio(hotelClave)) {
-            throw new IllegalArgumentException("Elige al menos un vuelo o un hotel.");
+        if (vacio(hotelClave)) {
+            throw new IllegalArgumentException("Elige un hotel: el paquete se arma alrededor del hotel.");
         }
         Destino destino = destino(solicitud.destinoId());
 
-        List<ServicioReservable> servicios = new ArrayList<>();
+        List<String> extras = new ArrayList<>();
+        String textoVuelo = null;
         if (!vacio(vueloId)) {
-            servicios.add(copiaDelVuelo(solicitud, vueloId.trim()));
-        }
-        if (!vacio(hotelClave)) {
-            servicios.add(copiaDelHotel(solicitud, hotelClave.trim(), destino));
+            Vuelo vuelo = copiaDelVuelo(solicitud, vueloId.trim());
+            servicioDAO.guardar(vuelo);
+            extras.add(vuelo.getId());
+            textoVuelo = "Vuelo " + vuelo.getAerolinea() + " " + vuelo.getOrigen() + " → " + vuelo.getDestino()
+                    + " el " + vuelo.getFechaSalida().format(FECHA);
         }
 
-        BigDecimal precio = BigDecimal.valueOf(servicios.stream().mapToDouble(ServicioReservable::calcularCosto).sum())
-                .setScale(0, RoundingMode.HALF_UP);
-        PaqueteTuristico paquete = new PaqueteTuristico(nombre.trim(),
-                vacio(descripcion) ? resumen(servicios) : recortar(descripcion.trim()),
-                precio, solicitud.noches() + 1);
-        paquete.setDestinos(new ArrayList<>(List.of(destino)));
-        paquete.setActivo(true);
-
-        servicios.forEach(servicioDAO::guardar);
-        PaqueteTuristico guardado = paqueteDAO.guardar(paquete);
-        servicios.forEach(s -> paqueteServicioDAO.asociar(guardado.getId(), s.getId()));
-        log.info("Paquete {} armado con {} servicio(s) reales, precio {}", guardado.getId(), servicios.size(), precio);
-        return guardado;
+        String texto = vacio(descripcion) ? descripcionAutomatica(textoVuelo, solicitud) : descripcion.trim();
+        ArmarPaqueteRequest request = new ArmarPaqueteRequest(nombre.trim(), recortar(texto),
+                List.of(destino.getId()), destino.getCiudad(), hotelClave.trim(), solicitud.ida(), solicitud.vuelta(),
+                ProveedorHoteles.HABITACIONES_POR_DEFECTO, ProveedorHoteles.ADULTOS_POR_DEFECTO, extras);
+        PaqueteRealRespuestaDTO paquete = paqueteRealService.armar(request);
+        log.info("Paquete {} armado desde la web con {} servicio(s), precio {}", paquete.id(),
+                paquete.servicios().size(), paquete.precioReferencia());
+        return paquete;
     }
 
-    /** Servicios guardados con el paquete (vuelo y hotel). Vacío si el paquete se creó a mano. */
+    /**
+     * Servicios guardados con el paquete, primero el vuelo, luego el hotel y luego el transporte.
+     * Vacío si el paquete se creó a mano.
+     */
     public List<ServicioReservable> serviciosDe(Long paqueteId) {
-        List<ServicioReservable> servicios = new ArrayList<>();
-        for (String id : paqueteServicioDAO.serviciosDe(paqueteId)) {
-            servicioDAO.buscarPorId(id).ifPresent(servicios::add);
-        }
-        return servicios;
+        return paqueteServicioDAO.listarServicios(paqueteId).stream()
+                .sorted(Comparator.comparingInt(ConstructorPaqueteService::orden))
+                .toList();
+    }
+
+    private static int orden(ServicioReservable s) {
+        return switch (s) {
+            case Vuelo v -> 1;
+            case Hotel h -> 2;
+            case Transporte t -> 3;
+            default -> 4;
+        };
     }
 
     // ---------- Búsqueda ----------
@@ -213,7 +228,8 @@ public class ConstructorPaqueteService {
             }
             return vuelos;
         } catch (IllegalStateException e) {
-            avisos.add("No se pueden buscar vuelos: falta la llave de Ignav (variable de entorno IGNAV_API_KEY).");
+            avisos.add("No se pueden buscar vuelos: falta la llave de Ignav (variable de entorno IGNAV_API_KEY). "
+                    + "Puedes armar el paquete solo con el hotel.");
         } catch (RuntimeException e) {
             log.warn("Fallo al buscar vuelos: {}", e.getMessage());
             avisos.add("No se pudo consultar Ignav: " + e.getMessage());
@@ -221,7 +237,7 @@ public class ConstructorPaqueteService {
         return List.of();
     }
 
-    private List<OpcionHotel> buscarHoteles(Solicitud s, List<String> avisos) {
+    private List<OpcionHotel> buscarHoteles(Solicitud s, TasaCambio tasa, List<String> avisos) {
         List<HotelResumen> encontrados;
         try {
             encontrados = proveedorHoteles.buscarHoteles(s.claveHoteles().trim(), LIMITE_HOTELES);
@@ -237,7 +253,7 @@ public class ConstructorPaqueteService {
             try {
                 Optional<OpcionHotel> opcion = proveedorHoteles.consultarTarifa(hotel.clave(), s.ida(), s.vuelta(),
                                 ProveedorHoteles.HABITACIONES_POR_DEFECTO, ProveedorHoteles.ADULTOS_POR_DEFECTO)
-                        .flatMap(oferta -> opcion(hotel, oferta));
+                        .flatMap(oferta -> opcion(hotel, oferta, tasa));
                 if (opcion.isPresent()) {
                     opciones.add(opcion.get());
                 } else {
@@ -256,21 +272,18 @@ public class ConstructorPaqueteService {
         return opciones;
     }
 
-    private Optional<OpcionHotel> opcion(HotelResumen hotel, OfertaHotel oferta) {
-        return aCop(oferta.mejorTarifa().precioPorNoche(), oferta.moneda())
-                .map(noche -> new OpcionHotel(hotel, oferta, noche, noche * oferta.noches() * oferta.habitaciones()));
-    }
-
-    /** Convierte a COP (redondeado a pesos). Vacío si la moneda no es COP ni USD. */
-    Optional<Double> aCop(double valor, String moneda) {
-        if ("COP".equalsIgnoreCase(moneda)) {
-            return Optional.of((double) Math.round(valor));
+    /** Mismo cálculo que PaqueteRealService: tarifa por noche × habitaciones, convertida a pesos. */
+    private Optional<OpcionHotel> opcion(HotelResumen hotel, OfertaHotel oferta, TasaCambio tasa) {
+        double noche = oferta.mejorTarifa().precioPorNoche() * oferta.habitaciones();
+        Double nocheCop;
+        if ("USD".equalsIgnoreCase(oferta.moneda())) {
+            nocheCop = tasa.convertirUsdACop(noche);
+        } else if ("COP".equalsIgnoreCase(oferta.moneda())) {
+            nocheCop = noche;
+        } else {
+            return Optional.empty();
         }
-        if ("USD".equalsIgnoreCase(moneda)) {
-            return Optional.of(BigDecimal.valueOf(valor).multiply(tasaUsdCop)
-                    .setScale(0, RoundingMode.HALF_UP).doubleValue());
-        }
-        return Optional.empty();
+        return Optional.of(new OpcionHotel(hotel, oferta, nocheCop, nocheCop * oferta.noches()));
     }
 
     // ---------- Armado ----------
@@ -305,38 +318,11 @@ public class ConstructorPaqueteService {
                 elegido.getFuente(), elegido.getIdExterno(), elegido.getFechaConsulta(), enlace);
     }
 
-    /** Pide la tarifa del hotel elegido (Xotelo la tiene en caché) y la copia ya convertida a COP. */
-    private Hotel copiaDelHotel(Solicitud s, String hotelClave, Destino destino) {
-        OfertaHotel oferta = proveedorHoteles.consultarTarifa(hotelClave, s.ida(), s.vuelta(),
-                        ProveedorHoteles.HABITACIONES_POR_DEFECTO, ProveedorHoteles.ADULTOS_POR_DEFECTO)
-                .orElseThrow(() -> new IllegalStateException("El hotel elegido ya no tiene tarifa para esas fechas."));
-        double nocheCop = aCop(oferta.mejorTarifa().precioPorNoche(), oferta.moneda())
-                .orElseThrow(() -> new IllegalStateException("No se puede convertir la moneda " + oferta.moneda() + "."));
-
-        Optional<HotelResumen> resumen = proveedorHoteles.buscarHoteles(s.claveHoteles().trim(), LIMITE_HOTELES).stream()
-                .filter(h -> hotelClave.equals(h.clave()))
-                .findFirst();
-        String nombre = resumen.map(HotelResumen::nombre).filter(n -> !vacio(n)).orElse("Hotel " + hotelClave);
-        String enlace = resumen.map(HotelResumen::enlace).orElse(null);
-
-        return new Hotel(UUID.randomUUID().toString(), nocheCop, true, nombre,
-                destino.getCiudad() + ", " + destino.getPais(), TIPO_HABITACION, oferta.noches(),
-                "XOTELO", hotelClave, LocalDateTime.ofInstant(oferta.fechaConsulta(), ZONA), enlace);
-    }
-
     /** Descripción automática cuando el administrador no escribe una. */
-    private String resumen(List<ServicioReservable> servicios) {
-        List<String> partes = new ArrayList<>();
-        for (ServicioReservable s : servicios) {
-            if (s instanceof Vuelo v) {
-                partes.add("Vuelo " + v.getAerolinea() + " " + v.getOrigen() + " → " + v.getDestino()
-                        + " el " + v.getFechaSalida().format(FECHA));
-            } else if (s instanceof Hotel h) {
-                partes.add(h.getNoches() + " noche(s) en " + h.getNombre());
-            }
-        }
-        return recortar(String.join(" + ", partes) + ". Precio de referencia consultado el "
-                + LocalDate.now(ZONA).format(FECHA) + ".");
+    private static String descripcionAutomatica(String textoVuelo, Solicitud s) {
+        String hotel = s.noches() + " noche(s) de hotel";
+        return (textoVuelo == null ? hotel : textoVuelo + " + " + hotel)
+                + ". Precio de referencia consultado el " + LocalDate.now(ZONA).format(FECHA) + ".";
     }
 
     private Destino destino(Long id) {

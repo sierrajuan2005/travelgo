@@ -387,16 +387,20 @@ Un destino que usa un paquete no se puede borrar.
 
 ### 7.5 Constructor de paquetes (`/admin/constructor`, solo Administrador)
 
-Hecho el 2026-11-17 (`ConstructorWebController` + `ConstructorPaqueteService`). Usa `ProveedorVuelos` (Ignav,
-Integrante 1) y `ProveedorHoteles` (Xotelo, Integrante 2), y guarda en la tabla `paquete_servicio` (Integrante 4).
+Hecho el 2026-11-17 (`ConstructorWebController` + `ConstructorPaqueteService`). Es la pantalla de
+`PaqueteRealService` (Integrante 2): busca con `ProveedorVuelos` (Ignav, Integrante 1), `ProveedorHoteles` (Xotelo)
+y `ProveedorTasaCambio` (open.er-api.com), y para guardar delega en `PaqueteRealService.armar`, que une el hotel y
+el vuelo al paquete en la tabla `paquete_servicio` (Integrante 4).
 
 - **Buscar:** destino de TravelGo, ciudad de salida y fechas. Los códigos para las APIs (aeropuerto IATA y clave
   de la ciudad en Xotelo) se llenan solos para los destinos de `data.sql` (`CodigosDestino`) y se pueden cambiar.
-- **Elegir:** un vuelo (solo ida, 1 adulto) y un hotel (1 habitación, 2 adultos). Se puede dejar uno de los dos vacío.
+- **Elegir:** un vuelo (solo ida, 1 adulto, opcional) y un hotel (1 habitación, 2 adultos, obligatorio).
   El total se suma en vivo.
-- **Guardar:** se guarda una **copia** del vuelo y del hotel (precio, fecha de consulta, fuente y enlace de reserva),
-  el paquete (precio = vuelo + hotel × noches; duración = noches + 1) y su unión en `paquete_servicio`. Todo o nada.
-- Xotelo responde en USD: se convierte a COP con la tasa fija `travelgo.moneda.usd-cop` (4.000 por defecto).
+- **Guardar:** se guarda una **copia** del vuelo (precio, fecha de consulta, fuente y enlace de reserva) y
+  `PaqueteRealService` guarda la del hotel, el paquete (precio = vuelo + hotel × noches; duración = noches + 1) y la
+  unión en `paquete_servicio`. Todo en una transacción: todo o nada.
+- Xotelo responde en USD: se convierte a COP con la tasa del día de open.er-api.com (la misma que usa
+  `PaqueteRealService`). Si no hay tasa, no se muestran hoteles.
 - Ignav guarda la búsqueda 30 minutos. Si pasa más tiempo antes de guardar, la pantalla pide buscar otra vez.
 - Si una API falla o falta la llave (`IGNAV_API_KEY`), la búsqueda no se cae: muestra un aviso.
 - El detalle del catálogo muestra "Incluye" con la fuente, la fecha de consulta y el enlace de cada servicio, y al
@@ -428,4 +432,4 @@ Integrante 1) y `ProveedorHoteles` (Xotelo, Integrante 2), y guarda en la tabla 
 | Catálogo y detalle | `CatalogoWebController` | `PaqueteService`, `InfoDestinoService` | Paquetes de PostgreSQL; foto, clima y atracciones de las APIs (en caché) |
 | Reserva, reservas, pago y factura | `ReservaWebController` | `ReservaService`, `PagoService`, `FacturaService`, `ServicioReservableService` | PostgreSQL |
 | Administración | `AdminWebController` | `DestinoService`, `PaqueteService`, `ServicioReservableService` | PostgreSQL |
-| Constructor de paquetes | `ConstructorWebController` | `ConstructorPaqueteService` | Ignav y Xotelo al buscar; PostgreSQL (`servicio_reservable`, `paquete_turistico`, `paquete_servicio`) al guardar |
+| Constructor de paquetes | `ConstructorWebController` | `ConstructorPaqueteService`, `PaqueteRealService` | Ignav y Xotelo al buscar; PostgreSQL (`servicio_reservable`, `paquete_turistico`, `paquete_servicio`) al guardar |

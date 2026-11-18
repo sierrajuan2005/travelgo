@@ -100,7 +100,6 @@ public class CatalogoWebController {
 		static Incluido de(ServicioReservable s) {
 			String fuente = switch (s.getFuente() == null ? "" : s.getFuente()) {
 				case "IGNAV" -> "Ignav";
-				case "XOTELO" -> "Xotelo (precios de TripAdvisor)";
 				case "" -> "Dato manual";
 				default -> s.getFuente();
 			};

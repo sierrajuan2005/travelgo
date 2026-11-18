@@ -4,7 +4,7 @@ import com.travelgo.exception.AccesoDatosException;
 import com.travelgo.exception.ProveedorNoDisponibleException;
 import com.travelgo.exception.RecursoNoEncontradoException;
 import com.travelgo.model.Destino;
-import com.travelgo.model.PaqueteTuristico;
+import com.travelgo.dto.PaqueteRealRespuestaDTO;
 import com.travelgo.service.CodigosDestino;
 import com.travelgo.service.ConstructorPaqueteService;
 import com.travelgo.service.ConstructorPaqueteService.Solicitud;
@@ -78,7 +78,6 @@ public class ConstructorWebController {
 		model.addAttribute("solicitud", solicitud);
 		model.addAttribute("idaSugerida", LocalDate.now().plusDays(30));
 		model.addAttribute("vueltaSugerida", LocalDate.now().plusDays(34));
-		model.addAttribute("tasa", constructor.tasaUsdCop());
 
 		if (ida != null || vuelta != null) {
 			try {
@@ -104,9 +103,9 @@ public class ConstructorWebController {
 			RedirectAttributes redirect) {
 		Solicitud solicitud = new Solicitud(destinoId, origen, codigoDestino, claveHoteles, ida, vuelta);
 		try {
-			PaqueteTuristico paquete = constructor.armar(solicitud, vueloId, hotelClave, nombre, descripcion);
-			redirect.addFlashAttribute("mensaje", "Paquete \"" + paquete.getNombre() + "\" guardado con id "
-				+ paquete.getId() + ". Ya sale en el catálogo con su precio de referencia.");
+			PaqueteRealRespuestaDTO paquete = constructor.armar(solicitud, vueloId, hotelClave, nombre, descripcion);
+			redirect.addFlashAttribute("mensaje", "Paquete \"" + paquete.nombre() + "\" guardado con id "
+				+ paquete.id() + ". Ya sale en el catálogo con su precio de referencia.");
 			return "redirect:/admin/paquetes";
 		} catch (IllegalArgumentException | IllegalStateException | RecursoNoEncontradoException
 				| ProveedorNoDisponibleException | AccesoDatosException e) {
