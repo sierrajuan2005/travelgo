@@ -7,7 +7,7 @@ Rama: `feature/destinos-web`. Este documento tiene la verificación de las APIs 
 
 | Tarea del Sprint 4 | Estado |
 |---|---|
-| Verificación de APIs: OpenTripMap, Geoapify, Open-Meteo y fotos | Hecha para Open-Meteo y fotos. OpenTripMap y Geoapify esperan la llave gratuita (ver 2) |
+| Verificación de APIs: OpenTripMap, Geoapify, Open-Meteo y fotos | Hecha (2026-11-17): Open-Meteo, fotos y Geoapify pasaron; OpenTripMap no pasó (su registro no entrega la llave, ver 2) |
 | ProveedorDestinos: atracciones, clima y fotos con atribución, y endpoints | Hecha |
 | La web usa la base de datos (reemplazar `BackendConsola` por los services de Spring) | Hecha |
 | Constructor de paquetes en la web | **Bloqueada:** espera `ProveedorVuelos` (Integrante 1) y `ProveedorHoteles` + armado de paquetes (Integrante 2). Wireframe listo en `Diagramas/Wireframes.md` (sección 7) |
@@ -23,14 +23,14 @@ Prueba hecha el 2026-11-06 con los destinos de `data.sql`: Cartagena, Bogotá, C
 | Open-Meteo Geocoding | Pasar de ciudad a coordenadas | No | **Pasó** | Encontró las 4 ciudades. Hay que filtrar por país: "Cartagena" también existe en España | Datos de GeoNames, CC BY 4.0 |
 | Wikipedia REST (`page/summary`) + Wikimedia Commons (`imageinfo`) | Foto del destino con autor y licencia | No | **Pasó** | 1 foto por destino con autor y licencia (CC BY 2.0, CC BY-SA 2.0, CC BY-SA 4.0). "Cusco y Machu Picchu" no tiene artículo: se busca por la ciudad | Autor + licencia + enlace a Commons en cada foto. Wikimedia pide un User-Agent que identifique la app |
 | Wikipedia `geosearch` | Atracciones (respaldo sin llave) | No | **Pasó con límites** | 4 a 8 lugares reales por destino (Coricancha, Castillo San Felipe, Catedral de Cancún...). No trae dirección: se muestra la distancia al centro. Trae también barrios y batallas, por eso se filtran | Textos de Wikipedia, CC BY-SA 4.0 |
-| OpenTripMap | Atracciones con nombre, dirección y coordenadas | Sí (gratis) | **Pendiente** | Sin llave responde 401. El adaptador ya está hecho; falta probarlo con la llave (comandos abajo) | Datos © colaboradores de OpenStreetMap (ODbL) |
-| Geoapify Places | Atracciones y hoteles con dirección | Sí (gratis) | **Pendiente** | No se hizo adaptador: OpenTripMap y Wikipedia cubren las atracciones. Sirve como datos de apoyo para los hoteles de Integrante 2 | © OpenStreetMap contributors, "Powered by Geoapify" |
+| OpenTripMap | Atracciones con nombre, dirección y coordenadas | Sí (gratis) | **No pasó** (2026-11-17) | La cuenta se crea, pero el correo de verificación nunca llega y "request another" en `dev.opentripmap.org/email/verify` responde **error 500**. Sin verificar el correo no se entrega la llave. El adaptador queda hecho (`OpenTripMapAtracciones`) por si el servicio se arregla; mientras tanto las atracciones salen de Wikipedia | Datos © colaboradores de OpenStreetMap (ODbL) |
+| Geoapify Places | Atracciones y hoteles con dirección | Sí (gratis) | **Pasó** (2026-11-17) | Datos reales con nombre, dirección y coordenadas en los 3 destinos. Atracciones: Zona Arqueológica Muyu Orqo y Kusilluchayoq (Cusco), Monumento a las Palenqueras (Cartagena), El Meco (Cancún). Hoteles: Casa Andina Standard Cusco Plaza, Decameron Cartagena, Grand Oasis Palm (Cancún). Algunos lugares vienen sin nombre o con nombres poco turísticos (estatuas), así que habría que filtrarlos. No se hizo adaptador: Wikipedia ya cubre las atracciones; queda como alternativa | © OpenStreetMap contributors (ODbL), "Powered by Geoapify" |
 | Overpass API (OpenStreetMap) | Alternativa sin llave para atracciones | No | **No pasó** | No respondió en la prueba. Se descarta: es un servidor compartido con límites estrictos | — |
 
 Moneda: ninguna de estas APIs devuelve precios. Cuotas: los resultados se guardan en caché
 (clima 1 hora, atracciones y fotos 24 horas, coordenadas 7 días), así que cada destino gasta pocas consultas al día.
 
-### Cómo terminar la verificación de OpenTripMap y Geoapify
+### Cómo repetir la verificación de OpenTripMap y Geoapify
 
 1. Crear una cuenta gratuita en <https://dev.opentripmap.org/> y en <https://myprojects.geoapify.com/>.
 2. Probar con PowerShell (cambiar `TU_LLAVE`):
