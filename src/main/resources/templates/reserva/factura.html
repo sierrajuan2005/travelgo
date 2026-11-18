@@ -4,80 +4,108 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="container py-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
-            <li class="breadcrumb-item active" aria-current="page" th:text="${factura.numero}">Factura</li>
-        </ol>
-    </nav>
-
-    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
-
-    <div class="card tg-card mx-auto" style="max-width: 720px;">
-        <div class="card-body p-4 p-md-5">
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <p class="fw-bold mb-0"><i class="bi bi-airplane-fill"></i> TravelGo</p>
-                    <p class="text-muted small mb-0">Agencia de viajes</p>
-                </div>
-                <div class="text-end">
-                    <h1 class="h4 mb-1" th:text="${'Factura ' + factura.numero}">Factura FAC-0000</h1>
-                    <span class="badge"
-                          th:classappend="${factura.estado.name() == 'PAGADA'} ? 'text-bg-success' : 'text-bg-warning'"
-                          th:text="${factura.estado}">PAGADA</span>
-                </div>
-            </div>
-
-            <div class="row small mb-4">
-                <div class="col-sm-6">
-                    <p class="text-muted mb-1">Cliente</p>
-                    <p class="mb-0 fw-semibold" th:text="${reserva.usuario.nombre}">Cliente</p>
-                    <p class="mb-0" th:text="${reserva.usuario.correo}">correo</p>
-                </div>
-                <div class="col-sm-6 text-sm-end mt-3 mt-sm-0">
-                    <p class="mb-0"><span class="text-muted">Fecha de emisión:</span>
-                        <span th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}">01/01/2026</span></p>
-                    <p class="mb-0"><span class="text-muted">Reserva:</span>
-                        <code th:text="${idCorto}">abcd1234</code> (<span th:text="${reserva.estado}">CONFIRMADA</span>)</p>
-                    <p class="mb-0"><span class="text-muted">Paquete:</span> <span th:text="${paquete}">Paquete</span></p>
-                </div>
-            </div>
-
-            <table class="table mb-4">
-                <thead>
-                <tr>
-                    <th>Servicio</th>
-                    <th class="text-end">Valor</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="linea : ${lineas}">
-                    <td th:text="${linea.descripcion()}">Servicio</td>
-                    <td class="text-end"
-                        th:text="${@formato.cop(linea.valor())}">$ 0</td>
-                </tr>
-                </tbody>
-                <tfoot>
-                <tr>
-                    <th>Total</th>
-                    <th class="text-end tg-precio"
-                        th:text="${@formato.cop(factura.total)}">$ 0</th>
-                </tr>
-                </tfoot>
-            </table>
-
-            <p class="small mb-0" th:if="${pago != null}">
-                <i class="bi bi-credit-card"></i>
-                Pagado con <span th:text="${metodo}">Tarjeta</span>
-                el <span th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/01/2026</span>.
-            </p>
+<!-- Al imprimir o "Guardar como PDF" solo sale la tarjeta de la factura: el menú, el encabezado, las migas
+     de pan, los botones y el pie se ocultan (styles.css, sección 16), así el PDF no trae enlaces. -->
+<main>
+    <section class="tg-encabezado">
+        <div class="container position-relative">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${factura.numero}">Factura</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">Tu factura</h1>
         </div>
-    </div>
+    </section>
 
-    <div class="text-center mt-4">
-        <a class="btn btn-outline-secondary" th:href="@{/reservas}"><i class="bi bi-arrow-left"></i> Volver a reservas</a>
-        <button type="button" class="btn btn-tg" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+    <div class="container tg-sube">
+        <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+        <article class="card tg-card tg-factura mx-auto" data-bs-theme="light">
+            <div class="tg-factura-franja"></div>
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start gap-3 mb-5">
+                    <div>
+                        <span class="tg-marca" style="color: var(--tg-tinta);">
+                            <span class="tg-marca-icono"><i class="bi bi-airplane-fill"></i></span> TravelGo
+                        </span>
+                        <p class="text-muted small mt-2 mb-0">Agencia de viajes · Proyecto académico UPC 2026</p>
+                    </div>
+                    <div class="text-sm-end">
+                        <div class="text-muted small text-uppercase fw-bold" style="letter-spacing: .08em;">Factura</div>
+                        <div class="h3 mb-2" th:text="${factura.numero}">FAC-0000</div>
+                        <span class="badge"
+                              th:classappend="${factura.estado.name() == 'PAGADA'} ? 'text-bg-success' : 'text-bg-warning'"
+                              th:text="${factura.estado}">PAGADA</span>
+                    </div>
+                </div>
+
+                <div class="row g-4 small mb-4">
+                    <div class="col-sm-6">
+                        <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: .7rem; letter-spacing: .08em;">Facturado a</div>
+                        <p class="mb-0 fw-bold fs-6" th:text="${reserva.usuario.nombre}">Cliente</p>
+                        <p class="mb-0" th:text="${reserva.usuario.correo}">correo</p>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: .7rem; letter-spacing: .08em;">Detalle</div>
+                        <p class="mb-0"><span class="text-muted">Fecha de emisión:</span>
+                            <span th:text="${#temporals.format(factura.fechaEmision, 'dd/MM/yyyy')}">01/01/2026</span></p>
+                        <p class="mb-0"><span class="text-muted">Reserva:</span>
+                            <span class="fw-semibold" th:text="${idCorto}">abcd1234</span> (<span th:text="${reserva.estado}">CONFIRMADA</span>)</p>
+                        <p class="mb-0"><span class="text-muted">Paquete:</span> <span th:text="${paquete}">Paquete</span></p>
+                    </div>
+                </div>
+
+                <table class="table mb-4">
+                    <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="linea : ${lineas}">
+                        <td th:text="${linea.descripcion()}">Servicio</td>
+                        <td class="text-end" th:text="${@formato.cop(linea.valor())}">$ 0</td>
+                    </tr>
+                    </tbody>
+                    <tfoot>
+                    <!-- Descuento por cupón (si se usó uno al pagar) -->
+                    <tr th:if="${factura.descuento > 0}">
+                        <td class="text-muted">Subtotal</td>
+                        <td class="text-end" th:text="${@formato.cop(factura.subtotal)}">$ 0</td>
+                    </tr>
+                    <tr th:if="${factura.descuento > 0}">
+                        <td class="text-muted">Descuento
+                            <span th:if="${factura.cupon != null}" class="badge text-bg-light"
+                                  th:text="${factura.cupon.codigo}">VERANO10</span></td>
+                        <td class="text-end text-success" th:text="${'- ' + @formato.cop(factura.descuento)}">- $ 0</td>
+                    </tr>
+                    <tr>
+                        <th>Total</th>
+                        <th class="text-end tg-precio fs-4" th:text="${@formato.cop(factura.total)}">$ 0</th>
+                    </tr>
+                    </tfoot>
+                </table>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 small">
+                    <span th:if="${pago != null}">
+                        <i class="bi bi-credit-card"></i>
+                        Pagado con <span th:text="${metodo}">Tarjeta</span>
+                        el <span th:text="${#temporals.format(pago.fechaPago, 'dd/MM/yyyy')}">01/01/2026</span>.
+                    </span>
+                    <span class="text-muted">Pago simulado · documento sin validez tributaria.</span>
+                </div>
+            </div>
+        </article>
+
+        <div class="text-center mt-4 tg-no-imprimir">
+            <a class="btn btn-outline-secondary" th:href="@{/reservas}"><i class="bi bi-arrow-left"></i> Volver a reservas</a>
+            <button type="button" class="btn btn-tg" onclick="window.print()">
+                <i class="bi bi-printer"></i> Imprimir o guardar en PDF
+            </button>
+        </div>
     </div>
 </main>
 

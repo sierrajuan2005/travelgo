@@ -4,15 +4,25 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="container py-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
-            <li class="breadcrumb-item active" aria-current="page" th:text="${'Pagar ' + idCorto}">Pagar</li>
+<main>
+  <section class="tg-encabezado">
+    <div class="container position-relative">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${'Pagar ' + idCorto}">Pagar</li>
+            </ol>
+        </nav>
+        <h1 class="h2 mb-1">Pagar la reserva <code th:text="${idCorto}">abcd1234</code></h1>
+        <ol class="tg-pasos">
+            <li class="hecho"><span>Elegir servicios</span></li>
+            <li class="actual"><span>Pagar</span></li>
+            <li><span>Factura</span></li>
         </ol>
-    </nav>
+    </div>
+  </section>
 
-    <h1 class="h2 mb-4">Pagar la reserva <code th:text="${idCorto}">abcd1234</code></h1>
+  <div class="container tg-sube">
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
@@ -21,7 +31,7 @@
             <div class="col-lg-8">
                 <div class="card tg-card mb-4">
                     <div class="card-body p-4">
-                        <h2 class="h5">Detalle</h2>
+                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-list-check"></i></span> Detalle</h2>
                         <p class="mb-1"><span class="text-muted">Paquete:</span> <span th:text="${paquete}">Paquete</span></p>
                         <p class="mb-3"><span class="text-muted">Cliente:</span>
                             <span th:text="${reserva.usuario.nombre + ' - ' + reserva.usuario.correo}">Cliente</span></p>
@@ -37,7 +47,7 @@
 
                 <div class="card tg-card">
                     <div class="card-body p-4">
-                        <h2 class="h5"><i class="bi bi-credit-card"></i> Método de pago</h2>
+                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-credit-card"></i></span> Método de pago</h2>
                         <label class="card tg-opcion p-3 mb-2" th:each="m, estado : ${metodos}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="metodo" required
@@ -46,6 +56,12 @@
                             </div>
                         </label>
                         <p class="text-muted small mb-0">El pago es simulado: no se cobra dinero real.</p>
+
+                        <!-- Cupón de descuento (opcional). PagoService lo valida y lo aplica a la factura. -->
+                        <hr class="my-4">
+                        <label for="codigoCupon" class="form-label"><i class="bi bi-ticket-perforated"></i> ¿Tienes un cupón?</label>
+                        <input type="text" id="codigoCupon" name="codigoCupon" class="form-control text-uppercase"
+                               maxlength="40" placeholder="Por ejemplo: VERANO10">
                     </div>
                 </div>
             </div>
@@ -53,14 +69,28 @@
             <div class="col-lg-4">
                 <div class="card tg-card tg-resumen">
                     <div class="card-body p-4">
+                        <!-- Tarjeta dibujada: el pago es simulado, no se pide ningún dato real -->
+                        <div class="tg-tarjeta-credito mb-4">
+                            <div class="d-flex justify-content-between align-items-start position-relative" style="z-index: 1;">
+                                <span class="tg-chip-tarjeta"></span>
+                                <span class="fw-bold"><i class="bi bi-airplane-fill"></i> TravelGo</span>
+                            </div>
+                            <div class="position-relative" style="z-index: 1;">
+                                <div class="tg-tarjeta-numero mb-1">•••• •••• •••• 2026</div>
+                                <div class="small d-flex justify-content-between">
+                                    <span class="text-uppercase" th:text="${reserva.usuario.nombre}">Cliente</span>
+                                    <span>12/30</span>
+                                </div>
+                            </div>
+                        </div>
                         <h2 class="h5">Resumen</h2>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="fw-semibold">Total a pagar</span>
                             <span class="tg-precio"
                                   th:text="${@formato.cop(reserva.total)}">$ 0</span>
                         </div>
-                        <button type="submit" class="btn btn-tg w-100">
-                            <i class="bi bi-lock-fill"></i> Pagar
+                        <button type="submit" class="btn btn-tg-acento btn-lg w-100">
+                            <i class="bi bi-lock-fill"></i> Pagar ahora
                         </button>
                         <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
                         <p class="text-muted small mt-2 mb-0">
@@ -71,6 +101,7 @@
             </div>
         </div>
     </form>
+  </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

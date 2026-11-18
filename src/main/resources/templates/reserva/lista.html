@@ -5,65 +5,72 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <!-- Cliente: solo sus reservas. Agente: las de todos los clientes, con el nombre del cliente. -->
-<main class="container py-5">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
-        <div>
-            <h1 class="h2 mb-1" th:text="${esAgente} ? 'Reservas de todos los clientes' : 'Mis reservas'">Mis reservas</h1>
-            <p class="text-muted mb-0">Paga una reserva pendiente o consulta la factura de una reserva pagada.</p>
+<main>
+    <section class="tg-encabezado">
+        <div class="container position-relative d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+            <div>
+                <span class="tg-eyebrow text-white-50" th:text="${esAgente} ? 'Agente' : 'Tu cuenta'">Tu cuenta</span>
+                <h1 class="h2 mb-1" th:text="${esAgente} ? 'Reservas de todos los clientes' : 'Mis reservas'">Mis reservas</h1>
+                <p class="mb-0">Paga una reserva pendiente o consulta la factura de una reserva pagada.</p>
+            </div>
+            <a class="btn btn-tg-acento align-self-start align-self-md-end" th:href="@{/catalogo}">
+                <i class="bi bi-plus-lg"></i> Nueva reserva
+            </a>
         </div>
-        <a class="btn btn-tg align-self-start align-self-md-end" th:href="@{/catalogo}">
-            <i class="bi bi-calendar-plus"></i> Nueva reserva
-        </a>
-    </div>
+    </section>
 
-    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+    <div class="container tg-sube">
+        <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
-    <p th:if="${#lists.isEmpty(reservas)}" class="text-muted">
-        No hay reservas. Elige un paquete en el <a th:href="@{/catalogo}">catálogo</a> para armar una.
-    </p>
+        <div th:if="${#lists.isEmpty(reservas)}" class="card tg-card p-5 text-center">
+            <span class="tg-error-icon mx-auto mb-3"><i class="bi bi-suitcase2"></i></span>
+            <h2 class="h4">Todavía no hay reservas</h2>
+            <p class="text-muted">Elige un paquete en el catálogo para armar tu primera reserva.</p>
+            <a class="btn btn-tg mx-auto" th:href="@{/catalogo}">Ir al catálogo</a>
+        </div>
 
-    <div class="card tg-card" th:unless="${#lists.isEmpty(reservas)}">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Reserva</th>
-                    <th>Paquete</th>
-                    <th th:if="${esAgente}">Cliente</th>
-                    <th class="text-end">Total</th>
-                    <th>Estado</th>
-                    <th class="text-end">Acción</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="r : ${reservas}">
-                    <td><code th:text="${r.idCorto()}">abcd1234</code></td>
-                    <td th:text="${r.paquete()}">Paquete</td>
-                    <td th:if="${esAgente}" th:text="${r.cliente()}">Cliente</td>
-                    <td class="text-end"
-                        th:text="${@formato.cop(r.total())}">$ 0</td>
-                    <td>
-                        <span class="badge"
-                              th:classappend="${r.estado() == 'CONFIRMADA' ? 'text-bg-success'
-                                  : (r.estado() == 'CANCELADA' ? 'text-bg-secondary' : 'text-bg-warning')}"
-                              th:text="${r.estado()}">PENDIENTE</span>
-                    </td>
-                    <td class="text-end">
-                        <a th:if="${r.pagada()}" class="btn btn-outline-secondary btn-sm"
-                           th:href="@{/reservas/{id}/factura(id=${r.id()})}">
-                            <i class="bi bi-receipt"></i> Ver factura
-                        </a>
-                        <a th:if="${!r.pagada() and r.estado() != 'CANCELADA'}" class="btn btn-tg btn-sm"
-                           th:href="@{/reservas/{id}/pagar(id=${r.id()})}">
-                            <i class="bi bi-credit-card"></i> Pagar
-                        </a>
-                        <span th:if="${!r.pagada() and r.estado() == 'CANCELADA'}" class="text-muted small">
-                            No se puede pagar
-                        </span>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <div class="card tg-card" th:unless="${#lists.isEmpty(reservas)}">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="ps-4">Reserva</th>
+                        <th>Paquete</th>
+                        <th th:if="${esAgente}">Cliente</th>
+                        <th class="text-end">Total</th>
+                        <th>Estado</th>
+                        <th class="text-end pe-4">Acción</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${reservas}">
+                        <td class="ps-4"><code th:text="${r.idCorto()}">abcd1234</code></td>
+                        <td class="fw-semibold" th:text="${r.paquete()}">Paquete</td>
+                        <td th:if="${esAgente}" th:text="${r.cliente()}">Cliente</td>
+                        <td class="text-end fw-bold" th:text="${@formato.cop(r.total())}">$ 0</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${r.estado() == 'CONFIRMADA' ? 'text-bg-success'
+                                      : (r.estado() == 'CANCELADA' ? 'text-bg-secondary' : 'text-bg-warning')}"
+                                  th:text="${r.estado()}">PENDIENTE</span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a th:if="${r.pagada()}" class="btn btn-outline-secondary btn-sm"
+                               th:href="@{/reservas/{id}/factura(id=${r.id()})}">
+                                <i class="bi bi-receipt"></i> Ver factura
+                            </a>
+                            <a th:if="${!r.pagada() and r.estado() != 'CANCELADA'}" class="btn btn-tg-acento btn-sm"
+                               th:href="@{/reservas/{id}/pagar(id=${r.id()})}">
+                                <i class="bi bi-credit-card"></i> Pagar
+                            </a>
+                            <span th:if="${!r.pagada() and r.estado() == 'CANCELADA'}" class="text-muted small">
+                                No se puede pagar
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </main>

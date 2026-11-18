@@ -4,22 +4,30 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="container py-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
-            <li class="breadcrumb-item">
-                <a th:href="@{/catalogo/{id}(id=${paquete.id})}" th:text="${paquete.nombre}">Paquete</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Reservar</li>
-        </ol>
-    </nav>
-
-    <div class="mb-4">
+<main>
+  <section class="tg-encabezado">
+    <div class="container position-relative">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
+                <li class="breadcrumb-item">
+                    <a th:href="@{/catalogo/{id}(id=${paquete.id})}" th:text="${paquete.nombre}">Paquete</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Reservar</li>
+            </ol>
+        </nav>
         <h1 class="h2 mb-1">Arma tu reserva</h1>
-        <p class="text-muted mb-0">Elige al menos un servicio. Se muestran los que llegan a
+        <p class="mb-0">Elige al menos un servicio. Se muestran los que llegan a
             <span th:text="${@formato.destinos(paquete)}">destino</span>.</p>
+        <ol class="tg-pasos">
+            <li class="actual"><span>Elegir servicios</span></li>
+            <li><span>Pagar</span></li>
+            <li><span>Factura</span></li>
+        </ol>
     </div>
+  </section>
+
+  <div class="container tg-sube">
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
@@ -37,7 +45,7 @@
                 <!-- Una sección por tipo de servicio reservable: Vuelo, Hotel y Transporte -->
                 <div class="card tg-card mb-4">
                     <div class="card-body p-4">
-                        <h2 class="h5"><i class="bi bi-airplane"></i> Vuelo</h2>
+                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-airplane"></i></span> Vuelo</h2>
                         <label class="card tg-opcion p-3 mb-2" th:each="vuelo : ${vuelos}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="vueloId"
@@ -63,7 +71,7 @@
 
                 <div class="card tg-card mb-4">
                     <div class="card-body p-4">
-                        <h2 class="h5"><i class="bi bi-building"></i> Hotel</h2>
+                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-building"></i></span> Hotel</h2>
                         <label class="card tg-opcion p-3 mb-2" th:each="hotel : ${hoteles}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="hotelId"
@@ -90,7 +98,7 @@
 
                 <div class="card tg-card">
                     <div class="card-body p-4">
-                        <h2 class="h5"><i class="bi bi-car-front"></i> Transporte</h2>
+                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-car-front"></i></span> Transporte</h2>
                         <label class="card tg-opcion p-3 mb-2" th:each="transporte : ${transportes}">
                             <div class="d-flex align-items-center gap-3">
                                 <input class="form-check-input mt-0" type="radio" name="transporteId"
@@ -136,7 +144,7 @@
                             <span id="total" class="tg-precio" th:attr="data-base=${paquete.precio}"
                                   th:text="${@formato.cop(paquete.precio)}">$ 0</span>
                         </div>
-                        <button type="submit" class="btn btn-tg w-100">Confirmar reserva</button>
+                        <button type="submit" class="btn btn-tg-acento btn-lg w-100"><i class="bi bi-check2-circle"></i> Confirmar reserva</button>
                         <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
                         <p class="text-muted small mt-2 mb-0">
                             Por ahora el total a pagar solo suma los servicios, no el precio del paquete.
@@ -146,6 +154,7 @@
             </div>
         </div>
     </form>
+  </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
