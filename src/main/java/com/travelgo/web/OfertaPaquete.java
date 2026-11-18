@@ -18,8 +18,9 @@ import java.util.Optional;
  *   <li>Hotel: su dirección menciona una ciudad del paquete.</li>
  *   <li>Transporte: sale de una ciudad del paquete o llega a ella.</li>
  * </ul>
- * Hoy la base de datos no une paquetes con servicios; por eso se cruzan por ciudad. Cuando el constructor
- * de paquetes del Sprint 4 guarde el vuelo y el hotel de cada paquete, esta clase se reemplaza por esos datos.
+ * Si el paquete se armó con el constructor de paquetes (Sprint 4), la oferta son su vuelo y su hotel guardados
+ * en la tabla paquete_servicio ({@link #incluidos}). Los paquetes creados a mano no tienen servicios propios,
+ * así que se cruzan por ciudad ({@link #de}).
  *
  * @param vuelos      vuelos hacia el destino
  * @param hoteles     hoteles del destino
@@ -50,6 +51,18 @@ public record OfertaPaquete(List<Vuelo> vuelos, List<Hotel> hoteles, List<Transp
 			.filter(t -> ciudades.contains(Textos.normalizar(t.getOrigen())) || ciudades.contains(Textos.normalizar(t.getDestino())))
 			.toList();
 		return new OfertaPaquete(vuelos, hoteles, transportes);
+	}
+
+	/**
+	 * Oferta de un paquete armado con el constructor: exactamente los servicios guardados con él.
+	 *
+	 * @param servicios servicios del paquete (de la tabla paquete_servicio)
+	 */
+	public static OfertaPaquete incluidos(List<ServicioReservable> servicios) {
+		return new OfertaPaquete(
+			servicios.stream().filter(Vuelo.class::isInstance).map(Vuelo.class::cast).toList(),
+			servicios.stream().filter(Hotel.class::isInstance).map(Hotel.class::cast).toList(),
+			servicios.stream().filter(Transporte.class::isInstance).map(Transporte.class::cast).toList());
 	}
 
 	/** Busca un servicio de la oferta por id. */

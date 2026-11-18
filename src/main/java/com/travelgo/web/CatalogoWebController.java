@@ -4,8 +4,10 @@ import com.travelgo.util.Textos;
 import com.travelgo.exception.RecursoNoEncontradoException;
 import com.travelgo.model.Destino;
 import com.travelgo.model.PaqueteTuristico;
+import com.travelgo.model.ServicioReservable;
 import com.travelgo.proveedor.destinos.Consulta;
 import com.travelgo.proveedor.destinos.FotoDestino;
+import com.travelgo.service.ConstructorPaqueteService;
 import com.travelgo.service.InfoDestinoService;
 import com.travelgo.service.PaqueteService;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +34,14 @@ public class CatalogoWebController {
 	private final PaqueteService paqueteService;
 	private final InfoDestinoService infoDestinoService;
 	private final FormatoWeb formato;
+	private final ConstructorPaqueteService constructorPaquete;
 
 	public CatalogoWebController(PaqueteService paqueteService, InfoDestinoService infoDestinoService,
-			FormatoWeb formato) {
+			FormatoWeb formato, ConstructorPaqueteService constructorPaquete) {
 		this.paqueteService = paqueteService;
 		this.infoDestinoService = infoDestinoService;
 		this.formato = formato;
+		this.constructorPaquete = constructorPaquete;
 	}
 
 	/**
@@ -80,7 +85,31 @@ public class CatalogoWebController {
 		model.addAttribute("paquete", paquete);
 		model.addAttribute("destino", principal);
 		model.addAttribute("info", principal == null ? null : infoDestinoService.consultar(principal));
+		model.addAttribute("incluidos", constructorPaquete.serviciosDe(paquete.getId()).stream()
+			.map(Incluido::de).toList());
 		return "catalogo/detalle";
+	}
+
+	/**
+	 * Un servicio real guardado con el paquete, tal como se muestra en el detalle: siempre con su fuente
+	 * y su fecha de consulta (regla del Sprint 4: "siempre como referencia").
+	 */
+	public record Incluido(String tipo, String descripcion, double costo, String fuente, LocalDateTime consultado,
+			String enlace) {
+
+		static Incluido de(ServicioReservable s) {
+			String fuente = switch (s.getFuente() == null ? "" : s.getFuente()) {
+				case "IGNAV" -> "Ignav";
+				case "XOTELO" -> "Xotelo (precios de TripAdvisor)";
+				case "" -> "Dato manual";
+				default -> s.getFuente();
+			};
+			// describir() ya empieza con "Vuelo"; al hotel y al transporte se les pone el tipo adelante
+			String descripcion = s instanceof com.travelgo.model.Vuelo ? FormatoWeb.describir(s)
+				: FormatoWeb.tipo(s) + ": " + FormatoWeb.describir(s);
+			return new Incluido(FormatoWeb.tipo(s), descripcion, s.calcularCosto(), fuente,
+				s.getFechaConsulta(), s.getEnlaceReserva());
+		}
 	}
 
 	private PaqueteTuristico paqueteActivo(Long id) {
