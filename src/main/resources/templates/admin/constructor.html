@@ -4,16 +4,17 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="container py-5">
-    <h1 class="h2 mb-4">Panel de administración</h1>
-    <ul th:replace="~{fragments/layout :: adminTabs('constructor')}"></ul>
+<main>
+  <section th:replace="~{fragments/layout :: adminEncabezado('constructor')}"></section>
+
+  <div class="container tg-sube">
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
     <!-- 1. Búsqueda -->
     <div class="card tg-card mb-4">
         <div class="card-body p-4">
-            <h2 class="h5"><i class="bi bi-magic"></i> Nuevo paquete con datos reales</h2>
+            <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-magic"></i></span> Nuevo paquete con datos reales</h2>
             <p class="text-muted small">
                 Busca vuelos (Ignav) y hoteles (Xotelo) reales, elige uno de cada uno y guarda el paquete.
                 Se guarda una copia con el precio, la fecha de consulta y el enlace de reserva.
@@ -47,7 +48,7 @@
                            th:value="${solicitud.vuelta() != null ? solicitud.vuelta() : vueltaSugerida}">
                 </div>
                 <div class="col-6 col-md-2">
-                    <button type="submit" class="btn btn-tg w-100"><i class="bi bi-search"></i> Buscar</button>
+                    <button type="submit" class="btn btn-tg-acento w-100"><i class="bi bi-search"></i> Buscar</button>
                 </div>
 
                 <!-- Códigos para las APIs. Se llenan solos con el destino; se pueden cambiar para una ciudad nueva -->
@@ -91,17 +92,17 @@
                 <div class="col-lg-6">
                     <div class="card tg-card h-100">
                         <div class="card-body p-4">
-                            <h2 class="h5"><i class="bi bi-airplane"></i> Vuelos encontrados
+                            <h2 class="h5"><span class="tg-seccion-icono"><i class="bi bi-airplane"></i></span> Vuelos encontrados
                                 <span class="badge text-bg-light" th:text="${#lists.size(resultado.vuelos())}">0</span></h2>
                             <p class="small text-muted" th:text="${solicitud.origen() + ' → ' + solicitud.codigoDestino()
                                 + ' · ' + @formato.diaCorto(solicitud.ida()) + ' · 1 adulto, solo ida'}">BOG → CTG</p>
 
-                            <div class="form-check border rounded p-3 ps-5 mb-2">
+                            <div class="form-check tg-opcion p-3 ps-5 mb-2">
                                 <input class="form-check-input" type="radio" name="vueloId" id="vuelo-ninguno" value=""
                                        data-precio="0">
                                 <label class="form-check-label text-muted" for="vuelo-ninguno">Sin vuelo</label>
                             </div>
-                            <div th:each="v, it : ${resultado.vuelos()}" class="form-check border rounded p-3 ps-5 mb-2">
+                            <div th:each="v, it : ${resultado.vuelos()}" class="form-check tg-opcion p-3 ps-5 mb-2">
                                 <input class="form-check-input" type="radio" name="vueloId"
                                        th:id="${'vuelo-' + it.index}" th:value="${v.id}" th:checked="${it.first}"
                                        th:attr="data-precio=${v.calcularCosto()}">
@@ -127,12 +128,12 @@
                 <div class="col-lg-6">
                     <div class="card tg-card h-100">
                         <div class="card-body p-4">
-                            <h2 class="h5"><i class="bi bi-building"></i> Hoteles encontrados
+                            <h2 class="h5"><span class="tg-seccion-icono"><i class="bi bi-building"></i></span> Hoteles encontrados
                                 <span class="badge text-bg-light" th:text="${#lists.size(resultado.hoteles())}">0</span></h2>
                             <p class="small text-muted"
                                th:text="${solicitud.noches() + ' noche(s) · 1 habitación, 2 adultos · ' + resultado.destino().ciudad}">noches</p>
 
-                            <div th:each="h, it : ${resultado.hoteles()}" class="form-check border rounded p-3 ps-5 mb-2">
+                            <div th:each="h, it : ${resultado.hoteles()}" class="form-check tg-opcion p-3 ps-5 mb-2">
                                 <input class="form-check-input" type="radio" name="hotelClave" required
                                        th:id="${'hotel-' + it.index}" th:value="${h.hotel().clave()}" th:checked="${it.first}"
                                        th:attr="data-precio=${h.totalCop()}">
@@ -188,12 +189,13 @@
                             <div class="tg-precio fs-3" id="precioTotal">$ 0</div>
                             <div class="small text-muted" th:text="${'Duración: ' + (solicitud.noches() + 1) + ' días'}">días</div>
                         </div>
-                        <button type="submit" class="btn btn-tg btn-lg"><i class="bi bi-save"></i> Guardar paquete</button>
+                        <button type="submit" class="btn btn-tg-acento btn-lg"><i class="bi bi-save"></i> Guardar paquete</button>
                     </div>
                 </div>
             </div>
         </form>
     </th:block>
+  </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

@@ -4,10 +4,25 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="d-flex align-items-center justify-content-center py-5">
-    <div class="card tg-auth-card">
+<main>
+    <div class="row g-0 tg-auth">
+        <div class="col-lg-6 tg-auth-lado d-none d-lg-flex align-items-center">
+            <i class="bi bi-airplane tg-avion"></i>
+            <div class="p-5 position-relative" style="z-index: 1; max-width: 34rem;">
+                <span class="tg-etiqueta mb-4"><i class="bi bi-stars"></i> Crea tu cuenta gratis</span>
+                <h2 class="mb-3">Empieza a planear tu viaje hoy</h2>
+                <p class="mb-4" style="color: rgba(255,255,255,.82);">Con tu cuenta puedes reservar paquetes y guardar tus facturas.</p>
+                <ul class="list-unstyled d-grid gap-3 mb-0">
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Vuelos y hoteles con precios reales de referencia</li>
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Clima del día y lugares para visitar</li>
+                    <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Factura al instante, lista para PDF</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-6 d-flex align-items-center justify-content-center p-4 py-5">
+    <div class="card tg-auth-card tg-aparece visible">
         <div class="card-header text-center">
-            <i class="bi bi-person-plus-fill fs-1 text-primary"></i>
+            <span class="tg-marca-icono mb-2" style="width:3rem;height:3rem;font-size:1.3rem;"><i class="bi bi-person-plus-fill"></i></span>
             <h1 class="h4 mt-2">Crear cuenta</h1>
         </div>
         <div class="card-body px-4 pb-4">
@@ -38,12 +53,14 @@
                            th:classappend="${#fields.hasErrors('confirmarPassword')} ? 'is-invalid'">
                     <div class="invalid-feedback" th:errors="*{confirmarPassword}"></div>
                 </div>
-                <button type="submit" class="btn btn-tg w-100">Registrarme</button>
+                <button type="submit" class="btn btn-tg-acento btn-lg w-100">Registrarme</button>
             </form>
 
             <p class="text-center mt-3 mb-0 small">
                 ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia sesión</a>
             </p>
+        </div>
+    </div>
         </div>
     </div>
 </main>
