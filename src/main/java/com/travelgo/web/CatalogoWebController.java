@@ -21,8 +21,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Catálogo web con los paquetes de la base de datos (PaqueteService) y la información real de cada destino
@@ -66,8 +68,17 @@ public class CatalogoWebController {
 			}
 		}
 
+		// Paquetes armados con el constructor (vuelo y hotel reales): llevan la etiqueta "Datos reales"
+		Set<Long> reales = new HashSet<>();
+		for (PaqueteTuristico paquete : paquetes) {
+			if (!constructorPaquete.serviciosDe(paquete.getId()).isEmpty()) {
+				reales.add(paquete.getId());
+			}
+		}
+
 		model.addAttribute("paquetes", paquetes);
 		model.addAttribute("fotos", fotos);
+		model.addAttribute("reales", reales);
 		model.addAttribute("destino", destino);
 		model.addAttribute("precioMin", precioMin);
 		model.addAttribute("precioMax", precioMax);
