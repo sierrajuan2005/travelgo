@@ -13,8 +13,8 @@ de los demás. Última actualización: 2026-11-12. Lo marcado **(por probar)** o
 | Otras fuentes de hoteles | Integrante 2 | Respaldo | Por decidir | — | — | — | — |
 | Open-Meteo (clima y geocodificación) | Integrante 3 | Clima, ciudad a coordenadas | **Pasó** (2026-11-06) | No | °C, no hay precios | Gratis, uso no comercial | "Weather data by Open-Meteo.com" (CC BY 4.0); GeoNames (CC BY 4.0) |
 | Wikipedia + Wikimedia Commons | Integrante 3 | Fotos y atracciones | **Pasó** / atracciones **pasó con límites** | No | No aplica | Sin llave; pide User-Agent | Autor + licencia + enlace a Commons; textos CC BY-SA 4.0 |
-| OpenTripMap | Integrante 3 | Atracciones con dirección | **Pendiente** de llave (sin llave responde 401) | Sí (gratis) | No aplica | Por confirmar | © colaboradores de OpenStreetMap (ODbL) |
-| Geoapify | Integrante 3 | Hoteles y atracciones de apoyo | **Pendiente** de llave | Sí (gratis) | No aplica | Por confirmar | © OpenStreetMap, "Powered by Geoapify" |
+| OpenTripMap | Integrante 3 | Atracciones con dirección | **No pasó** (2026-11-17): el correo de verificación no llega y reenviarlo da error 500, así que no se obtiene la llave. Respaldo: Wikipedia | Sí (gratis) | No aplica | No se pudo ver | © colaboradores de OpenStreetMap (ODbL) |
+| Geoapify | Integrante 3 | Hoteles y atracciones de apoyo | **Pasó** (2026-11-17): atracciones y hoteles reales con nombre, dirección y coordenadas en Cartagena, Cusco y Cancún | Sí (gratis, `GEOAPIFY_KEY`) | No aplica | Plan gratuito (ver su página de precios) | © OpenStreetMap contributors (ODbL), "Powered by Geoapify" |
 | Overpass API | Integrante 3 | Alternativa sin llave | **No pasó** (no respondió); descartada | No | — | — | — |
 
 Descartadas desde el planning: Amadeus Self-Service (cerrado en julio de 2026) y Duffel (aerolíneas ficticias en

@@ -12,6 +12,7 @@ import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.ServicioReservable;
 import com.travelgo.model.Usuario;
+import com.travelgo.service.ConstructorPaqueteService;
 import com.travelgo.service.FacturaService;
 import com.travelgo.service.PagoService;
 import com.travelgo.service.PaqueteService;
@@ -57,16 +58,25 @@ public class ReservaWebController {
 	private final ReservaService reservaService;
 	private final PagoService pagoService;
 	private final FacturaService facturaService;
+	private final ConstructorPaqueteService constructorPaquete;
 
 	public ReservaWebController(UsuarioService usuarioService, PaqueteService paqueteService,
 			ServicioReservableService servicioService, ReservaService reservaService, PagoService pagoService,
-			FacturaService facturaService) {
+			FacturaService facturaService, ConstructorPaqueteService constructorPaquete) {
 		this.usuarioService = usuarioService;
 		this.paqueteService = paqueteService;
 		this.servicioService = servicioService;
 		this.reservaService = reservaService;
 		this.pagoService = pagoService;
 		this.facturaService = facturaService;
+		this.constructorPaquete = constructorPaquete;
+	}
+
+	/** Servicios que se pueden reservar con el paquete: los suyos si se armó con el constructor, o los de su ciudad. */
+	private OfertaPaquete oferta(PaqueteTuristico paquete) {
+		List<ServicioReservable> propios = constructorPaquete.serviciosDe(paquete.getId());
+		return propios.isEmpty() ? OfertaPaquete.de(paquete, servicioService.listar(true))
+			: OfertaPaquete.incluidos(propios);
 	}
 
 	/** Una fila de la tabla de reservas. */
@@ -89,7 +99,7 @@ public class ReservaWebController {
 		if (paquete.isEmpty()) {
 			return "redirect:/catalogo";
 		}
-		OfertaPaquete oferta = OfertaPaquete.de(paquete.get(), servicioService.listar(true));
+		OfertaPaquete oferta = oferta(paquete.get());
 		model.addAttribute("paquete", paquete.get());
 		model.addAttribute("vuelos", oferta.vuelos());
 		model.addAttribute("hoteles", oferta.hoteles());
@@ -113,7 +123,7 @@ public class ReservaWebController {
 			return "redirect:/catalogo";
 		}
 		// Solo se aceptan servicios de la oferta del paquete, aunque alguien cambie el formulario a mano
-		OfertaPaquete oferta = OfertaPaquete.de(paquete.get(), servicioService.listar(true));
+		OfertaPaquete oferta = oferta(paquete.get());
 		List<String> serviciosIds = new ArrayList<>();
 		for (String id : new String[] {vueloId, hotelId, transporteId}) {
 			if (id != null && !id.isBlank()) {

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administración · Constructor de paquetes')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="container py-5">
+    <h1 class="h2 mb-4">Panel de administración</h1>
+    <ul th:replace="~{fragments/layout :: adminTabs('constructor')}"></ul>
+
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <!-- 1. Búsqueda -->
+    <div class="card tg-card mb-4">
+        <div class="card-body p-4">
+            <h2 class="h5"><i class="bi bi-magic"></i> Nuevo paquete con datos reales</h2>
+            <p class="text-muted small">
+                Busca vuelos (Ignav) y hoteles (Xotelo) reales, elige uno de cada uno y guarda el paquete.
+                Se guarda una copia con el precio, la fecha de consulta y el enlace de reserva.
+            </p>
+            <form th:action="@{/admin/constructor}" method="get" id="formBusqueda" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="destinoId" class="form-label small">Destino</label>
+                    <select id="destinoId" name="destinoId" class="form-select" required>
+                        <option th:each="d : ${destinos}" th:value="${d.id}"
+                                th:selected="${d.id == solicitud.destinoId()}"
+                                th:attr="data-iata=${codigos[d.id]?.iata()},data-hoteles=${codigos[d.id]?.claveHoteles()}"
+                                th:text="${d.nombre + ' - ' + d.ciudad + ', ' + d.pais}">Destino</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="origen" class="form-label small">Sale de</label>
+                    <select id="origen" name="origen" class="form-select">
+                        <option th:each="o : ${origenes}" th:value="${o.key}"
+                                th:selected="${o.key == solicitud.origen()}"
+                                th:text="${o.value + ' (' + o.key + ')'}">Bogotá (BOG)</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="ida" class="form-label small">Ida</label>
+                    <input type="date" id="ida" name="ida" class="form-control" required
+                           th:value="${solicitud.ida() != null ? solicitud.ida() : idaSugerida}">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="vuelta" class="form-label small">Vuelta</label>
+                    <input type="date" id="vuelta" name="vuelta" class="form-control" required
+                           th:value="${solicitud.vuelta() != null ? solicitud.vuelta() : vueltaSugerida}">
+                </div>
+                <div class="col-6 col-md-2">
+                    <button type="submit" class="btn btn-tg w-100"><i class="bi bi-search"></i> Buscar</button>
+                </div>
+
+                <!-- Códigos para las APIs. Se llenan solos con el destino; se pueden cambiar para una ciudad nueva -->
+                <div class="col-12">
+                    <details>
+                        <summary class="small text-muted">Códigos para las APIs</summary>
+                        <div class="row g-2 mt-1">
+                            <div class="col-6 col-md-3">
+                                <label for="codigoDestino" class="form-label small">Aeropuerto destino (IATA)</label>
+                                <input type="text" id="codigoDestino" name="codigoDestino" class="form-control"
+                                       maxlength="3" th:value="${solicitud.codigoDestino()}" required>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="claveHoteles" class="form-label small">Ciudad en Xotelo (TripAdvisor)</label>
+                                <input type="text" id="claveHoteles" name="claveHoteles" class="form-control"
+                                       th:value="${solicitud.claveHoteles()}" required>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Resultados -->
+    <th:block th:if="${resultado != null}">
+        <div th:each="aviso : ${resultado.avisos()}" class="alert alert-warning small">
+            <i class="bi bi-info-circle"></i> <span th:text="${aviso}">Aviso</span>
+        </div>
+
+        <form th:action="@{/admin/constructor}" method="post" id="formArmar">
+            <input type="hidden" name="destinoId" th:value="${solicitud.destinoId()}">
+            <input type="hidden" name="origen" th:value="${solicitud.origen()}">
+            <input type="hidden" name="codigoDestino" th:value="${solicitud.codigoDestino()}">
+            <input type="hidden" name="claveHoteles" th:value="${solicitud.claveHoteles()}">
+            <input type="hidden" name="ida" th:value="${solicitud.ida()}">
+            <input type="hidden" name="vuelta" th:value="${solicitud.vuelta()}">
+
+            <div class="row g-4">
+                <!-- Vuelos -->
+                <div class="col-lg-6">
+                    <div class="card tg-card h-100">
+                        <div class="card-body p-4">
+                            <h2 class="h5"><i class="bi bi-airplane"></i> Vuelos encontrados
+                                <span class="badge text-bg-light" th:text="${#lists.size(resultado.vuelos())}">0</span></h2>
+                            <p class="small text-muted" th:text="${solicitud.origen() + ' → ' + solicitud.codigoDestino()
+                                + ' · ' + @formato.diaCorto(solicitud.ida()) + ' · 1 adulto, solo ida'}">BOG → CTG</p>
+
+                            <div class="form-check border rounded p-3 ps-5 mb-2">
+                                <input class="form-check-input" type="radio" name="vueloId" id="vuelo-ninguno" value=""
+                                       data-precio="0">
+                                <label class="form-check-label text-muted" for="vuelo-ninguno">Sin vuelo</label>
+                            </div>
+                            <div th:each="v, it : ${resultado.vuelos()}" class="form-check border rounded p-3 ps-5 mb-2">
+                                <input class="form-check-input" type="radio" name="vueloId"
+                                       th:id="${'vuelo-' + it.index}" th:value="${v.id}" th:checked="${it.first}"
+                                       th:attr="data-precio=${v.calcularCosto()}">
+                                <label class="form-check-label w-100" th:for="${'vuelo-' + it.index}">
+                                    <span class="d-flex justify-content-between">
+                                        <span class="fw-semibold" th:text="${v.aerolinea}">Avianca</span>
+                                        <span class="tg-precio" th:text="${@formato.cop(v.precio)}">$ 0</span>
+                                    </span>
+                                    <span class="small d-block"
+                                          th:text="${@formato.fechaHora(v.fechaSalida) + ' → ' + @formato.fechaHora(v.fechaLlegada)}">salida</span>
+                                    <span class="small text-muted d-block">
+                                        <span th:text="${v.fuente}">IGNAV</span> · consultado
+                                        <span th:text="${@formato.fechaHora(v.fechaConsulta)}">fecha</span>
+                                        <span th:unless="${v.disponible}" class="badge text-bg-warning">precio sin verificar</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hoteles -->
+                <div class="col-lg-6">
+                    <div class="card tg-card h-100">
+                        <div class="card-body p-4">
+                            <h2 class="h5"><i class="bi bi-building"></i> Hoteles encontrados
+                                <span class="badge text-bg-light" th:text="${#lists.size(resultado.hoteles())}">0</span></h2>
+                            <p class="small text-muted"
+                               th:text="${solicitud.noches() + ' noche(s) · 1 habitación, 2 adultos · ' + resultado.destino().ciudad}">noches</p>
+
+                            <div th:each="h, it : ${resultado.hoteles()}" class="form-check border rounded p-3 ps-5 mb-2">
+                                <input class="form-check-input" type="radio" name="hotelClave" required
+                                       th:id="${'hotel-' + it.index}" th:value="${h.hotel().clave()}" th:checked="${it.first}"
+                                       th:attr="data-precio=${h.totalCop()}">
+                                <label class="form-check-label w-100 d-flex gap-3" th:for="${'hotel-' + it.index}">
+                                    <img th:if="${h.hotel().imagen()}" th:src="${h.hotel().imagen()}" alt="" class="rounded"
+                                         style="width:72px;height:72px;object-fit:cover">
+                                    <span class="flex-grow-1">
+                                        <span class="d-flex justify-content-between">
+                                            <span class="fw-semibold" th:text="${h.hotel().nombre()}">Hotel</span>
+                                            <span class="tg-precio" th:text="${@formato.cop(h.totalCop())}">$ 0</span>
+                                        </span>
+                                        <span class="small d-block">
+                                            <span th:text="${@formato.cop(h.precioNocheCop())}">$ 0</span> / noche
+                                            (<span th:text="${h.oferta().moneda() + ' ' + #numbers.formatDecimal(h.oferta().mejorTarifa().precioPorNoche(), 1, 2)}">USD</span>
+                                            en <span th:text="${h.oferta().mejorTarifa().agencia()}">Booking.com</span>)
+                                            <span th:if="${h.hotel().calificacion()}"> · <i class="bi bi-star-fill text-warning"></i>
+                                                <span th:text="${h.hotel().calificacion()}">4.5</span></span>
+                                        </span>
+                                        <a th:if="${h.hotel().enlace()}" th:href="${h.hotel().enlace()}" target="_blank" rel="noopener"
+                                           class="small">Ver el hotel <i class="bi bi-box-arrow-up-right"></i></a>
+                                    </span>
+                                </label>
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Fuente: Xotelo (precios de TripAdvisor).
+                                <th:block th:if="${resultado.tasa() != null}">
+                                    USD convertido a COP con la tasa de <span th:text="${resultado.tasa().fuente()}">open.er-api.com</span>:
+                                    1 USD = <span th:text="${@formato.cop(resultado.tasa().copPorUsd())}">$ 4.000</span>.
+                                </th:block>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Datos del paquete -->
+            <div class="card tg-card mt-4">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label for="nombre" class="form-label small">Nombre del paquete</label>
+                            <input type="text" id="nombre" name="nombre" class="form-control" maxlength="100" required
+                                   th:value="${resultado.destino().ciudad + ' ' + solicitud.noches() + ' noches'}">
+                        </div>
+                        <div class="col-md-7">
+                            <label for="descripcion" class="form-label small">Descripción (si la dejas vacía, se escribe sola)</label>
+                            <input type="text" id="descripcion" name="descripcion" class="form-control" maxlength="500">
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-3">
+                        <div>
+                            <div class="small text-muted">Precio de referencia = vuelo + hotel × noches (el hotel es obligatorio)</div>
+                            <div class="tg-precio fs-3" id="precioTotal">$ 0</div>
+                            <div class="small text-muted" th:text="${'Duración: ' + (solicitud.noches() + 1) + ' días'}">días</div>
+                        </div>
+                        <button type="submit" class="btn btn-tg btn-lg"><i class="bi bi-save"></i> Guardar paquete</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+    // Llena los códigos de las APIs al cambiar el destino
+    const destino = document.getElementById('destinoId');
+    destino?.addEventListener('change', () => {
+        const opcion = destino.selectedOptions[0];
+        document.getElementById('codigoDestino').value = opcion.dataset.iata || '';
+        document.getElementById('claveHoteles').value = opcion.dataset.hoteles || '';
+    });
+
+    // Suma en vivo el precio del vuelo y del hotel elegidos
+    const formArmar = document.getElementById('formArmar');
+    const formatoCop = new Intl.NumberFormat('es-CO', {style: 'currency', currency: 'COP', maximumFractionDigits: 0});
+    function actualizarTotal() {
+        let total = 0;
+        formArmar.querySelectorAll('input[type=radio]:checked').forEach(r => total += Number(r.dataset.precio || 0));
+        document.getElementById('precioTotal').textContent = formatoCop.format(total);
+    }
+    if (formArmar) {
+        formArmar.addEventListener('change', actualizarTotal);
+        // Si no hay vuelos, "Sin vuelo" queda elegido
+        if (!formArmar.querySelector('input[name=vueloId]:checked')) {
+            formArmar.querySelector('input[name=vueloId][value=""]').checked = true;
+        }
+        actualizarTotal();
+    }
+</script>
+</body>
+</html>

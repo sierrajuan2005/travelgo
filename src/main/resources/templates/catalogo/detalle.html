@@ -120,9 +120,29 @@
         <div class="col-lg-4">
             <div class="card tg-card tg-resumen">
                 <div class="card-body p-4">
-                    <p class="text-muted mb-1">Precio de referencia por persona</p>
+                    <p class="text-muted mb-1" th:text="${#lists.isEmpty(incluidos)} ? 'Precio de referencia por persona'
+                        : 'Precio de referencia (vuelo para 1 adulto + habitación doble)'">Precio de referencia</p>
                     <p class="tg-precio fs-3 mb-1" th:text="${@formato.cop(paquete.precio)}">$ 0</p>
                     <p class="text-muted small" th:text="${paquete.duracionDias + ' días'}">5 días</p>
+
+                    <!-- Vuelo y hotel reales guardados por el constructor de paquetes -->
+                    <div th:unless="${#lists.isEmpty(incluidos)}" class="mb-3">
+                        <p class="small fw-semibold mb-2">Incluye</p>
+                        <div th:each="s : ${incluidos}" class="small border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span th:text="${s.descripcion()}">Vuelo</span>
+                                <span class="text-nowrap" th:text="${@formato.cop(s.costo())}">$ 0</span>
+                            </div>
+                            <div class="text-muted">
+                                <span th:text="${s.fuente()}">Fuente</span>
+                                <th:block th:if="${s.consultado() != null}">
+                                    · consultado el <span th:text="${@formato.fechaHora(s.consultado())}">fecha</span>
+                                </th:block>
+                                <a th:if="${s.enlace() != null}" th:href="${s.enlace()}" target="_blank" rel="noopener">
+                                    · ver en el sitio <i class="bi bi-box-arrow-up-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
                     <!-- El Administrador no reserva (docs/matriz_permisos.md) -->
                     <th:block sec:authorize="!hasRole('ADMINISTRADOR')">
                         <a class="btn btn-tg w-100" th:href="@{/reserva(paquete=${paquete.id})}">
