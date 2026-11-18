@@ -81,4 +81,21 @@ class CatalogoYOfertaTest {
 		assertEquals("123e4567", FormatoWeb.idCorto("123e4567-e89b-12d3-a456-426614174000"));
 		assertEquals("Cartagena, Colombia", formato.destinos(paquetes.get(0)));
 	}
+
+	@Test
+	@DisplayName("Un paquete armado con el constructor ofrece solo su vuelo y su hotel, aunque no coincida la ciudad")
+	void ofertaDelConstructor() {
+		LocalDateTime salida = LocalDateTime.of(2026, 12, 10, 8, 0);
+		// El vuelo real trae códigos de aeropuerto (CTG), no el nombre de la ciudad
+		Vuelo vuelo = new Vuelo("v-real", 350000, true, "Avianca", "BOG", "CTG", salida, salida.plusHours(2));
+		Hotel hotel = new Hotel("h-real", 400000, true, "Hotel Caribe", "Cartagena, Colombia", "Doble", 4);
+
+		OfertaPaquete oferta = OfertaPaquete.incluidos(List.of(vuelo, hotel));
+
+		assertEquals(List.of(vuelo), oferta.vuelos());
+		assertEquals(List.of(hotel), oferta.hoteles());
+		assertTrue(oferta.transportes().isEmpty());
+		assertTrue(oferta.buscar("h-real").isPresent());
+		assertTrue(oferta.buscar("otro").isEmpty());
+	}
 }
