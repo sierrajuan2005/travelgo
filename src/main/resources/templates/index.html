@@ -6,39 +6,231 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <main>
-    <section class="tg-hero text-center">
-        <div class="container">
-            <h1 class="display-5 fw-bold">Tu próximo viaje empieza aquí</h1>
-            <p class="lead mb-4">Paquetes turísticos, vuelos, hoteles y transporte en un solo lugar.</p>
-            <div sec:authorize="isAnonymous()">
-                <a class="btn btn-light btn-lg me-2" th:href="@{/registro}">Crear cuenta</a>
-                <a class="btn btn-outline-light btn-lg" th:href="@{/login}">Iniciar sesión</a>
+    <!-- 1. Portada: fotos reales de los destinos a pantalla completa (HomeController arma las diapositivas) -->
+    <section class="tg-hero">
+        <div id="carruselPortada" class="carousel slide" data-bs-ride="false" data-bs-pause="false"
+             th:unless="${#lists.isEmpty(diapositivas)}">
+            <div class="carousel-indicators">
+                <button type="button" th:each="d, it : ${diapositivas}" data-bs-target="#carruselPortada"
+                        th:attr="data-bs-slide-to=${it.index},aria-label=${d.ciudad()}"
+                        th:classappend="${it.first} ? 'active'"></button>
+            </div>
+            <div class="carousel-inner">
+                <div class="carousel-item" th:each="d, it : ${diapositivas}" th:classappend="${it.first} ? 'active'">
+                    <img th:src="${d.foto()}" th:alt="${'Foto de ' + d.ciudad() + ', ' + d.pais()}">
+                    <a class="tg-hero-ficha" th:href="@{/catalogo/{id}(id=${d.paqueteId()})}">
+                        <div class="small text-white-50"><i class="bi bi-geo-alt-fill"></i>
+                            <span th:text="${d.ciudad() + ', ' + d.pais()}">Cusco, Perú</span></div>
+                        <div class="fw-bold" th:text="${d.paquete()}">Machu Picchu Aventura</div>
+                        <div class="d-flex justify-content-between align-items-end mt-1 gap-3">
+                            <span class="small text-white-50" th:text="${d.dias() + ' días · desde'}">7 días · desde</span>
+                            <span class="tg-ficha-precio" th:text="${@formato.cop(d.precio())}">$ 3.500.000</span>
+                        </div>
+                    </a>
+                    <button type="button" class="tg-info-foto" data-bs-toggle="tooltip" data-bs-placement="left"
+                            th:title="${d.credito()}" aria-label="Crédito de la foto"><i class="bi bi-info-lg"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="tg-hero-sombra"></div>
+
+        <div class="tg-hero-contenido">
+            <div class="container">
+                <span class="tg-etiqueta mb-4"><i class="bi bi-stars"></i> Vuelos, hoteles y clima con datos reales</span>
+                <h1 class="mb-4">Viaja más<br><span class="tg-serif">lejos.</span></h1>
+                <p class="lead mb-4">
+                    Paquetes a Cartagena, Cusco, Cancún y más. Compara precios reales, reserva en minutos
+                    y recibe tu factura al instante.
+                </p>
+                <form class="tg-buscador" th:action="@{/catalogo}" method="get" role="search">
+                    <label for="buscarDestino" class="visually-hidden">Destino</label>
+                    <input type="text" id="buscarDestino" name="destino" class="form-control"
+                           placeholder="¿A dónde quieres ir?">
+                    <button type="submit" class="btn btn-tg"><i class="bi bi-search"></i> Buscar</button>
+                </form>
             </div>
         </div>
     </section>
 
-    <section class="container py-5">
-        <div class="row g-4 text-center">
-            <div class="col-md-4">
-                <i class="bi bi-geo-alt-fill tg-feature-icon"></i>
-                <h2 class="h5 mt-3">Destinos</h2>
-                <p class="text-muted">Explora destinos nacionales e internacionales.</p>
+    <!-- 2. Párrafo grande que se pinta al bajar (estilo Lovi) -->
+    <section class="tg-seccion">
+        <div class="container">
+            <p class="tg-declaracion mx-auto mb-0" id="declaracion">
+                TravelGo junta
+                <span class="tg-punto" style="background: radial-gradient(circle at 30% 30%, #c9b8ff, #8051ff);"></span>
+                vuelos,
+                <span class="tg-punto" style="background: radial-gradient(circle at 30% 30%, #ffe2a8, #f5b83d);"></span>
+                hoteles, el clima del día y los lugares para visitar en un solo sitio.
+                Precios reales de referencia, reserva en minutos y tu factura
+                <span class="tg-punto" style="background: radial-gradient(circle at 30% 30%, #b9f0d6, #17a36b);"></span>
+                al instante.
+            </p>
+        </div>
+    </section>
+
+    <!-- 3. Paquetes destacados (los más económicos con foto) -->
+    <section class="tg-seccion" th:unless="${#lists.isEmpty(destacados)}">
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-5 tg-aparece">
+                <div>
+                    <span class="tg-eyebrow">Destacados</span>
+                    <h2 class="tg-titulo-seccion mb-0">Paquetes que te van<br>a <span class="tg-serif">encantar</span></h2>
+                </div>
+                <a class="btn btn-outline-secondary" th:href="@{/catalogo}">Ver todos <i class="bi bi-arrow-right"></i></a>
             </div>
-            <div class="col-md-4">
-                <i class="bi bi-suitcase2-fill tg-feature-icon"></i>
-                <h2 class="h5 mt-3">Paquetes turísticos</h2>
-                <p class="text-muted">Elige paquetes con todo incluido al mejor precio.</p>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4 tg-aparece" th:each="p : ${destacados}">
+                    <a class="card tg-card tg-card-paquete h-100" th:href="@{/catalogo/{id}(id=${p.paqueteId()})}">
+                        <div class="tg-card-foto">
+                            <img th:src="${p.foto()}" th:alt="${'Foto de ' + p.ciudad()}" loading="lazy">
+                            <span class="tg-chip"><i class="bi bi-clock"></i> <span th:text="${p.dias() + ' días'}">5 días</span></span>
+                            <span class="tg-info-foto" data-bs-toggle="tooltip" th:title="${p.credito()}"
+                                  aria-label="Crédito de la foto"><i class="bi bi-info-lg"></i></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted mb-2" th:text="${p.ciudad() + ', ' + p.pais()}">Ciudad, País</div>
+                            <div class="d-flex justify-content-between align-items-end gap-3">
+                                <div>
+                                    <h3 class="mb-2" th:text="${p.paquete()}">Paquete</h3>
+                                    <div class="tg-precio" th:text="${'Desde ' + @formato.cop(p.precio())}">Desde $ 0</div>
+                                </div>
+                                <span class="tg-ver"><i class="bi bi-arrow-up-right"></i></span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             </div>
-            <div class="col-md-4">
-                <i class="bi bi-calendar-check-fill tg-feature-icon"></i>
-                <h2 class="h5 mt-3">Reservas</h2>
-                <p class="text-muted">Reserva vuelos, hoteles y transporte en minutos.</p>
+        </div>
+    </section>
+
+    <!-- 4. Tarjetas "bento" (estilo Lovi): cómo funciona y datos reales -->
+    <section class="tg-seccion">
+        <div class="container">
+            <div class="mb-5 tg-aparece">
+                <span class="tg-eyebrow">Así funciona</span>
+                <h2 class="tg-titulo-seccion mb-0">Todo tu viaje,<br><span class="tg-serif">en un solo lugar</span></h2>
             </div>
+            <div class="row g-3">
+                <div class="col-lg-5 tg-aparece">
+                    <div class="tg-bento tg-bento-oscuro" style="min-height: 22rem;">
+                        <span class="tg-serif fs-4" style="color: rgba(247,247,238,.6);">Hoy hay</span>
+                        <div>
+                            <div class="tg-bento-numero" th:text="${totalPaquetes}">5</div>
+                            <h3 class="mt-2">paquetes listos para reservar</h3>
+                            <p>Con fotos, clima del día y lugares reales de cada destino.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7 tg-aparece">
+                    <div class="tg-bento" style="min-height: 22rem;">
+                        <div class="tg-chips">
+                            <span class="tg-chip-suave"><i class="bi bi-airplane-fill" style="color:#8051ff"></i> Vuelos · Ignav</span>
+                            <span class="tg-chip-suave"><i class="bi bi-building-fill" style="color:#f5b83d"></i> Hoteles · Xotelo</span>
+                            <span class="tg-chip-suave"><i class="bi bi-cloud-sun-fill" style="color:#4aa8ff"></i> Clima · Open-Meteo</span>
+                            <span class="tg-chip-suave"><i class="bi bi-image-fill" style="color:#17a36b"></i> Fotos · Wikimedia</span>
+                            <span class="tg-chip-suave"><i class="bi bi-pin-map-fill" style="color:#e5484d"></i> Lugares · Wikipedia</span>
+                            <span class="tg-chip-suave"><i class="bi bi-currency-exchange" style="color:#1d1d16"></i> Tasa USD → COP</span>
+                        </div>
+                        <div>
+                            <h3>Datos reales, no inventados</h3>
+                            <p>Siempre mostramos de dónde sale cada precio y cuándo se consultó.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 tg-aparece">
+                    <div class="tg-bento">
+                        <span class="tg-paso-numero">01</span>
+                        <div><h3>Elige tu destino</h3><p>Mira fotos, clima y qué visitar.</p></div>
+                    </div>
+                </div>
+                <div class="col-md-4 tg-aparece">
+                    <div class="tg-bento">
+                        <span class="tg-paso-numero">02</span>
+                        <div><h3>Arma tu reserva</h3><p>Suma vuelo, hotel y transporte.</p></div>
+                    </div>
+                </div>
+                <div class="col-md-4 tg-aparece">
+                    <div class="tg-bento tg-bento-violeta">
+                        <span class="tg-paso-numero" style="color:#fff;">03</span>
+                        <div><h3>Paga y listo</h3><p>Factura al instante, lista para PDF.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Destinos en letras gigantes sobre el cielo (estilo Heart Aerospace) -->
+    <section class="tg-cielo" aria-label="Destinos">
+        <div class="tg-marquesina" aria-hidden="true">
+            <th:block th:each="vuelta : ${#numbers.sequence(1, 2)}">
+                <th:block th:if="${#lists.isEmpty(diapositivas)}">
+                    <span>Cartagena</span><span class="tg-serif">Cusco</span><span>Cancún</span><span class="tg-serif">Bogotá</span>
+                </th:block>
+                <span th:each="d, it : ${diapositivas}" th:text="${d.ciudad()}"
+                      th:classappend="${it.odd} ? '' : 'tg-serif'">Cusco</span>
+            </th:block>
+        </div>
+    </section>
+
+    <!-- 6. Cierre -->
+    <section class="tg-seccion text-center">
+        <div class="container tg-aparece">
+            <h2 class="tg-titulo-seccion mb-4">¿A dónde vamos <span class="tg-serif">ahora</span>?</h2>
+            <a class="btn btn-tg btn-lg" th:href="@{/catalogo}">Explorar paquetes <i class="bi bi-arrow-right"></i></a>
+            <a class="btn btn-outline-secondary btn-lg ms-2" th:href="@{/registro}" sec:authorize="isAnonymous()">Crear cuenta</a>
         </div>
     </section>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+    // Carrusel: avanza solo cada 5 segundos y las fotos se deslizan hacia la derecha
+    // (por eso usa prev(); con next() se deslizarían hacia la izquierda).
+    (function () {
+        const elemento = document.getElementById('carruselPortada');
+        if (!elemento || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+        const carrusel = bootstrap.Carousel.getOrCreateInstance(elemento, {interval: false, touch: true});
+        setInterval(() => carrusel.prev(), 5000);
+    })();
+
+    // Párrafo que se pinta palabra por palabra al bajar por la página (como Lovi)
+    (function () {
+        const parrafo = document.getElementById('declaracion');
+        if (!parrafo) {
+            return;
+        }
+        // Copia de la lista: los nodos se reemplazan mientras se recorren
+        [...parrafo.childNodes].forEach(nodo => {
+            if (nodo.nodeType !== Node.TEXT_NODE || !nodo.textContent.trim()) {
+                return;
+            }
+            const fragmento = document.createDocumentFragment();
+            nodo.textContent.split(/(\s+)/).forEach(parte => {
+                if (!parte.trim()) {
+                    fragmento.appendChild(document.createTextNode(parte));
+                    return;
+                }
+                const palabra = document.createElement('span');
+                palabra.className = 'p';
+                palabra.textContent = parte;
+                fragmento.appendChild(palabra);
+            });
+            nodo.replaceWith(fragmento);
+        });
+        const palabras = parrafo.querySelectorAll('.p');
+        function pintar() {
+            const caja = parrafo.getBoundingClientRect();
+            const avance = (window.innerHeight * 0.85 - caja.top) / (caja.height + window.innerHeight * 0.35);
+            const cuantas = Math.round(Math.max(0, Math.min(1, avance)) * palabras.length);
+            palabras.forEach((p, i) => p.classList.toggle('on', i < cuantas));
+        }
+        window.addEventListener('scroll', pintar, {passive: true});
+        pintar();
+    })();
+</script>
 </body>
 </html>

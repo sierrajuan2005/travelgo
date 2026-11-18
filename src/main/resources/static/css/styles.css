@@ -1,196 +1,819 @@
-/* Estilos globales de TravelGo (complementan a Bootstrap 5) */
+/* =====================================================================
+   TravelGo · estilos globales (complementan a Bootstrap 5.3)
+   Referencias de diseño:
+     - Heart Aerospace: foto a pantalla completa, títulos gigantes y apretados,
+       menú blanco mínimo, palabra enorme sobre un cielo lavanda.
+     - Lovi: fondo casi blanco, tarjetas "bento" blancas muy redondeadas,
+       texto grande que se pinta al bajar, chips de colores suaves.
+     - Shopify Editions Winter '26: crema #f7f7ee, tinta oliva #292919,
+       acento violeta #5433eb y una palabra en serif cursiva.
+   Letras: Bricolage Grotesque (títulos), Geist (texto), Instrument Serif (acentos).
+   Para cambiar los colores, cambia solo la sección 1.
+   Índice: 1 Variables · 2 Base · 3 Botones · 4 Navegación y pie · 5 Portada
+           6 Secciones de la portada · 7 Tarjetas · 8 Páginas internas · 9 Detalle
+           10 Reserva y pago · 11 Factura · 12 Login · 13 Admin · 14 Animaciones
+           15 Pantallas pequeñas · 16 Impresión
+   ===================================================================== */
 
+/* ---------- 1. Variables ---------- */
 :root {
-    --tg-primario: #0d6e8a;
-    --tg-primario-oscuro: #0a5468;
-    --tg-acento: #f4a259;
-    --tg-fondo: #f5f8fa;
+    --tg-crema: #f7f7ee;
+    --tg-fondo: #f4f4ef;
+    --tg-blanco: #ffffff;
+    --tg-tinta: #1d1d16;
+    --tg-tinta-suave: #6f6f66;
+    --tg-linea: #e4e4da;
+    --tg-hueso: #dcdcd0;
+
+    --tg-violeta: #5433eb;
+    --tg-violeta-claro: #8051ff;
+    --tg-violeta-suave: #eeeafe;
+
+    /* Cielo lavanda de Heart Aerospace */
+    --tg-cielo: linear-gradient(180deg, #7b7891 0%, #a9a6bb 55%, #d9d7e2 100%);
+
+    --tg-verde: #17a36b;
+    --tg-rojo: #e5484d;
+    --tg-ambar: #f5b83d;
+
+    /* Nombres por uso (algunas plantillas los usan) */
+    --tg-superficie: var(--tg-blanco);
+    --tg-borde: var(--tg-linea);
+    --tg-texto-suave: var(--tg-tinta-suave);
+    --tg-primario: var(--tg-violeta);
+    --tg-acento: var(--tg-violeta);
+    --tg-sol: var(--tg-violeta-suave);
+
+    --font-titulo: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --font-texto: "Geist", "Helvetica Neue", Arial, sans-serif;
+    --font-serif: "Instrument Serif", Georgia, serif;
+
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --tg-radio: 28px;
+    --tg-radio-sm: 16px;
+    --tg-sombra: 0 1px 2px rgba(29, 29, 22, 0.04), 0 8px 24px rgba(29, 29, 22, 0.06);
+    --tg-sombra-fuerte: 0 2px 4px rgba(29, 29, 22, 0.05), 0 24px 48px rgba(29, 29, 22, 0.12);
+
+    --bs-body-font-family: var(--font-texto);
+    --bs-body-bg: var(--tg-fondo);
+    --bs-body-color: var(--tg-tinta);
+    --bs-secondary-color: var(--tg-tinta-suave);
+    --bs-border-color: var(--tg-linea);
+    --bs-link-color: var(--tg-violeta);
+    --bs-link-color-rgb: 84, 51, 235;
+    --bs-link-hover-color-rgb: 61, 32, 196;
+    --bs-primary: var(--tg-violeta);
+    --bs-primary-rgb: 84, 51, 235;
+    --bs-heading-color: var(--tg-tinta);
 }
 
-html, body {
-    height: 100%;
-}
+/* ---------- 2. Base ---------- */
+html, body { height: 100%; }
 
 body {
     display: flex;
     flex-direction: column;
-    background-color: var(--tg-fondo);
+    background: var(--tg-fondo);
+    font-size: 1rem;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
 }
 
-main {
-    flex: 1 0 auto;
+main { flex: 1 0 auto; }
+
+h1, h2, h3, h4, h5, .h1, .h2, .h3, .h4, .h5, .display-6 {
+    font-family: var(--font-titulo);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    color: var(--tg-tinta);
+}
+h5, .h5 { letter-spacing: -0.02em; line-height: 1.2; }
+
+/* Palabra en serif cursiva dentro de un título (como Shopify Editions) */
+.tg-serif {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
 }
 
-/* Barra de navegación y pie */
+.text-muted { color: var(--tg-tinta-suave) !important; }
+
+code { color: var(--tg-violeta); font-size: 0.88em; }
+
+::selection { background: var(--tg-violeta); color: #fff; }
+
+:focus-visible { outline: 2px solid var(--tg-violeta); outline-offset: 2px; }
+
+.form-control, .form-select, .input-group-text {
+    border-radius: 14px;
+    border-color: var(--tg-linea);
+    background-color: var(--tg-blanco);
+    padding: 0.7rem 1rem;
+}
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--tg-violeta);
+    box-shadow: 0 0 0 4px rgba(84, 51, 235, 0.12);
+}
+.form-check-input:checked { background-color: var(--tg-violeta); border-color: var(--tg-violeta); }
+.form-label { font-size: 0.85rem; font-weight: 600; color: var(--tg-tinta); }
+
+.alert { border: none; border-radius: var(--tg-radio-sm); font-size: 0.95rem; }
+.alert-success { background: #e3f6ec; color: #0d6b45; }
+.alert-danger { background: #fde8e9; color: #a3242a; }
+.alert-warning { background: #fdf3dc; color: #7a5300; }
+.alert-info { background: var(--tg-violeta-suave); color: #3a22a8; }
+
+.badge { border-radius: 999px; padding: 0.42em 0.8em; font-weight: 600; letter-spacing: 0; }
+.text-bg-success { background: #e3f6ec !important; color: #0d6b45 !important; }
+.text-bg-warning { background: #fdf3dc !important; color: #7a5300 !important; }
+.text-bg-secondary { background: #ececE4 !important; color: var(--tg-tinta-suave) !important; }
+
+.table { --bs-table-bg: transparent; }
+.table > :not(caption) > * > * { border-bottom-color: var(--tg-linea); padding-top: 0.9rem; padding-bottom: 0.9rem; }
+.table > thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tg-tinta-suave);
+    white-space: nowrap;
+}
+.table > tbody > tr:hover > * { background: #fafaf6; }
+
+.breadcrumb { font-size: 0.85rem; }
+.breadcrumb a { color: var(--tg-tinta-suave); text-decoration: none; }
+.breadcrumb a:hover { color: var(--tg-tinta); }
+
+/* Los filetes del diseño anterior ya no se usan */
+.tg-filete { display: none; }
+
+/* ---------- 3. Botones ---------- */
+.btn {
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 0.65rem 1.35rem;
+    transition: transform 0.15s var(--ease-out), background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn-sm { padding: 0.42rem 0.95rem; font-size: 0.875rem; }
+.btn-lg { padding: 0.9rem 1.8rem; font-size: 1.05rem; }
+
+/* Principal: píldora negra (como los botones de las tiendas en Lovi) */
+.btn-tg {
+    background: var(--tg-tinta);
+    border-color: var(--tg-tinta);
+    color: #fff;
+}
+.btn-tg:hover, .btn-tg:focus { background: #000; border-color: #000; color: #fff; }
+
+/* Acción clave: violeta */
+.btn-tg-acento {
+    background: var(--tg-violeta);
+    border-color: var(--tg-violeta);
+    color: #fff;
+}
+.btn-tg-acento:hover, .btn-tg-acento:focus { background: #4322d6; border-color: #4322d6; color: #fff; }
+
+.btn-outline-secondary {
+    background: var(--tg-blanco);
+    border: 1px solid var(--tg-linea);
+    color: var(--tg-tinta);
+}
+.btn-outline-secondary:hover { background: var(--tg-tinta); border-color: var(--tg-tinta); color: #fff; }
+
+.btn-outline-light { border-color: rgba(255, 255, 255, 0.6); color: #fff; }
+.btn-outline-light:hover { background: #fff; color: var(--tg-tinta); }
+
+/* ---------- 4. Navegación y pie ---------- */
 .tg-navbar {
-    background-color: var(--tg-primario);
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid rgba(29, 29, 22, 0.06);
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
+
+.tg-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-titulo);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.04em;
+    color: var(--tg-tinta);
+}
+.tg-marca:hover { color: var(--tg-tinta); }
+
+.tg-marca-icono {
+    display: inline-grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 9px;
+    background: var(--tg-tinta);
+    color: #fff;
+    font-size: 0.85rem;
+    transform: rotate(-12deg);
+}
+
+.tg-navbar .nav-link {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--tg-tinta);
+    padding: 0.4rem 0.85rem !important;
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+}
+.tg-navbar .nav-link:hover { background: rgba(29, 29, 22, 0.06); color: var(--tg-tinta); }
+
+.tg-usuario { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--tg-tinta-suave); }
 
 .tg-footer {
-    background-color: var(--tg-primario-oscuro);
-    color: #dbe9ee;
+    margin-top: 6rem;
+    padding: 4.5rem 0 2rem;
+    background: var(--tg-tinta);
+    color: rgba(247, 247, 238, 0.65);
+}
+.tg-footer .tg-marca { color: var(--tg-crema); font-size: 1.6rem; }
+.tg-footer .tg-marca-icono { background: var(--tg-crema); color: var(--tg-tinta); }
+.tg-footer h2 { color: var(--tg-crema); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
+.tg-footer a { color: rgba(247, 247, 238, 0.65); text-decoration: none; }
+.tg-footer a:hover { color: var(--tg-crema); }
+.tg-footer-linea { border-top: 1px solid rgba(247, 247, 238, 0.12); margin-top: 3rem; padding-top: 1.5rem; }
+.tg-footer-gigante {
+    font-family: var(--font-titulo);
+    font-weight: 700;
+    font-size: clamp(4rem, 17vw, 15rem);
+    letter-spacing: -0.06em;
+    line-height: 0.8;
+    color: var(--tg-crema);
+    margin-top: 3rem;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-/* Botón principal con el color de la marca */
-.btn-tg {
-    background-color: var(--tg-primario);
-    border-color: var(--tg-primario);
-    color: #fff;
-}
-
-.btn-tg:hover,
-.btn-tg:focus {
-    background-color: var(--tg-primario-oscuro);
-    border-color: var(--tg-primario-oscuro);
-    color: #fff;
-}
-
-/* Portada de la página de inicio */
+/* ---------- 5. Portada: foto a pantalla completa (Heart Aerospace) ---------- */
 .tg-hero {
-    background: linear-gradient(135deg, var(--tg-primario) 0%, #1b9aaa 100%);
+    position: relative;
+    min-height: calc(100vh - 64px);
+    background: var(--tg-cielo);
     color: #fff;
-    padding: 5rem 0;
+    overflow: hidden;
 }
 
-.tg-hero .btn-light {
-    color: var(--tg-primario);
-}
+.tg-hero .carousel,
+.tg-hero .carousel-inner,
+.tg-hero .carousel-item { position: absolute; inset: 0; height: 100%; }
 
-.tg-feature-icon {
-    font-size: 2.5rem;
-    color: var(--tg-primario);
-}
-
-/* Tarjetas de login y registro */
-.tg-auth-card {
-    max-width: 440px;
+.tg-hero .carousel-item img {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.03);
+    transition: transform 7s ease-out;
+}
+.tg-hero .carousel-item.active img { transform: scale(1.1); }
+
+/* Solo se oscurece abajo, donde va el título */
+.tg-hero-sombra {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(0deg, rgba(10, 10, 8, 0.62) 0%, rgba(10, 10, 8, 0.15) 45%, rgba(10, 10, 8, 0) 70%);
+    pointer-events: none;
+}
+
+.tg-hero-contenido {
+    position: relative;
+    z-index: 2;
+    min-height: calc(100vh - 64px);
+    display: flex;
+    align-items: flex-end;
+    padding: 6rem 0 4.5rem;
+    pointer-events: none;
+}
+.tg-hero-contenido a, .tg-hero-contenido form { pointer-events: auto; }
+
+.tg-hero h1 {
+    color: #fff;
+    font-size: clamp(3.4rem, 9.5vw, 9rem);
+    letter-spacing: -0.055em;
+    line-height: 0.9;
+    animation: tg-subir 1s var(--ease-out) 0.1s both;
+}
+.tg-hero h1 .tg-serif { letter-spacing: -0.02em; }
+
+.tg-hero .lead {
+    max-width: 30rem;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    animation: tg-aparecer 1s ease 0.4s both;
+}
+
+.tg-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--tg-tinta);
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: var(--tg-sombra);
+}
+.tg-etiqueta .bi { color: var(--tg-violeta); }
+
+.tg-buscador {
+    display: flex;
+    gap: 0.4rem;
+    max-width: 30rem;
+    padding: 0.35rem;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: var(--tg-sombra-fuerte);
+    animation: tg-aparecer 1s ease 0.6s both;
+}
+.tg-buscador .form-control { border: none; box-shadow: none; background: transparent; padding-left: 1.15rem; }
+
+.tg-hero-ficha {
+    position: absolute;
+    z-index: 3;
+    right: 2.5rem;
+    bottom: 4.5rem;
+    min-width: 16rem;
+    padding: 1rem 1.15rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--tg-tinta);
+    text-decoration: none;
+    box-shadow: var(--tg-sombra-fuerte);
+    transition: transform 0.25s var(--ease-out);
+}
+.tg-hero-ficha:hover { color: var(--tg-tinta); transform: translateY(-4px); }
+.tg-hero-ficha .text-white-50 { color: var(--tg-tinta-suave) !important; }
+.tg-hero-ficha .fw-bold { font-family: var(--font-titulo); letter-spacing: -0.03em; font-size: 1.1rem; }
+.tg-hero-ficha .tg-ficha-precio { font-family: var(--font-titulo); font-weight: 700; font-size: 1.15rem; color: var(--tg-violeta); }
+
+.tg-hero .carousel-indicators { z-index: 3; justify-content: flex-start; margin: 0 0 1.5rem; left: max(1rem, calc((100vw - 1296px) / 2 + 0.75rem)); right: auto; }
+.tg-hero .carousel-indicators [data-bs-target] { width: 1.6rem; height: 3px; border: none; border-radius: 3px; background: #fff; opacity: 0.45; }
+.tg-hero .carousel-indicators .active { opacity: 1; width: 2.6rem; }
+
+.tg-ola { display: none; }
+
+/* Botón (i) con el crédito de la foto: la licencia CC BY pide citar al autor */
+.tg-info-foto {
+    position: absolute;
+    z-index: 3;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
     border: none;
-    border-radius: 1rem;
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--tg-tinta);
+    font-size: 0.85rem;
+    cursor: help;
+}
+.tg-hero .tg-info-foto { top: 1.25rem; bottom: auto; right: 1.25rem; }
+
+/* ---------- 6. Secciones de la portada ---------- */
+.tg-seccion { padding: 7rem 0 0; }
+
+.tg-eyebrow {
+    display: inline-block;
+    margin-bottom: 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--tg-violeta);
 }
 
-.tg-auth-card .card-header {
-    background-color: transparent;
-    border-bottom: none;
-    padding-top: 2rem;
+.tg-titulo-seccion { font-size: clamp(2.4rem, 5.2vw, 4.4rem); letter-spacing: -0.045em; }
+
+/* Párrafo grande que se pinta al bajar (Lovi) */
+.tg-declaracion {
+    max-width: 52rem;
+    font-family: var(--font-titulo);
+    font-weight: 500;
+    font-size: clamp(1.8rem, 3.6vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+}
+.tg-declaracion .p { color: #c9c9bd; transition: color 0.3s ease; }
+.tg-declaracion .p.on { color: var(--tg-tinta); }
+.tg-declaracion .tg-punto {
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin: 0 0.12em;
+    border-radius: 50%;
+    vertical-align: -0.08em;
 }
 
-/* Páginas de error (404, 403, 500) */
-.tg-error-icon {
-    font-size: 4rem;
-    color: var(--tg-primario);
+/* Tarjetas "bento" (Lovi) */
+.tg-bento {
+    position: relative;
+    height: 100%;
+    min-height: 15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2rem;
+    border-radius: var(--tg-radio);
+    background: var(--tg-blanco);
+    overflow: hidden;
+}
+.tg-bento h3 { font-size: 1.35rem; letter-spacing: -0.03em; }
+.tg-bento p { color: var(--tg-tinta-suave); margin-bottom: 0; }
+.tg-bento-oscuro { background: var(--tg-tinta); color: var(--tg-crema); }
+.tg-bento-oscuro h3 { color: var(--tg-crema); }
+.tg-bento-oscuro p { color: rgba(247, 247, 238, 0.65); }
+.tg-bento-violeta { background: var(--tg-violeta); color: #fff; }
+.tg-bento-violeta h3, .tg-bento-violeta p { color: #fff; }
+.tg-bento-numero { font-family: var(--font-titulo); font-weight: 700; font-size: clamp(3.5rem, 7vw, 6rem); letter-spacing: -0.06em; line-height: 0.9; }
+
+/* Chips de colores suaves (Lovi) */
+.tg-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tg-chip-suave {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: var(--tg-fondo);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+.tg-chip-suave i { font-size: 0.95rem; }
+
+.tg-paso { height: 100%; padding: 2rem; border-radius: var(--tg-radio); background: var(--tg-blanco); }
+.tg-paso h3 { font-size: 1.35rem; }
+.tg-paso-numero { font-family: var(--font-serif); font-style: italic; font-size: 2.6rem; line-height: 1; color: var(--tg-violeta); }
+.tg-paso-icono, .tg-feature-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 14px;
+    background: var(--tg-violeta-suave);
+    color: var(--tg-violeta);
+    font-size: 1.25rem;
 }
 
-/* Tarjetas del catálogo: la "imagen" es un degradado con un icono */
+/* Palabra gigante sobre el cielo, deslizándose (Heart Aerospace + Shopify) */
+.tg-cielo {
+    position: relative;
+    margin-top: 7rem;
+    padding: 6rem 0;
+    background: var(--tg-cielo);
+    overflow: hidden;
+}
+.tg-marquesina { display: flex; width: max-content; animation: tg-deslizar 38s linear infinite; }
+.tg-marquesina span {
+    padding-right: 0.25em;
+    font-family: var(--font-titulo);
+    font-weight: 700;
+    font-size: clamp(5rem, 16vw, 14rem);
+    letter-spacing: -0.06em;
+    line-height: 0.85;
+    color: #fff;
+    white-space: nowrap;
+}
+.tg-marquesina span.tg-serif { font-weight: 400; letter-spacing: -0.03em; }
+@keyframes tg-deslizar { to { transform: translateX(-50%); } }
+
+/* La franja vieja ahora es un bloque oscuro */
+.tg-franja { padding: 3rem; border-radius: var(--tg-radio); background: var(--tg-tinta); color: var(--tg-crema); }
+.tg-franja h2 { color: var(--tg-crema); }
+.tg-dato { font-family: var(--font-titulo); font-weight: 700; font-size: 2.6rem; letter-spacing: -0.05em; color: #fff; }
+.tg-dato-texto { font-size: 0.85rem; color: rgba(247, 247, 238, 0.6); }
+
+/* ---------- 7. Tarjetas ---------- */
 .tg-card {
     border: none;
-    border-radius: 1rem;
+    border-radius: var(--tg-radio);
+    background: var(--tg-blanco);
     overflow: hidden;
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.06);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s ease;
 }
 
-.tg-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
-}
+a.tg-card, .tg-card-paquete { color: inherit; text-decoration: none; }
+.tg-card-paquete { padding: 0.5rem; }
+.tg-card-paquete:hover { color: inherit; transform: translateY(-6px); box-shadow: var(--tg-sombra-fuerte); }
+.tg-card-paquete .card-body { padding: 1.1rem 0.9rem 0.9rem !important; }
+.tg-card-paquete h2, .tg-card-paquete h3 { font-size: 1.4rem; letter-spacing: -0.035em; }
 
 .tg-card-img {
-    height: 160px;
+    height: 240px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3.5rem;
-    color: #fff;
-    background: linear-gradient(135deg, var(--tg-primario) 0%, #1b9aaa 100%);
-}
-
-/* Fotos reales de los destinos (Wikimedia Commons) con el crédito del autor encima */
-.tg-card-foto,
-.tg-foto-destino {
-    position: relative;
-    background-color: var(--tg-primario);
-}
-
-.tg-card-foto img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    display: block;
-}
-
-.tg-foto-destino img {
-    width: 100%;
-    height: 320px;
-    object-fit: cover;
-    display: block;
-}
-
-.tg-credito {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    max-width: 100%;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.7rem;
-    color: #fff;
-    background-color: rgba(0, 0, 0, 0.55);
-    border-top-left-radius: 0.5rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.tg-credito a {
-    color: #fff;
-}
-
-.tg-clima-icono {
+    border-radius: 22px;
     font-size: 3rem;
-    color: var(--tg-acento);
+    color: rgba(255, 255, 255, 0.85);
+    background: var(--tg-cielo);
 }
 
-/* Pantallas pequeñas: fotos más bajas y tablas con texto más chico */
-@media (max-width: 575.98px) {
-    .tg-foto-destino img {
-        height: 200px;
-    }
+.tg-card-foto, .tg-foto-destino { position: relative; overflow: hidden; border-radius: 22px; background: var(--tg-hueso); }
+.tg-card-foto img { width: 100%; height: 260px; object-fit: cover; display: block; transition: transform 0.8s var(--ease-out); }
+.tg-card-paquete:hover .tg-card-foto img { transform: scale(1.06); }
 
-    .table {
-        font-size: 0.875rem;
-    }
-
-    main.container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 1.5rem !important;
-    }
+.tg-chip {
+    position: absolute;
+    z-index: 2;
+    left: 1.25rem;
+    top: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--tg-tinta);
+    font-size: 0.78rem;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
 }
 
 .tg-precio {
-    font-size: 1.25rem;
+    font-family: var(--font-titulo);
     font-weight: 700;
-    color: var(--tg-primario);
+    font-size: 1.35rem;
+    letter-spacing: -0.04em;
+    color: var(--tg-tinta);
+    font-variant-numeric: tabular-nums;
 }
 
-/* Resumen de la reserva: queda fijo al hacer scroll en pantallas grandes */
-@media (min-width: 992px) {
-    .tg-resumen {
-        position: sticky;
-        top: 1rem;
-    }
+.tg-ver {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: var(--tg-fondo);
+    color: var(--tg-tinta);
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.35s var(--ease-out);
 }
+.tg-card-paquete:hover .tg-ver { background: var(--tg-violeta); color: #fff; transform: rotate(-45deg); }
+
+/* ---------- 8. Páginas internas: título grande sin banda de color ---------- */
+.tg-encabezado { padding: 4.5rem 0 2.5rem; }
+.tg-encabezado h1 { font-size: clamp(2.8rem, 6.5vw, 5.6rem); letter-spacing: -0.055em; line-height: 0.92; }
+.tg-encabezado p { color: var(--tg-tinta-suave); font-size: 1.05rem; max-width: 40rem; }
+.tg-encabezado .text-white-50 { color: var(--tg-violeta) !important; }
+.tg-encabezado code { color: var(--tg-violeta); }
+.tg-sube { margin-top: 0; }
+
+/* ---------- 9. Detalle del paquete ---------- */
+.tg-banner {
+    position: relative;
+    min-height: 78vh;
+    display: flex;
+    align-items: flex-end;
+    color: #fff;
+    background: var(--tg-cielo);
+    overflow: hidden;
+}
+.tg-banner > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tg-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(10, 10, 8, 0.65) 0%, rgba(10, 10, 8, 0.1) 50%, rgba(10, 10, 8, 0) 75%);
+    pointer-events: none;
+}
+.tg-banner-texto { position: relative; z-index: 2; width: 100%; padding: 3rem 0 3.5rem; }
+.tg-banner h1 { color: #fff; font-size: clamp(3rem, 8.5vw, 8rem); letter-spacing: -0.055em; line-height: 0.9; }
+.tg-banner .breadcrumb a, .tg-banner .breadcrumb-item, .tg-banner .breadcrumb-item.active { color: rgba(255, 255, 255, 0.8); }
+.tg-banner .breadcrumb-item + .breadcrumb-item::before { color: rgba(255, 255, 255, 0.5); }
+.tg-banner .tg-info-foto { top: 1.25rem; bottom: auto; right: 1.25rem; }
+
+.tg-dato-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--tg-tinta);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Clima sobre el cielo lavanda */
+.tg-clima { border-radius: var(--tg-radio); background: var(--tg-cielo); color: #fff; }
+.tg-clima h2 { color: #fff; font-size: 1.6rem; }
+.tg-clima .tg-fuente { color: rgba(255, 255, 255, 0.78) !important; }
+.tg-clima-icono { font-size: 3rem; color: #fff; }
+.tg-clima-temp { font-family: var(--font-titulo); font-weight: 700; font-size: clamp(4rem, 9vw, 6.5rem); letter-spacing: -0.06em; line-height: 0.85; }
+.tg-clima-dia {
+    height: 100%;
+    padding: 1rem 0.5rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    text-align: center;
+}
+.tg-clima-dia .bi { display: block; margin: 0.25rem 0; font-size: 1.5rem; }
+
+/* Lugares para visitar */
+.tg-lugar { display: flex; gap: 0.85rem; align-items: flex-start; height: 100%; padding: 1rem; border-radius: 18px; background: var(--tg-fondo); }
+.tg-lugar .fw-bold { font-family: var(--font-titulo); letter-spacing: -0.02em; }
+.tg-lugar-icono {
+    flex: 0 0 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #c9b8ff, var(--tg-violeta-claro));
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.tg-fuente { font-size: 0.8rem; color: var(--tg-tinta-suave); }
+
+.tg-incluye { padding: 0.9rem 1rem; border-radius: 16px; background: var(--tg-fondo); }
+
+/* ---------- 10. Reserva y pago ---------- */
+@media (min-width: 992px) {
+    .tg-resumen { position: sticky; top: 6rem; }
+}
+
+.tg-pasos { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; counter-reset: paso; }
+.tg-pasos li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem 0.4rem 0.4rem;
+    border-radius: 999px;
+    background: var(--tg-blanco);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--tg-tinta-suave);
+}
+.tg-pasos li::before {
+    counter-increment: paso;
+    content: counter(paso);
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--tg-fondo);
+    font-size: 0.75rem;
+}
+.tg-pasos li.hecho { color: var(--tg-tinta); }
+.tg-pasos li.hecho::before { content: "\2713"; background: #e3f6ec; color: var(--tg-verde); }
+.tg-pasos li.actual { background: var(--tg-tinta); color: #fff; }
+.tg-pasos li.actual::before { background: var(--tg-violeta); color: #fff; }
 
 .tg-opcion {
     cursor: pointer;
+    border: 1.5px solid var(--tg-linea);
+    border-radius: 18px;
+    background: var(--tg-blanco);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.tg-opcion:hover { border-color: #c8c8bc; }
+.tg-opcion:has(input:checked) { border-color: var(--tg-violeta); background: var(--tg-violeta-suave); }
+
+.tg-seccion-icono {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.5rem;
+    border-radius: 12px;
+    background: var(--tg-violeta-suave);
+    color: var(--tg-violeta);
+    font-size: 1rem;
+    vertical-align: middle;
 }
 
-.tg-opcion:has(input:checked) {
-    border-color: var(--tg-primario);
-    background-color: #e8f4f7;
+.tg-tarjeta-credito {
+    position: relative;
+    aspect-ratio: 1.6;
+    width: 100%;
+    max-width: 22rem;
+    padding: 1.4rem;
+    border-radius: 20px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 85% 15%, rgba(128, 81, 255, 0.9), transparent 55%),
+        radial-gradient(circle at 10% 100%, rgba(84, 51, 235, 0.8), transparent 50%),
+        var(--tg-tinta);
+    box-shadow: var(--tg-sombra-fuerte);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.tg-chip-tarjeta { width: 2.5rem; height: 1.8rem; border-radius: 0.4rem; background: linear-gradient(135deg, #f2f2e6, #b9b9a8); }
+.tg-tarjeta-numero { font-family: var(--font-titulo); font-size: 1.15rem; letter-spacing: 0.16em; }
+
+/* ---------- 11. Factura ---------- */
+.tg-factura { max-width: 760px; }
+.tg-factura-franja { height: 6px; background: linear-gradient(90deg, var(--tg-tinta) 0%, var(--tg-violeta) 100%); }
+.tg-factura .table tfoot th { border-bottom: none; }
+.tg-factura .badge.text-bg-light { background: var(--tg-violeta-suave) !important; color: var(--tg-violeta) !important; }
+
+/* ---------- 12. Login y registro ---------- */
+.tg-auth { min-height: calc(100vh - 64px); }
+.tg-auth-lado { position: relative; background: var(--tg-cielo); color: #fff; overflow: hidden; }
+.tg-auth-lado h2 { color: #fff; font-size: clamp(3rem, 5.5vw, 5.4rem); letter-spacing: -0.055em; line-height: 0.92; }
+.tg-auth-lado p { color: rgba(255, 255, 255, 0.85); }
+.tg-auth-lado .tg-etiqueta { color: var(--tg-tinta); }
+.tg-auth-lado .text-warning { color: #fff !important; }
+.tg-avion { position: absolute; right: -2rem; top: 2rem; font-size: 14rem; color: #fff; opacity: 0.18; transform: rotate(-25deg); }
+
+.tg-auth-card { max-width: 440px; width: 100%; border: none; border-radius: var(--tg-radio); background: var(--tg-blanco); }
+.tg-auth-card .card-header { background: transparent; border-bottom: none; padding-top: 2.4rem; }
+.tg-auth-card h1 { font-size: 2.2rem; letter-spacing: -0.045em; }
+
+.tg-prueba { padding: 0.9rem 1rem; border-radius: 16px; background: var(--tg-fondo); font-size: 0.85rem; }
+
+/* ---------- 13. Administración ---------- */
+.tg-admin-tabs {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0.3rem;
+    border-radius: 999px;
+    background: #e9e9e0;
+    list-style: none;
+}
+.tg-admin-tabs .nav-link { padding: 0.45rem 1rem; border-radius: 999px; font-size: 0.9rem; font-weight: 600; color: var(--tg-tinta-suave); }
+.tg-admin-tabs .nav-link:hover { color: var(--tg-tinta); }
+.tg-admin-tabs .nav-link.active { background: var(--tg-blanco); color: var(--tg-tinta); box-shadow: var(--tg-sombra); }
+
+.tg-error-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 5rem;
+    height: 5rem;
+    border-radius: 24px;
+    background: var(--tg-violeta-suave);
+    color: var(--tg-violeta);
+    font-size: 2.2rem;
+}
+.tg-error .display-4 { font-family: var(--font-titulo); font-weight: 700; font-size: 8rem; letter-spacing: -0.07em; color: var(--tg-tinta); }
+
+/* ---------- 14. Animaciones ---------- */
+.tg-aparece { opacity: 0; transform: translateY(28px); transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out); }
+.tg-aparece.visible { opacity: 1; transform: none; }
+
+@keyframes tg-subir { from { opacity: 0; transform: translateY(40px); } }
+@keyframes tg-aparecer { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .tg-aparece { opacity: 1; transform: none; }
+    .tg-declaracion .p { color: var(--tg-tinta); }
 }
 
-/* La tarjeta de filtros no se mueve al pasar el mouse */
-.tg-filtros:hover {
-    transform: none;
+/* ---------- 15. Pantallas pequeñas ---------- */
+@media (max-width: 991.98px) {
+    .tg-hero-ficha { display: none; }
+}
+
+@media (max-width: 575.98px) {
+    .tg-buscador { flex-direction: column; border-radius: 22px; }
+    .tg-buscador .btn { width: 100%; }
+    .tg-seccion { padding-top: 4.5rem; }
+    .tg-bento { padding: 1.5rem; min-height: 12rem; }
+    .tg-pasos li span { display: none; }
+    .tg-pasos li { padding-right: 0.4rem; }
+    .table { font-size: 0.875rem; }
+}
+
+/* ---------- 16. Impresión y "Guardar como PDF" ----------
+   Solo sale la factura: sin menú, pie, migas de pan ni botones. Lo que se oculta con
+   display:none no deja enlaces dentro del PDF. */
+@media print {
+    /* Sin margen de página, el navegador no imprime su encabezado y pie (URL, fecha y título) */
+    @page { size: A4; margin: 0; }
+
+    .tg-navbar, .tg-footer, .breadcrumb, .tg-encabezado, .tg-no-imprimir, .alert, .tg-info-foto {
+        display: none !important;
+    }
+
+    body { background: #fff !important; padding: 1.5cm !important; display: block !important; }
+    main { padding: 0 !important; }
+
+    .tg-card { box-shadow: none !important; border: 1px solid #ddd !important; max-width: 100% !important; }
+
+    a { color: inherit !important; text-decoration: none !important; }
+
+    .tg-factura-franja, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

@@ -189,6 +189,7 @@ public class ReservaWebController {
 	 */
 	@PostMapping("/reservas/{id}/pagar")
 	public String pagar(@PathVariable String id, @RequestParam(required = false) MetodoPago metodo,
+			@RequestParam(required = false) String codigoCupon,
 			Authentication autenticacion, RedirectAttributes redirect) {
 		Reserva reserva = reservaVisible(autenticacion, id);
 		if (metodo == null) {
@@ -200,7 +201,8 @@ public class ReservaWebController {
         .anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
 
 pagoService.pagar(
-        new PagoRequest(reserva.getId(), metodo),
+        new PagoRequest(reserva.getId(), metodo,
+                codigoCupon == null || codigoCupon.isBlank() ? null : codigoCupon.trim().toUpperCase()),
         autenticacion.getName(),
         esAgente
 );

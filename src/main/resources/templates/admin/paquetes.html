@@ -4,9 +4,10 @@
 <body>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<main class="container py-5">
-    <h1 class="h2 mb-4">Panel de administración</h1>
-    <ul th:replace="~{fragments/layout :: adminTabs('paquetes')}"></ul>
+<main>
+  <section th:replace="~{fragments/layout :: adminEncabezado('paquetes')}"></section>
+
+  <div class="container tg-sube">
 
     <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
 
@@ -59,7 +60,7 @@
         <div class="col-lg-4">
             <div class="card tg-card">
                 <div class="card-body p-4">
-                    <h2 class="h5">Agregar paquete</h2>
+                    <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-plus-lg"></i></span> Agregar paquete</h2>
                     <form th:action="@{/admin/paquetes}" method="post">
                         <div class="mb-2">
                             <label for="nombre" class="form-label small">Nombre</label>
@@ -98,6 +99,7 @@
             </div>
         </div>
     </div>
+  </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
