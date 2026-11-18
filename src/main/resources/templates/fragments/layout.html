@@ -90,6 +90,10 @@
             <i class="bi bi-suitcase2"></i> Paquetes</a>
     </li>
     <li class="nav-item">
+        <a class="nav-link" th:classappend="${activa == 'constructor'} ? 'active'" th:href="@{/admin/constructor}">
+            <i class="bi bi-magic"></i> Constructor</a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link" th:classappend="${activa == 'servicios'} ? 'active'" th:href="@{/admin/servicios}">
             <i class="bi bi-airplane"></i> Servicios</a>
     </li>
