@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Anuncio TravelGo v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=Geist:wght@500;600;700&display=swap">
+<style>
+    body { margin: 0; background: #111; color: #eee; font-family: Geist, sans-serif; display: flex; gap: 20px; padding: 14px; }
+    #vista { display: flex; align-items: flex-start; }
+    canvas { max-height: calc(100vh - 28px); max-width: 70vw; background: #000; }
+    #panel { display: flex; flex-direction: column; gap: 10px; width: 300px; font-size: 14px; }
+    button { font: 600 14px Geist, sans-serif; padding: 9px 14px; border-radius: 999px; border: 0; cursor: pointer; }
+    #estado { white-space: pre-line; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="vista"><canvas id="lienzo"></canvas></div>
+<div id="panel">
+    <b>Anuncio TravelGo v2</b>
+    <div><button data-modo="H">Horizontal 16:9</button> <button data-modo="V">Vertical 9:16</button></div>
+    <button id="ver">▶ Vista previa con sonido</button>
+    <button id="exportar" style="background:#d7ff3b">⬇ Exportar los dos MP4</button>
+    <label>Ir al segundo <input id="seg" type="range" min="0" max="30" step="0.05" value="0" style="width:100%"></label>
+    <div id="estado">Cargando…</div>
+</div>
+<script>
+// =====================================================================
+// Anuncio TravelGo v2: motion graphics al ritmo de la música, en 16:9 y 9:16.
+// Línea de tiempo en compases (4 tiempos). La duración real depende del BPM de la canción.
+// =====================================================================
+const FPS = 30;
+const lienzo = document.getElementById('lienzo');
+const c = lienzo.getContext('2d');
+const estado = document.getElementById('estado');
+let W = 1920, H = 1080, U = 1, MODO = 'H';
+
+// Colores: tinta, crema y violeta de la web; lima eléctrico de acento; naranja de Niko; magenta de ExpoSoftware
+const TINTA = '#0e0d0a', CREMA = '#f7f7ee', VIOLETA = '#5433eb', LIMA = '#d7ff3b', NARANJA = '#ff7a1a', MAGENTA = '#ff2d87';
+const TITULO = 'Bricolage Grotesque', SERIF = 'Instrument Serif', TEXTO = 'Geist';
+
+function ponerModo(m) {
+    MODO = m;
+    [W, H] = m === 'H' ? [1920, 1080] : [1080, 1920];
+    U = Math.min(W, H) / 1080;
+    lienzo.width = W; lienzo.height = H;
+}
+ponerModo('H');
+
+// ---------- Ritmo ----------
+let BPM = 120, BEAT = 0.5, BAR = 2;           // se recalculan con la música
+const COMPASES = { intro: 2, destinos: 3, niko: 2, app: 4, datos: 1, cierre: 2, fin: 1 };
+let ESCENAS = [], DURACION = 30;
+function armarLinea() {
+    BEAT = 60 / BPM; BAR = 4 * BEAT;
+    let t = 0; ESCENAS = [];
+    for (const [nombre, compases] of Object.entries(COMPASES)) {
+        ESCENAS.push({ nombre, desde: t, hasta: t + compases * BAR });
+        t += compases * BAR;
+    }
+    DURACION = t;
+    document.getElementById('seg').max = DURACION.toFixed(2);
+}
+armarLinea();
+
+// ---------- Imágenes ----------
+const img = {};
+const ARCHIVOS = {
+    nikoSinFondo: 'niko_sin_fondo.png', nikoZona: 'niko_zona.png',
+    cartagena: 'capturas/cartagena.png', cusco: 'capturas/cusco.png', cancun: 'capturas/cancun.png',
+    inicio: 'capturas/inicio.png', catalogo: 'capturas/catalogo.png', detalle: 'capturas/detalle.png',
+    pago: 'capturas/pago.png', factura: 'capturas/factura.png'
+};
+const cargar = (n, r) => new Promise(ok => { const i = new Image(); i.onload = () => { img[n] = i; ok(); }; i.onerror = ok; i.src = r + '?v=' + Date.now(); });
+
+// ---------- Utilidades ----------
+const lim = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const tramo = (t, a, b) => lim((t - a) / (b - a));
+const sal = x => 1 - Math.pow(1 - x, 3);
+const salFuerte = x => 1 - Math.pow(1 - x, 5);
+const resorte = x => x >= 1 ? 1 : 1 - Math.exp(-6 * x) * Math.cos(12 * x);
+const golpe = (t, t0, k = 9) => t < t0 ? 0 : Math.exp(-k * (t - t0));
+// Ruido determinista (mismo resultado en cada exportación)
+const azar = n => { const s = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+
+function rr(x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function cubrir(im, x, y, w, h, zoom = 1, fx = 0.5, fy = 0.5) {
+    const e = Math.max(w / im.width, h / im.height) * zoom, sw = w / e, sh = h / e;
+    c.drawImage(im, (im.width - sw) * fx, (im.height - sh) * fy, sw, sh, x, y, w, h);
+}
+// Texto con ajuste al ancho máximo
+function txt(t, x, y, o = {}) {
+    const { tam = 120, fuente = TITULO, peso = 800, color = CREMA, alinear = 'center', esc = 1, alfa = 1, contorno = 0,
+        maxAncho = W * 0.9, italica = false, base = 'middle', espaciado = -0.04 } = o;
+    if (alfa <= 0 || esc <= 0) return;
+    c.save();
+    c.globalAlpha *= alfa;
+    c.translate(x, y); c.scale(esc, esc);
+    c.font = `${italica ? 'italic ' : ''}${peso} ${tam * U}px "${fuente}"`;
+    c.letterSpacing = `${espaciado * tam * U}px`;
+    const ancho = c.measureText(t).width;
+    if (ancho > maxAncho) c.scale(maxAncho / ancho, maxAncho / ancho);
+    c.textAlign = alinear; c.textBaseline = base;
+    if (contorno) { c.lineWidth = contorno * U; c.strokeStyle = color; c.lineJoin = 'round'; c.strokeText(t, 0, 0); }
+    else { c.fillStyle = color; c.fillText(t, 0, 0); }
+    c.restore();
+}
+function ancho(t, tam, fuente = TITULO, peso = 800) {
+    c.save(); c.font = `${peso} ${tam * U}px "${fuente}"`; c.letterSpacing = `${-0.04 * tam * U}px`;
+    const a = c.measureText(t).width; c.restore(); return a;
+}
+
+// Grano de película
+const grano = document.createElement('canvas'); grano.width = grano.height = 256;
+(() => { const g = grano.getContext('2d'), d = g.createImageData(256, 256);
+    for (let i = 0; i < d.data.length; i += 4) { const v = azar(i) * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    g.putImageData(d, 0, 0); })();
+function ponerGrano(t) {
+    c.save(); c.globalAlpha = 0.07; c.globalCompositeOperation = 'overlay';
+    const f = Math.floor(t * 24);
+    c.translate(-azar(f) * 256, -azar(f + 7) * 256);
+    c.fillStyle = c.createPattern(grano, 'repeat'); c.fillRect(0, 0, W + 256, H + 256);
+    c.restore();
+}
+
+// Niko: recorte sin fondo si existe; si no, "sticker" redondeado con borde blanco
+function niko(x, y, alto, rot = 0, alfa = 1) {
+    c.save(); c.globalAlpha *= alfa; c.translate(x, y); c.rotate(rot);
+    if (img.nikoSinFondo) {
+        const im = img.nikoSinFondo, w = alto * im.width / im.height;
+        c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 40 * U; c.shadowOffsetY = 20 * U;
+        c.drawImage(im, -w / 2, -alto / 2, w, alto);
+    } else if (img.nikoZona) {
+        const im = img.nikoZona, w = alto * im.width / im.height;
+        c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 40 * U; c.shadowOffsetY = 20 * U;
+        rr(-w / 2 - 14 * U, -alto / 2 - 14 * U, w + 28 * U, alto + 28 * U, 60 * U); c.fillStyle = '#fff'; c.fill();
+        c.shadowColor = 'transparent';
+        rr(-w / 2, -alto / 2, w, alto, 48 * U); c.save(); c.clip(); c.drawImage(im, -w / 2, -alto / 2, w, alto); c.restore();
+    }
+    c.restore();
+}
+
+// Celular con una captura de la app
+function celular(clave, cx, cy, alto, rot = 0, desplazar = 0) {
+    const w = alto * 0.49, r = w * 0.14;
+    c.save(); c.translate(cx, cy); c.rotate(rot);
+    c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 60 * U; c.shadowOffsetY = 30 * U;
+    rr(-w / 2 - 12 * U, -alto / 2 - 12 * U, w + 24 * U, alto + 24 * U, r + 12 * U); c.fillStyle = '#121212'; c.fill();
+    c.shadowColor = 'transparent';
+    rr(-w / 2, -alto / 2, w, alto, r); c.save(); c.clip();
+    const im = img[clave];
+    if (im) {
+        const ah = w * im.height / im.width, sobra = Math.max(0, ah - alto);
+        c.drawImage(im, -w / 2, -alto / 2 - sobra * desplazar, w, ah);
+    } else { c.fillStyle = '#333'; c.fillRect(-w / 2, -alto / 2, w, alto); }
+    c.restore();
+    rr(-w * 0.17, -alto / 2 + 14 * U, w * 0.34, 30 * U, 15 * U); c.fillStyle = '#121212'; c.fill();
+    c.restore();
+}
+
+// Etiqueta tipo sticker
+function sticker(texto, x, y, esc, fondo = LIMA, color = TINTA, rot = -0.05, tam = 46) {
+    if (esc <= 0) return;
+    c.save(); c.translate(x, y); c.rotate(rot); c.scale(esc, esc);
+    c.font = `800 ${tam * U}px "${TITULO}"`; c.letterSpacing = `${-0.02 * tam * U}px`;
+    const a = c.measureText(texto).width, pw = a + 56 * U, ph = tam * U * 1.55;
+    c.shadowColor = 'rgba(0,0,0,.3)'; c.shadowBlur = 24 * U; c.shadowOffsetY = 10 * U;
+    rr(-pw / 2, -ph / 2, pw, ph, ph / 2); c.fillStyle = fondo; c.fill();
+    c.shadowColor = 'transparent';
+    c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(texto, 0, 2 * U);
+    c.restore();
+}
+
+// Rayos girando (fondo de la escena de Niko)
+function rayos(t, color, n = 18) {
+    c.save(); c.translate(W / 2, H / 2); c.rotate(t * 0.25);
+    const R = Math.hypot(W, H);
+    c.fillStyle = color;
+    for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        c.beginPath(); c.moveTo(0, 0);
+        c.lineTo(Math.cos(a) * R, Math.sin(a) * R); c.lineTo(Math.cos(a + Math.PI / n) * R, Math.sin(a + Math.PI / n) * R);
+        c.closePath(); c.fill();
+    }
+    c.restore();
+}
+
+// Golpe de zoom en cada tiempo (la imagen "late" con la música)
+function latido(t, fuerza = 0.035) {
+    const b = Math.floor(t / BEAT) * BEAT;
+    return 1 + fuerza * golpe(t, b, 10);
+}
+
+// ---------- Escenas ----------
+function escIntro(t) {
+    c.fillStyle = TINTA; c.fillRect(0, 0, W, H);
+    const palabras = ['¿LISTO', 'PARA', 'TU', 'PRÓXIMO'];
+    const i = Math.min(3, Math.floor(t / BEAT));
+    if (t < 4 * BEAT) {
+        const p = (t - i * BEAT) / BEAT;
+        const esc = 1.25 - 0.25 * salFuerte(lim(p * 3));
+        txt(palabras[i], W / 2, H / 2, { tam: MODO === 'H' ? 300 : 230, esc, color: i === 3 ? LIMA : CREMA });
+        // contador pequeño de tiempos
+        txt(`0${i + 1}`, W / 2, H / 2 + 230 * U, { tam: 34, fuente: TEXTO, peso: 600, color: 'rgba(247,247,238,.4)', espaciado: 0.1 });
+    } else {
+        // "VIAJE?" gigante con caja lima que barre por detrás y fondo violeta que entra en el tiempo 5
+        const p = t - 4 * BEAT;
+        c.fillStyle = VIOLETA; c.fillRect(0, 0, W, H * sal(lim(p / (BEAT * 0.5))));
+        const tam = MODO === 'H' ? 420 : 300;
+        const a = ancho('VIAJE?', tam) * 1.04;
+        const barrido = sal(tramo(p, BEAT * 0.3, BEAT * 1.1));
+        c.fillStyle = LIMA;
+        c.fillRect(W / 2 - a / 2 - 30 * U, H / 2 - tam * U * 0.42, (a + 60 * U) * barrido, tam * U * 0.84);
+        txt('VIAJE?', W / 2, H / 2, { tam, esc: resorte(lim(p / (BEAT * 1.2))) * latido(t, 0.03), color: barrido > 0.5 ? TINTA : CREMA });
+        txt('TravelGo te lleva.', W / 2, H / 2 + (MODO === 'H' ? 280 : 260) * U,
+            { tam: 70, fuente: SERIF, peso: 400, italica: true, alfa: tramo(p, BEAT * 2, BEAT * 2.6), espaciado: 0 });
+    }
+}
+
+const DESTINOS = [
+    { clave: 'cartagena', nombre: 'CARTAGENA', pais: 'Colombia', credito: 'Foto: poirpom · CC BY 2.0' },
+    { clave: 'cusco', nombre: 'CUSCO', pais: 'Perú', credito: 'Foto: Allison Bellido · CC BY-SA 4.0' },
+    { clave: 'cancun', nombre: 'CANCÚN', pais: 'México', credito: 'Foto: dronepicr · CC BY 2.0' }
+];
+function escDestinos(t) {
+    const i = Math.min(2, Math.floor(t / BAR));
+    const p = t - i * BAR;
+    const d = DESTINOS[i];
+    const zoom = 1.12 + 0.1 * (p / BAR);
+    c.save();
+    // golpe de zoom en cada tiempo
+    const l = latido(t, 0.05);
+    c.translate(W / 2, H / 2); c.scale(l, l); c.translate(-W / 2, -H / 2);
+    if (img[d.clave]) cubrir(img[d.clave], 0, 0, W, H, zoom, 0.5, 0.45); else { c.fillStyle = VIOLETA; c.fillRect(0, 0, W, H); }
+    c.restore();
+    const g = c.createLinearGradient(0, H * 0.35, 0, H);
+    g.addColorStop(0, 'rgba(14,13,10,0)'); g.addColorStop(1, 'rgba(14,13,10,.85)');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    // Nombre gigante: contorno que se llena de abajo hacia arriba
+    const tam = MODO === 'H' ? 330 : 250, y = H * (MODO === 'H' ? 0.62 : 0.66);
+    const entra = salFuerte(lim(p / (BEAT * 0.6)));
+    const dx = (1 - entra) * W * 0.25 * (i % 2 ? -1 : 1);
+    txt(d.nombre, W / 2 + dx, y, { tam, contorno: 5, color: CREMA, maxAncho: W * 0.94 });
+    const lleno = sal(tramo(p, BEAT * 0.5, BEAT * 2));
+    c.save(); c.beginPath(); c.rect(0, y + tam * U * 0.45 - tam * U * 0.95 * lleno, W, tam * U * 1.2); c.clip();
+    txt(d.nombre, W / 2 + dx, y, { tam, color: CREMA, maxAncho: W * 0.94 });
+    c.restore();
+    sticker(d.pais, W / 2, y + tam * U * 0.62, resorte(tramo(p, BEAT, BEAT * 1.6)), LIMA, TINTA, -0.04, 44);
+    txt(d.credito + ' · Wikimedia Commons', W - 30 * U, H - 30 * U,
+        { tam: 20, fuente: TEXTO, peso: 500, alinear: 'right', color: 'rgba(247,247,238,.65)', espaciado: 0 });
+    // número del destino
+    txt(`0${i + 1}/03`, 60 * U, 80 * U, { tam: 40, fuente: TEXTO, peso: 600, alinear: 'left', color: CREMA, espaciado: 0.05 });
+}
+
+function escNiko(t) {
+    c.fillStyle = VIOLETA; c.fillRect(0, 0, W, H);
+    rayos(t, 'rgba(255,255,255,.07)');
+    const entra = resorte(lim(t / (BEAT * 1.4)));
+    // "NIKO" gigante en contorno detrás
+    const tamN = MODO === 'H' ? 520 : 400;
+    txt('NIKO', W / 2, H * (MODO === 'H' ? 0.5 : 0.42), { tam: tamN, contorno: 6, color: LIMA, esc: 0.8 + 0.2 * entra, alfa: lim(t / BEAT) });
+    txt('CONOCE A', W / 2, H * (MODO === 'H' ? 0.14 : 0.16), { tam: 70, color: CREMA, alfa: lim(t / (BEAT * 0.5)), espaciado: 0.02 });
+    const alto = (MODO === 'H' ? 900 : 1050) * U;
+    const bob = Math.sin(t * 4) * 12 * U;
+    niko(W / 2, H * (MODO === 'H' ? 0.6 : 0.56) + bob + (1 - entra) * H * 0.5, alto * (0.7 + 0.3 * entra), Math.sin(t * 2) * 0.03);
+    txt('tu copiloto de viaje', W / 2, H * (MODO === 'H' ? 0.92 : 0.9),
+        { tam: 90, fuente: SERIF, peso: 400, italica: true, espaciado: 0, alfa: tramo(t, BEAT * 4, BEAT * 4.6) });
+    sticker('¡Hola, viajero! 👋', W * (MODO === 'H' ? 0.74 : 0.7), H * (MODO === 'H' ? 0.3 : 0.27),
+        resorte(tramo(t, BEAT * 2, BEAT * 2.8)), CREMA, TINTA, 0.06, 48);
+}
+
+const FUNCIONES = [
+    { texto: 'Precios reales', color: LIMA },
+    { texto: 'Clima del día', color: CREMA },
+    { texto: 'Cupones 🔥', color: NARANJA },
+    { texto: 'Factura en PDF', color: LIMA }
+];
+function escApp(t) {
+    c.fillStyle = CREMA; c.fillRect(0, 0, W, H);
+    // titular que cambia en cada compás
+    const titulares = [['Todo tu viaje', 'en un solo lugar'], ['Fotos, clima', 'y qué visitar'], ['Reserva y paga', 'en minutos'], ['Tu factura', 'al instante']];
+    const k = Math.min(3, Math.floor(t / BAR)), p = t - k * BAR;
+    const [a, b] = titulares[k];
+    if (MODO === 'H') {
+        const pantallas = ['inicio', 'detalle', 'factura'];
+        const altos = [820, 900, 820];
+        [-1, 0, 1].forEach((pos, j) => {
+            const entra = salFuerte(tramo(t, j * BEAT * 0.5, j * BEAT * 0.5 + BEAT));
+            const cx = W * 0.62 + pos * 380 * U, cy = H * 0.55 + (1 - entra) * H + Math.sin(t * 1.5 + j) * 14 * U;
+            celular(k === 3 && pos === 0 ? 'pago' : pantallas[j], cx, cy, altos[j] * U, pos * 0.07, (t / (4 * BAR)));
+        });
+        txt(a, 110 * U, H * 0.36, { tam: 110, alinear: 'left', color: TINTA, maxAncho: W * 0.36, esc: 1 });
+        txt(b, 110 * U, H * 0.36 + 120 * U, { tam: 110, fuente: SERIF, peso: 400, italica: true, alinear: 'left', color: VIOLETA, maxAncho: W * 0.36, espaciado: -0.01 });
+        FUNCIONES.forEach((f, j) => sticker(f.texto, 280 * U + (j % 2) * 380 * U, H * 0.64 + Math.floor(j / 2) * 115 * U,
+            resorte(tramo(t, BAR * j + BEAT, BAR * j + BEAT * 1.6)), f.color, TINTA, (j % 2 ? 0.05 : -0.05), 40));
+        niko(W * 0.08, H * 0.98, 300 * U, Math.sin(t * 3) * 0.08, sal(tramo(t, BAR, BAR + BEAT)));
+    } else {
+        const pantallas = ['inicio', 'detalle', 'pago', 'factura'];
+        const entra = salFuerte(tramo(p, 0, BEAT * 0.8));
+        const cy = H * 0.6 + (1 - entra) * H * 0.4;
+        celular(pantallas[k], W / 2, cy, 1150 * U, Math.sin(t * 1.2) * 0.03, p / BAR);
+        txt(a, W / 2, H * 0.1, { tam: 110, color: TINTA, esc: resorte(tramo(p, 0, BEAT)) });
+        txt(b, W / 2, H * 0.1 + 115 * U, { tam: 110, fuente: SERIF, peso: 400, italica: true, color: VIOLETA, espaciado: -0.01, esc: resorte(tramo(p, BEAT * 0.25, BEAT * 1.25)) });
+        const f = FUNCIONES[k];
+        sticker(f.texto, W * (k % 2 ? 0.27 : 0.73), H * 0.33, resorte(tramo(p, BEAT, BEAT * 1.6)), f.color, TINTA, k % 2 ? -0.08 : 0.08, 52);
+        niko(W * 0.14, H * 0.93, 380 * U, Math.sin(t * 3) * 0.08, sal(tramo(t, BAR, BAR + BEAT)));
+    }
+}
+
+function escDatos(t) {
+    const datos = [['4', 'destinos reales'], ['5', 'APIs en vivo'], ['1', 'clic para reservar'], ['0', 'estrés']];
+    const i = Math.min(3, Math.floor(t / BEAT)), p = t - i * BEAT;
+    c.fillStyle = i % 2 ? VIOLETA : TINTA; c.fillRect(0, 0, W, H);
+    const [n, texto] = datos[i];
+    txt(n, W / 2, H * 0.42, { tam: MODO === 'H' ? 520 : 600, color: i % 2 ? LIMA : CREMA, esc: 1.3 - 0.3 * salFuerte(lim(p * 4)) });
+    txt(texto, W / 2, H * (MODO === 'H' ? 0.8 : 0.72), { tam: 90, color: i % 2 ? CREMA : LIMA, alfa: lim(p * 6) });
+}
+
+function escCierre(t) {
+    c.fillStyle = LIMA; c.fillRect(0, 0, W, H);
+    rayos(-t, 'rgba(14,13,10,.05)', 24);
+    const tam = MODO === 'H' ? 170 : 150;
+    const y0 = MODO === 'H' ? H * 0.17 : H * 0.17;
+    txt('TU PRÓXIMO', W / 2, y0, { tam, color: TINTA, esc: resorte(lim(t / BEAT)) });
+    txt('DESTINO', W / 2, y0 + tam * U * 0.95, { tam, color: TINTA, esc: resorte(tramo(t, BEAT * 0.5, BEAT * 1.5)) });
+    txt('está a un clic.', W / 2, y0 + tam * U * 1.95, { tam: tam * 0.85, fuente: SERIF, peso: 400, italica: true, color: VIOLETA, espaciado: -0.01, esc: resorte(tramo(t, BEAT, BEAT * 2)) });
+    const sube = resorte(tramo(t, BEAT * 2, BEAT * 3.2));
+    const alto = (MODO === 'H' ? 560 : 900) * U;
+    niko(MODO === 'H' ? W * 0.86 : W / 2, H - alto * 0.42 + (1 - sube) * alto, alto, Math.sin(t * 3) * 0.05);
+    if (MODO === 'H') niko(W * 0.14, H - alto * 0.42 + (1 - sube) * alto, alto, -Math.sin(t * 3) * 0.05);
+}
+
+function escFin(t) {
+    c.fillStyle = TINTA; c.fillRect(0, 0, W, H);
+    const e = resorte(lim(t / (BEAT * 1.2)));
+    // Marca: cuadrado girado con avión + TravelGo
+    const tam = MODO === 'H' ? 230 : 190;
+    const aMarca = ancho('TravelGo', tam);
+    const caja = tam * U * 0.9, gap = 40 * U;
+    const x0 = W / 2 - (caja + gap + aMarca) / 2, y = H * (MODO === 'H' ? 0.4 : 0.38);
+    c.save(); c.translate(x0 + caja / 2, y); c.rotate(-0.2); c.scale(e, e);
+    rr(-caja / 2, -caja / 2, caja, caja, caja * 0.28); c.fillStyle = CREMA; c.fill();
+    c.fillStyle = TINTA; c.font = `${caja * 0.55}px "Segoe UI Symbol", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('✈', 0, caja * 0.03);
+    c.restore();
+    txt('TravelGo', x0 + caja + gap, y, { tam, alinear: 'left', color: CREMA, esc: 1, alfa: lim(t / (BEAT * 0.6)) });
+    sticker('Descúbrenos en ExpoSoftware', W / 2, y + (MODO === 'H' ? 230 : 230) * U, resorte(tramo(t, BEAT, BEAT * 1.8)), MAGENTA, '#fff', -0.03, MODO === 'H' ? 58 : 50);
+    txt('Destinos · Paquetes · Reservas · Viajes', W / 2, y + (MODO === 'H' ? 360 : 360) * U,
+        { tam: 40, fuente: TEXTO, peso: 600, color: 'rgba(247,247,238,.7)', alfa: tramo(t, BEAT * 2, BEAT * 2.5), espaciado: 0.01 });
+}
+
+const PINTORES = { intro: escIntro, destinos: escDestinos, niko: escNiko, app: escApp, datos: escDatos, cierre: escCierre, fin: escFin };
+
+// Glitch entre escenas: franjas desplazadas con separación de color
+function glitch(t) {
+    for (const e of ESCENAS) {
+        const d = t - e.desde;
+        if (e.desde > 0 && d >= 0 && d < 0.14) {
+            const fuerza = 1 - d / 0.14;
+            const copia = c.getImageData(0, 0, W, H);
+            const n = 9;
+            for (let i = 0; i < n; i++) {
+                const y = Math.floor(azar(i + e.desde * 10) * H), h = Math.floor((20 + azar(i * 3) * 90) * U);
+                const dx = (azar(i * 7 + d) - 0.5) * 160 * U * fuerza;
+                c.putImageData(copia, dx, 0, 0, y, W, h);
+            }
+            c.save(); c.globalCompositeOperation = 'screen'; c.globalAlpha = 0.35 * fuerza;
+            c.fillStyle = MAGENTA; c.fillRect(0, 0, W, H); c.restore();
+        }
+    }
+}
+
+function dibujar(t) {
+    t = lim(t, 0, DURACION - 1e-3);
+    const e = ESCENAS.find(s => t >= s.desde && t < s.hasta) || ESCENAS[ESCENAS.length - 1];
+    c.save();
+    PINTORES[e.nombre](t - e.desde);
+    c.restore();
+    glitch(t);
+    ponerGrano(t);
+    // destello blanco corto al empezar cada escena
+    for (const s of ESCENAS) { const d = t - s.desde; if (s.desde > 0 && d >= 0 && d < 0.08) { c.fillStyle = `rgba(255,255,255,${0.5 * (1 - d / 0.08)})`; c.fillRect(0, 0, W, H); } }
+    const f = tramo(t, DURACION - 0.35, DURACION);
+    if (f > 0) { c.fillStyle = `rgba(0,0,0,${f})`; c.fillRect(0, 0, W, H); }
+}
+
+// =====================================================================
+// AUDIO: música (si hay musica.mp3) + efectos generados. Todo con OfflineAudioContext.
+// =====================================================================
+const SR = 48000;
+let musica = null, inicioMusica = 0, audioFinal = null;
+
+async function analizarMusica() {
+    try {
+        const r = await fetch('musica.mp3?v=' + Date.now());
+        if (!r.ok) return false;
+        const ctx = new AudioContext({ sampleRate: SR });
+        musica = await ctx.decodeAudioData(await r.arrayBuffer());
+        ctx.close();
+    } catch { return false; }
+    // Envolvente de energía (salto de 512 muestras) y su derivada positiva = "golpes"
+    const mono = musica.getChannelData(0), salto = 512, n = Math.floor(mono.length / salto);
+    const energia = new Float32Array(n), golpes = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < salto; j++) { const v = mono[i * salto + j]; s += v * v; } energia[i] = Math.sqrt(s / salto); }
+    for (let i = 1; i < n; i++) golpes[i] = Math.max(0, energia[i] - energia[i - 1]);
+    // BPM por autocorrelación entre 80 y 170
+    const fps = SR / salto; let mejor = 0, bpm = 120;
+    for (let b = 80; b <= 170; b += 0.5) {
+        const lag = fps * 60 / b; let s = 0;
+        for (let i = 0; i + lag < n; i += 1) s += golpes[i] * golpes[Math.floor(i + lag)];
+        if (s > mejor) { mejor = s; bpm = b; }
+    }
+    while (bpm < 110) bpm *= 2;
+    while (bpm >= 160) bpm /= 2;
+    BPM = bpm; armarLinea();
+    // Arranque: la ventana más fuerte de la canción, alineada al golpe
+    const ventana = Math.floor(DURACION * fps); let maxE = -1, desde = 0;
+    for (let i = 0; i + ventana < n; i += Math.floor(fps)) {
+        let s = 0; for (let j = i; j < i + ventana; j += 4) s += energia[j];
+        if (s > maxE) { maxE = s; desde = i; }
+    }
+    const periodo = fps * 60 / BPM; let mejorFase = 0, mejorS = -1;
+    for (let f = 0; f < periodo; f++) {
+        let s = 0; for (let k = 0; k < 16; k++) { const i = Math.floor(desde + f + k * periodo); if (i < n) s += golpes[i]; }
+        if (s > mejorS) { mejorS = s; mejorFase = f; }
+    }
+    inicioMusica = (desde + mejorFase) / fps;
+    // si la canción es más corta que el anuncio desde ese punto, empezar antes
+    if (inicioMusica + DURACION > musica.duration) inicioMusica = Math.max(0, musica.duration - DURACION);
+    return true;
+}
+
+// Efectos de sonido sintetizados
+function ruido(ctx, dur) {
+    const b = ctx.createBuffer(1, Math.ceil(dur * SR), SR), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = azar(i * 0.37) * 2 - 1;
+    return b;
+}
+function whoosh(ctx, destino, t, dur = 0.45, vol = 0.5) {
+    const s = ctx.createBufferSource(); s.buffer = ruido(ctx, dur);
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(5000, t + dur * 0.7);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.6); g.gain.linearRampToValueAtTime(0, t + dur);
+    s.connect(f).connect(g).connect(destino); s.start(t - dur * 0.6);
+}
+function impacto(ctx, destino, t, vol = 0.8) {
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.35);
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    o.connect(g).connect(destino); o.start(t); o.stop(t + 0.65);
+    const s = ctx.createBufferSource(); s.buffer = ruido(ctx, 0.08);
+    const gs = ctx.createGain(); gs.gain.setValueAtTime(vol * 0.5, t); gs.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    s.connect(gs).connect(destino); s.start(t);
+}
+function riser(ctx, destino, t, dur, vol = 0.35) {
+    const s = ctx.createBufferSource(); s.buffer = ruido(ctx, dur);
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3;
+    f.frequency.setValueAtTime(200, t - dur); f.frequency.exponentialRampToValueAtTime(7000, t);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t - dur); g.gain.exponentialRampToValueAtTime(vol, t);
+    g.gain.setValueAtTime(0, t + 0.01);
+    s.connect(f).connect(g).connect(destino); s.start(t - dur);
+}
+function pop(ctx, destino, t, vol = 0.25) {
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(1800, t + 0.06);
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    o.connect(g).connect(destino); o.start(t); o.stop(t + 0.13);
+}
+// Beat de respaldo si no hay canción: bombo, palmas, hi-hat y bajo
+function beatPropio(ctx, destino) {
+    const bombo = t => { const o = ctx.createOscillator(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.35); o.connect(g).connect(destino); o.start(t); o.stop(t + 0.4); };
+    const hat = (t, v) => { const s = ctx.createBufferSource(); s.buffer = ruido(ctx, 0.05); const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 8000;
+        const g = ctx.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05); s.connect(f).connect(g).connect(destino); s.start(t); };
+    const palma = t => { const s = ctx.createBufferSource(); s.buffer = ruido(ctx, 0.2); const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); s.connect(f).connect(g).connect(destino); s.start(t); };
+    const notas = [55, 55, 65.4, 49];
+    for (let b = 0; b * BEAT < DURACION; b++) {
+        const t = b * BEAT;
+        if (t < 2 * BAR && b % 4 !== 0) continue; // intro: solo bombo en el 1
+        bombo(t);
+        if (b % 2 === 1) palma(t);
+        hat(t + BEAT / 2, 0.18); hat(t + BEAT / 4, 0.08);
+        const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = notas[Math.floor(b / 4) % 4];
+        const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400;
+        const g = ctx.createGain(); g.gain.setValueAtTime(0.18, t + BEAT / 2); g.gain.exponentialRampToValueAtTime(0.001, t + BEAT * 0.95);
+        o.connect(f).connect(g).connect(destino); o.start(t + BEAT / 2); o.stop(t + BEAT);
+    }
+}
+
+async function renderAudio() {
+    const ctx = new OfflineAudioContext(2, Math.ceil(DURACION * SR), SR);
+    const master = ctx.createGain(); master.connect(ctx.destination);
+    master.gain.setValueAtTime(1, DURACION - 1.2); master.gain.linearRampToValueAtTime(0, DURACION);
+    const bus = ctx.createDynamicsCompressor(); bus.threshold.value = -10; bus.ratio.value = 4; bus.connect(master);
+    if (musica) {
+        const s = ctx.createBufferSource(); s.buffer = musica;
+        const g = ctx.createGain(); g.gain.value = 0.85;
+        s.connect(g).connect(bus); s.start(0, inicioMusica);
+    } else {
+        beatPropio(ctx, bus);
+    }
+    const sfx = ctx.createGain(); sfx.gain.value = 0.7; sfx.connect(bus);
+    const E = Object.fromEntries(ESCENAS.map(e => [e.nombre, e]));
+    for (let b = 0; b < 4; b++) impacto(ctx, sfx, b * BEAT, 0.6);              // palabras del intro
+    impacto(ctx, sfx, 4 * BEAT, 1); whoosh(ctx, sfx, 4 * BEAT);                 // VIAJE?
+    for (let k = 0; k < 3; k++) { whoosh(ctx, sfx, E.destinos.desde + k * BAR, 0.5, 0.6); impacto(ctx, sfx, E.destinos.desde + k * BAR, 0.5); }
+    riser(ctx, sfx, E.niko.desde, BAR);                                         // sube antes de Niko
+    impacto(ctx, sfx, E.niko.desde, 1); pop(ctx, sfx, E.niko.desde + 2 * BEAT);
+    for (let k = 0; k < 4; k++) { whoosh(ctx, sfx, E.app.desde + k * BAR, 0.4, 0.4); pop(ctx, sfx, E.app.desde + k * BAR + BEAT); }
+    for (let b = 0; b < 4; b++) impacto(ctx, sfx, E.datos.desde + b * BEAT, 0.7);
+    whoosh(ctx, sfx, E.cierre.desde, 0.5, 0.6); impacto(ctx, sfx, E.cierre.desde, 0.9); pop(ctx, sfx, E.cierre.desde + BEAT);
+    riser(ctx, sfx, E.fin.desde, BAR * 0.5, 0.3); impacto(ctx, sfx, E.fin.desde, 1);
+    audioFinal = await ctx.startRendering();
+}
+
+// ---------- Vista previa ----------
+let corriendo = false, fuente = null;
+document.getElementById('ver').onclick = async () => {
+    if (!audioFinal) await renderAudio();
+    const ctx = new AudioContext({ sampleRate: SR });
+    fuente = ctx.createBufferSource(); fuente.buffer = audioFinal; fuente.connect(ctx.destination);
+    const t0 = ctx.currentTime + 0.1; fuente.start(t0);
+    corriendo = true;
+    const bucle = () => { if (!corriendo) return; const t = ctx.currentTime - t0; dibujar(Math.max(0, t)); if (t < DURACION) requestAnimationFrame(bucle); else { corriendo = false; ctx.close(); } };
+    requestAnimationFrame(bucle);
+};
+document.getElementById('seg').oninput = e => { corriendo = false; dibujar(parseFloat(e.target.value)); };
+document.querySelectorAll('[data-modo]').forEach(b => b.onclick = () => { ponerModo(b.dataset.modo); dibujar(parseFloat(document.getElementById('seg').value)); });
+
+// ---------- Exportación (video H.264 + audio AAC en MP4) ----------
+async function exportarModo(modo, Muxer, ArrayBufferTarget) {
+    ponerModo(modo);
+    const codecAudio = (await AudioEncoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: SR, numberOfChannels: 2, bitrate: 192000 })).supported ? 'aac' : 'opus';
+    const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: { codec: 'avc', width: W, height: H, frameRate: FPS },
+        audio: { codec: codecAudio, numberOfChannels: 2, sampleRate: SR },
+        fastStart: 'in-memory'
+    });
+    let error = null;
+    const venc = new VideoEncoder({ output: (ch, m) => muxer.addVideoChunk(ch, m), error: e => error = e });
+    venc.configure({ codec: modo === 'H' ? 'avc1.640032' : 'avc1.640032', width: W, height: H, bitrate: 14_000_000, framerate: FPS });
+    const total = Math.round(DURACION * FPS);
+    for (let i = 0; i < total; i++) {
+        if (error) throw error;
+        dibujar(i / FPS);
+        const cuadro = new VideoFrame(lienzo, { timestamp: Math.round(i * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+        venc.encode(cuadro, { keyFrame: i % (FPS * 2) === 0 });
+        cuadro.close();
+        while (venc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 4));
+        if (i % 30 === 0) estado.textContent = `${modo === 'H' ? 'Horizontal' : 'Vertical'}: ${Math.round(100 * i / total)} %`;
+    }
+    await venc.flush();
+    // Audio
+    const aenc = new AudioEncoder({ output: (ch, m) => muxer.addAudioChunk(ch, m), error: e => error = e });
+    aenc.configure(codecAudio === 'aac'
+        ? { codec: 'mp4a.40.2', sampleRate: SR, numberOfChannels: 2, bitrate: 192000 }
+        : { codec: 'opus', sampleRate: SR, numberOfChannels: 2, bitrate: 160000 });
+    const L = audioFinal.getChannelData(0), R = audioFinal.getChannelData(1), paso = 4800;
+    for (let i = 0; i < L.length; i += paso) {
+        const n = Math.min(paso, L.length - i), datos = new Float32Array(n * 2);
+        datos.set(L.subarray(i, i + n), 0); datos.set(R.subarray(i, i + n), n);
+        const ad = new AudioData({ format: 'f32-planar', sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i * 1e6 / SR), data: datos });
+        aenc.encode(ad); ad.close();
+    }
+    await aenc.flush();
+    if (error) throw error;
+    muxer.finalize();
+    const buffer = muxer.target.buffer;
+    const nombre = `TravelGo-anuncio-${modo === 'H' ? 'horizontal' : 'vertical'}.mp4`;
+    const r = await fetch('/guardar?nombre=' + nombre, { method: 'POST', body: buffer });
+    if (!r.ok) throw new Error('No se pudo guardar ' + nombre);
+    return `${nombre} (${(buffer.byteLength / 1e6).toFixed(1)} MB, audio ${codecAudio})`;
+}
+async function exportarTodo() {
+    window.__exportado = 'corriendo';
+    const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.mjs');
+    if (!audioFinal) await renderAudio();
+    const a = await exportarModo('H', Muxer, ArrayBufferTarget);
+    const b = await exportarModo('V', Muxer, ArrayBufferTarget);
+    estado.textContent = 'Listo:\n' + a + '\n' + b;
+    window.__exportado = 'ok\n' + a + '\n' + b;
+}
+document.getElementById('exportar').onclick = () => exportarTodo().catch(e => { estado.textContent = 'Error: ' + e.message; window.__exportado = 'error ' + e.message; });
+window.exportarTodo = exportarTodo;
+
+// ---------- Inicio ----------
+(async () => {
+    await Promise.all(Object.entries(ARCHIVOS).map(([n, r]) => cargar(n, r)));
+    await Promise.all(['800 100px "Bricolage Grotesque"', 'italic 400 100px "Instrument Serif"', '600 100px Geist'].map(f => document.fonts.load(f)));
+    const hayMusica = await analizarMusica();
+    await renderAudio();
+    estado.textContent = [
+        hayMusica ? `Música: musica.mp3 · ${BPM.toFixed(1)} BPM · empieza en ${inicioMusica.toFixed(1)} s` : 'Sin musica.mp3: beat propio a 120 BPM',
+        img.nikoSinFondo ? 'Niko: recorte sin fondo ✔' : 'Niko: sticker (falta niko_sin_fondo.png)',
+        `Duración: ${DURACION.toFixed(1)} s`
+    ].join('\n');
+    window.__listo = estado.textContent;
+    dibujar(1);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Los videos exportados y la música no se suben (pesan mucho; la música tiene su propia licencia)
+*.mp4
+musica.mp3
