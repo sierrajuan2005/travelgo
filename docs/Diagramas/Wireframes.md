@@ -385,10 +385,22 @@ Si la API de fotos falla, la tarjeta muestra el degradado con el ícono de siemp
 Los paquetes no se borran (las reservas viejas los usan): se desactivan y dejan de salir en el catálogo.
 Un destino que usa un paquete no se puede borrar.
 
-### 7.5 Constructor de paquetes (pendiente)
+### 7.5 Constructor de paquetes (`/admin/constructor`, solo Administrador)
 
-Se construye cuando estén mergeados `ProveedorVuelos` (Integrante 1) y `ProveedorHoteles` con el armado de
-paquetes en `PaqueteService` (Integrante 2).
+Hecho el 2026-11-17 (`ConstructorWebController` + `ConstructorPaqueteService`). Usa `ProveedorVuelos` (Ignav,
+Integrante 1) y `ProveedorHoteles` (Xotelo, Integrante 2), y guarda en la tabla `paquete_servicio` (Integrante 4).
+
+- **Buscar:** destino de TravelGo, ciudad de salida y fechas. Los códigos para las APIs (aeropuerto IATA y clave
+  de la ciudad en Xotelo) se llenan solos para los destinos de `data.sql` (`CodigosDestino`) y se pueden cambiar.
+- **Elegir:** un vuelo (solo ida, 1 adulto) y un hotel (1 habitación, 2 adultos). Se puede dejar uno de los dos vacío.
+  El total se suma en vivo.
+- **Guardar:** se guarda una **copia** del vuelo y del hotel (precio, fecha de consulta, fuente y enlace de reserva),
+  el paquete (precio = vuelo + hotel × noches; duración = noches + 1) y su unión en `paquete_servicio`. Todo o nada.
+- Xotelo responde en USD: se convierte a COP con la tasa fija `travelgo.moneda.usd-cop` (4.000 por defecto).
+- Ignav guarda la búsqueda 30 minutos. Si pasa más tiempo antes de guardar, la pantalla pide buscar otra vez.
+- Si una API falla o falta la llave (`IGNAV_API_KEY`), la búsqueda no se cae: muestra un aviso.
+- El detalle del catálogo muestra "Incluye" con la fuente, la fecha de consulta y el enlace de cada servicio, y al
+  reservar ese paquete se ofrecen exactamente su vuelo y su hotel.
 
 ```text
 +--------------------------------------------------+
@@ -416,3 +428,4 @@ paquetes en `PaqueteService` (Integrante 2).
 | Catálogo y detalle | `CatalogoWebController` | `PaqueteService`, `InfoDestinoService` | Paquetes de PostgreSQL; foto, clima y atracciones de las APIs (en caché) |
 | Reserva, reservas, pago y factura | `ReservaWebController` | `ReservaService`, `PagoService`, `FacturaService`, `ServicioReservableService` | PostgreSQL |
 | Administración | `AdminWebController` | `DestinoService`, `PaqueteService`, `ServicioReservableService` | PostgreSQL |
+| Constructor de paquetes | `ConstructorWebController` | `ConstructorPaqueteService` | Ignav y Xotelo al buscar; PostgreSQL (`servicio_reservable`, `paquete_turistico`, `paquete_servicio`) al guardar |
