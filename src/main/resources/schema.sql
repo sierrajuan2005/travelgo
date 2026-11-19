@@ -24,15 +24,26 @@
 --                           spring.jpa.hibernate.ddl-auto=validate (o none)
 -- =====================================================================
 
+
 -- ---------- Usuarios ----------
 CREATE TABLE IF NOT EXISTS usuario (
-    id         VARCHAR(36)  PRIMARY KEY,
-    nombre     VARCHAR(100) NOT NULL,
-    correo     VARCHAR(150) NOT NULL UNIQUE,
-    password   VARCHAR(255) NOT NULL,           -- hash BCrypt (60 caracteres)
-    rol        VARCHAR(20)  NOT NULL
-               CHECK (rol IN ('CLIENTE', 'AGENTE', 'ADMINISTRADOR'))
+    id                    VARCHAR(36)  PRIMARY KEY,
+    nombre                VARCHAR(100) NOT NULL,
+    correo                VARCHAR(150) NOT NULL UNIQUE,
+    password              VARCHAR(255) NOT NULL, -- hash BCrypt (60 caracteres)
+    rol                   VARCHAR(20)  NOT NULL
+                          CHECK (rol IN ('CLIENTE', 'AGENTE', 'ADMINISTRADOR')),
+    telefono              VARCHAR(30),
+    notificaciones_correo BOOLEAN     NOT NULL DEFAULT FALSE,
+    notificaciones_sms    BOOLEAN     NOT NULL DEFAULT FALSE
 );
+
+-- Compatibilidad con bases de datos existentes
+ALTER TABLE usuario
+    ADD COLUMN IF NOT EXISTS telefono VARCHAR(30),
+    ADD COLUMN IF NOT EXISTS notificaciones_correo BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS notificaciones_sms BOOLEAN NOT NULL DEFAULT FALSE;
+
 
 -- ---------- Catálogo (entidades JPA, id Long) ----------
 CREATE TABLE IF NOT EXISTS destino (
