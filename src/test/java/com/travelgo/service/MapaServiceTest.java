@@ -1,5 +1,5 @@
 package com.travelgo.service;
-
+import static org.mockito.Mockito.lenient;
 import com.travelgo.dto.MapaRespuestaDTO;
 import com.travelgo.exception.ProveedorNoDisponibleException;
 import com.travelgo.exception.RecursoNoEncontradoException;
@@ -85,15 +85,15 @@ class MapaServiceTest {
     @Test
     @DisplayName("Si una fuente falla, devuelve las demás y un aviso")
     void unaFuenteFalla() {
-        when(proveedorLugares.buscar(eq(CategoriaMapa.CAFE), anyDouble(), anyDouble(), anyInt(), anyInt()))
+        lenient().when(proveedorLugares.buscar(eq(CategoriaMapa.CAFE), anyDouble(), anyDouble(), anyInt(), anyInt()))
                 .thenThrow(new ProveedorNoDisponibleException("sin llave"));
 
         MapaRespuestaDTO respuesta = service.lugares("cartagena",
                 EnumSet.of(CategoriaMapa.CAFE, CategoriaMapa.RESTAURANTE), 3000, 10);
 
         assertEquals(1, respuesta.avisos().size());
+        assertEquals("Cafés: sin llave", respuesta.avisos().get(0));
     }
-
     @Test
     @DisplayName("Una ciudad que no está en el mapa lanza RecursoNoEncontradoException")
     void ciudadInexistente() {
