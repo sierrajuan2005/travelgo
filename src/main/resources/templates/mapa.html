@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TravelGo · Mapa</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+    <link rel="stylesheet" th:href="@{/css/mapa.css}">
+</head>
+<body>
+<aside id="panel">
+    <h1>Explorar el mapa</h1>
+    <label for="ciudad">Ciudad</label>
+    <select id="ciudad"></select>
+
+    <h2>Categorías</h2>
+    <div id="categorias"></div>
+    <label class="opcion"><input type="checkbox" id="atenuar"> Atenuar en vez de ocultar</label>
+    <p id="estado" role="status"></p>
+
+    <p class="atribucion">
+        Datos de © OpenStreetMap, Geoapify y Xotelo (TripAdvisor).
+        <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Powered by Geoapify</a>
+    </p>
+</aside>
+<div id="mapa"></div>
+
+<script th:inline="javascript">
+    window.TRAVELGO_MAPA = { estiloUrl: /*[[${estiloUrl}]]*/ 'https://tiles.openfreemap.org/styles/liberty' };
+</script>
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script th:src="@{/js/mapa.js}"></script>
+</body>
+</html>
