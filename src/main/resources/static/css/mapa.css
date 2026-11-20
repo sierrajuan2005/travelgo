@@ -1,21 +1,15 @@
-body { margin: 0; display: flex; height: 100vh; font-family: system-ui, sans-serif; }
-#panel { width: 290px; padding: 16px; box-sizing: border-box; overflow-y: auto; background: #fff;
-    border-right: 1px solid #ddd; }
-#panel h1 { font-size: 1.25rem; margin: 0 0 12px; }
-#panel h2 { font-size: 1rem; margin: 16px 0 8px; }
-#panel select { width: 100%; padding: 6px; }
-#mapa { flex: 1; }
-#categorias { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { border: 2px solid var(--color); background: #fff; color: #222; border-radius: 999px;
-    padding: 6px 12px; cursor: pointer; }
-.chip.activo { background: var(--color); color: #fff; }
-.opcion { display: block; margin-top: 12px; font-size: .9rem; }
-#estado { margin-top: 12px; font-size: .85rem; color: #444; }
-.atribucion { margin-top: 24px; font-size: .75rem; color: #666; }
-.pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
+.tgm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tgm-chip { border: 2px solid var(--color); background: #fff; color: #222; border-radius: 999px;
+    padding: 4px 14px; cursor: pointer; font-size: .9rem; }
+.tgm-chip.activo { background: var(--color); color: #fff; }
+.tgm-lienzo { width: 100%; height: 440px; border-radius: 16px; overflow: hidden; }
+.tgm-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
     box-shadow: 0 0 3px rgba(0, 0, 0, .5); }
-.pin.oculto { display: none; }
-.pin.atenuado { opacity: .15; pointer-events: none; }
-.popup h3 { margin: 0 0 4px; font-size: 1rem; }
-.popup p { margin: 2px 0; font-size: .85rem; }
-.popup button { margin-top: 6px; }
+.tgm-pin.tgm-oculto { display: none; }
+.tgm-pin.tgm-atenuado { opacity: .15; pointer-events: none; }
+.tgm-pin.tgm-destacado { width: 26px; height: 26px; border-width: 3px; z-index: 5;
+    box-shadow: 0 0 0 3px #5a3df0, 0 0 12px rgba(0, 0, 0, .55); }
+.tgm-popup h3 { margin: 0 0 4px; font-size: 1rem; }
+.tgm-popup p { margin: 2px 0; font-size: .85rem; }
+.tgm-popup button { margin-top: 6px; }
+.tgm-tu-hotel { color: #5a3df0; font-weight: 600; }
