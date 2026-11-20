@@ -17,6 +17,8 @@ import java.util.List;
 public class MapaController {
 
     private final MapaService service;
+    private static final int RADIO_METROS = 5000;
+    private static final int LIMITE = 30;
 
     public MapaController(MapaService service) {
         this.service = service;
@@ -30,9 +32,7 @@ public class MapaController {
     /** Ejemplo: /api/mapa/lugares?ciudad=cartagena&categorias=RESTAURANTE,CAFE. Sin categorías trae todas. */
     @GetMapping("/lugares")
     public MapaRespuestaDTO lugares(@RequestParam String ciudad,
-                                    @RequestParam(required = false) List<CategoriaMapa> categorias,
-                                    @RequestParam(defaultValue = "5000") int radio,
-                                    @RequestParam(defaultValue = "30") int limite) {
-        return service.lugares(ciudad, categorias, radio, limite);
+                                    @RequestParam(required = false) List<CategoriaMapa> categorias) {
+        return service.lugares(ciudad, categorias, RADIO_METROS, LIMITE);
     }
 }

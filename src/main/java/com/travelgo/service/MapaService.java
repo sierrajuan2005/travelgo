@@ -27,6 +27,7 @@ public class MapaService {
     private final CiudadesMapa ciudades;
     private final ProveedorLugares proveedorLugares;
     private final ProveedorHoteles proveedorHoteles;
+    private static final int LIMITE_HOTELES = 100;
 
     public MapaService(CiudadesMapa ciudades, ProveedorLugares proveedorLugares,
                        ProveedorHoteles proveedorHoteles) {
@@ -50,8 +51,7 @@ public class MapaService {
         for (CategoriaMapa categoria : pedidas) {
             try {
                 if (categoria == CategoriaMapa.HOTEL) {
-                    lugares.addAll(hoteles(ciudad, limite));
-                } else {
+                    lugares.addAll(hoteles(ciudad, LIMITE_HOTELES));                } else {
                     lugares.addAll(proveedorLugares.buscar(categoria, ciudad.latitud(), ciudad.longitud(),
                             radio, limite));
                 }

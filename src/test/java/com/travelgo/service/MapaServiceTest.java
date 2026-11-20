@@ -52,7 +52,7 @@ class MapaServiceTest {
 
         verify(proveedorLugares, times(4)).buscar(any(CategoriaMapa.class), anyDouble(), anyDouble(),
                 eq(5000), eq(20));
-        verify(proveedorHoteles).buscarHoteles("g297476", 20);
+        verify(proveedorHoteles).buscarHoteles("g297476", 100);
     }
 
     @Test
@@ -72,8 +72,7 @@ class MapaServiceTest {
     @Test
     @DisplayName("Los hoteles sin coordenadas no se dibujan")
     void hotelesSinCoordenadas() {
-        when(proveedorHoteles.buscarHoteles("g297476", 10)).thenReturn(List.of(
-                new HotelResumen("g297476-d1", "Hotel A", "Hotel", null, "https://ta/1", 10.4, -75.5, 4.5),
+        when(proveedorHoteles.buscarHoteles("g297476", 100)).thenReturn(List.of(                 new HotelResumen("g297476-d1", "Hotel A", "Hotel", null, "https://ta/1", 10.4, -75.5, 4.5),
                 new HotelResumen("g297476-d2", "Hotel B", "Hotel", null, "https://ta/2", null, null, 4.0)));
 
         MapaRespuestaDTO respuesta = service.lugares("cartagena", Set.of(CategoriaMapa.HOTEL), 3000, 10);
