@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,6 +38,7 @@ class ServicioReservableServiceTest {
 
     private static final LocalDateTime SALIDA = LocalDateTime.of(2026, 12, 1, 8, 0);
     private static final LocalDateTime LLEGADA = LocalDateTime.of(2026, 12, 1, 9, 30);
+    private static final LocalDate FECHA_ENTRADA = LocalDate.of(2026, 12, 1);
 
     @Mock
     private ServicioReservableDAO servicioDAO;
@@ -49,7 +51,7 @@ class ServicioReservableServiceTest {
     }
 
     private HotelRequest hotelRequest() {
-        return new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", 3);
+        return new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", 3, FECHA_ENTRADA);
     }
 
     private TransporteRequest transporteRequest() {
@@ -131,7 +133,7 @@ class ServicioReservableServiceTest {
     @Test
     @DisplayName("Crear un servicio con precio negativo lanza IllegalArgumentException")
     void crearPrecioNegativo() {
-        HotelRequest negativo = new HotelRequest(-5.0, true, "Hotel Mar", "Calle 1", "Doble", 3);
+        HotelRequest negativo = new HotelRequest(-5.0, true, "Hotel Mar", "Calle 1", "Doble", 3, FECHA_ENTRADA);
 
         assertThrows(IllegalArgumentException.class, () -> service.crearHotel(negativo));
         verify(servicioDAO, never()).guardar(any());
@@ -140,7 +142,7 @@ class ServicioReservableServiceTest {
     @Test
     @DisplayName("Crear un hotel sin noches lanza IllegalArgumentException")
     void crearHotelSinNoches() {
-        HotelRequest sinNoches = new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", null);
+        HotelRequest sinNoches = new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", null, FECHA_ENTRADA);
 
         assertThrows(IllegalArgumentException.class, () -> service.crearHotel(sinNoches));
         verify(servicioDAO, never()).guardar(any());
@@ -149,9 +151,19 @@ class ServicioReservableServiceTest {
     @Test
     @DisplayName("Crear un hotel con 0 noches lanza IllegalArgumentException")
     void crearHotelCeroNoches() {
-        HotelRequest cero = new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", 0);
+        HotelRequest cero = new HotelRequest(100.0, true, "Hotel Mar", "Calle 1", "Doble", 0, FECHA_ENTRADA);
 
         assertThrows(IllegalArgumentException.class, () -> service.crearHotel(cero));
+    }
+
+    @Test
+    @DisplayName("Crear un hotel sin fecha de entrada lanza IllegalArgumentException")
+    void crearHotelSinFechaEntrada() {
+        HotelRequest sinFecha = new HotelRequest(
+                100.0, true, "Hotel Mar", "Calle 1", "Doble", 3, null);
+
+        assertThrows(IllegalArgumentException.class, () -> service.crearHotel(sinFecha));
+        verify(servicioDAO, never()).guardar(any());
     }
 
     @Test
