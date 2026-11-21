@@ -113,8 +113,12 @@ CREATE TABLE IF NOT EXISTS hotel (
     nombre          VARCHAR(150) NOT NULL,
     direccion       VARCHAR(200) NOT NULL,
     tipo_habitacion VARCHAR(100) NOT NULL,
-    noches          INTEGER      NOT NULL CHECK (noches > 0)
+    noches          INTEGER      NOT NULL CHECK (noches > 0),
+    fecha_entrada   DATE
 );
+
+ALTER TABLE hotel
+    ADD COLUMN IF NOT EXISTS fecha_entrada DATE;
 
 CREATE TABLE IF NOT EXISTS transporte (
     id      VARCHAR(36)  PRIMARY KEY REFERENCES servicio_reservable (id) ON DELETE CASCADE,
