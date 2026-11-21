@@ -190,3 +190,60 @@ CREATE INDEX IF NOT EXISTS idx_servicio_fuente_externo ON servicio_reservable (f
 --   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS moneda VARCHAR(3);
 --   ALTER TABLE servicio_reservable ADD COLUMN IF NOT EXISTS precio_original NUMERIC(12,2);
 -- y que Integrante 1 las lea/escriba en ServicioReservableDAOJdbc.
+
+-- =====================================================================
+-- Sprint 5 - Integrante 4: tablas compartidas
+-- Cada integrante implementa su módulo sobre estas estructuras:
+--   chat_sesion y mensaje ....... chatbot (Integrante 4)
+--   envio_recordatorio .......... recordatorios por correo y SMS (Integrante 3)
+--   cache_mapa .................. lugares del mapa (Integrante 2)
+-- =====================================================================
+
+-- ---------- Chatbot ----------
+CREATE TABLE IF NOT EXISTS chat_sesion (
+    id               VARCHAR(36) PRIMARY KEY,
+    usuario_id       VARCHAR(36) REFERENCES usuario (id),   -- NULL si quien escribió no inició sesión
+    canal            VARCHAR(20) NOT NULL CHECK (canal IN ('WEB', 'TELEGRAM')),
+    creada_en        TIMESTAMP   NOT NULL,
+    ultima_actividad TIMESTAMP   NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mensaje (
+    id        VARCHAR(36) PRIMARY KEY,
+    sesion_id VARCHAR(36) NOT NULL REFERENCES chat_sesion (id) ON DELETE CASCADE,
+    emisor    VARCHAR(10) NOT NULL CHECK (emisor IN ('USUARIO', 'BOT')),
+    texto     TEXT        NOT NULL,
+    intencion VARCHAR(40),
+    fecha     TIMESTAMP   NOT NULL
+);
+
+-- ---------- Recordatorios ----------
+-- Un registro por aviso enviado; la restricción UNIQUE evita repetir el mismo aviso de una reserva.
+CREATE TABLE IF NOT EXISTS envio_recordatorio (
+    id          VARCHAR(36) PRIMARY KEY,
+    usuario_id  VARCHAR(36) NOT NULL REFERENCES usuario (id),
+    reserva_id  VARCHAR(36) NOT NULL REFERENCES reserva (id),
+    tipo        VARCHAR(30) NOT NULL
+                CHECK (tipo IN ('VIAJE_7_DIAS', 'VIAJE_1_DIA', 'VIAJE_HORAS', 'PAGO_PENDIENTE', 'PAGO_CONFIRMADO')),
+    canal       VARCHAR(10) NOT NULL CHECK (canal IN ('CORREO', 'SMS')),
+    estado      VARCHAR(10) NOT NULL CHECK (estado IN ('ENVIADO', 'FALLIDO')),
+    fecha_envio TIMESTAMP   NOT NULL,
+    UNIQUE (reserva_id, tipo, canal)
+);
+
+-- ---------- Mapa ----------
+-- Caché de lugares por ciudad, categoría y fuente (Geoapify, Xotelo...). Se reutiliza hasta que expira.
+CREATE TABLE IF NOT EXISTS cache_mapa (
+    id             VARCHAR(36)  PRIMARY KEY,
+    ciudad         VARCHAR(100) NOT NULL,
+    categoria      VARCHAR(50)  NOT NULL,
+    fuente         VARCHAR(50)  NOT NULL,
+    respuesta_json TEXT         NOT NULL,
+    fecha_consulta TIMESTAMP    NOT NULL,
+    expira_en      TIMESTAMP    NOT NULL,
+    UNIQUE (ciudad, categoria, fuente)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_sesion_usuario ON chat_sesion (usuario_id);
+CREATE INDEX IF NOT EXISTS idx_mensaje_sesion      ON mensaje (sesion_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_envio_reserva       ON envio_recordatorio (reserva_id);
