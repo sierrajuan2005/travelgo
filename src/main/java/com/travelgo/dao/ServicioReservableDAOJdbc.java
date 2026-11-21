@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +32,7 @@ public class ServicioReservableDAOJdbc implements ServicioReservableDAO {
                    s.fuente, s.id_externo, s.fecha_consulta, s.enlace_reserva,
                    v.aerolinea, v.origen AS v_origen, v.destino AS v_destino,
                    v.fecha_salida, v.fecha_llegada,
-                   h.nombre, h.direccion, h.tipo_habitacion, h.noches,
+                   h.nombre, h.direccion, h.tipo_habitacion, h.noches, h.fecha_entrada,
                    t.tipo AS t_tipo, t.origen AS t_origen, t.destino AS t_destino, t.fecha
             FROM servicio_reservable s
             LEFT JOIN vuelo v ON v.id = s.id
@@ -132,12 +133,12 @@ public class ServicioReservableDAOJdbc implements ServicioReservableDAO {
 
     private void guardarHotel(Hotel h) {
         jdbc.update("""
-                INSERT INTO hotel (id, nombre, direccion, tipo_habitacion, noches)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO hotel (id, nombre, direccion, tipo_habitacion, noches, fecha_entrada)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET
                     nombre = EXCLUDED.nombre, direccion = EXCLUDED.direccion,
-                    tipo_habitacion = EXCLUDED.tipo_habitacion, noches = EXCLUDED.noches
-                """, h.getId(), h.getNombre(), h.getDireccion(), h.getTipoHabitacion(), h.getNoches());
+                    tipo_habitacion = EXCLUDED.tipo_habitacion, noches = EXCLUDED.noches, fecha_entrada = EXCLUDED.fecha_entrada
+                """, h.getId(), h.getNombre(), h.getDireccion(), h.getTipoHabitacion(), h.getNoches(), h.getFechaEntrada());
     }
 
     private void guardarTransporte(Transporte t) {
@@ -181,7 +182,8 @@ public class ServicioReservableDAOJdbc implements ServicioReservableDAO {
             case "HOTEL" -> new Hotel(id, precio, disponible,
                     rs.getString("nombre"), rs.getString("direccion"),
                     rs.getString("tipo_habitacion"), rs.getInt("noches"),
-                    fuente, idExterno, fechaConsulta, enlace);
+                    fuente, idExterno, fechaConsulta, enlace,
+                    rs.getObject("fecha_entrada", LocalDate.class));
             case "TRANSPORTE" -> new Transporte(id, precio, disponible,
                     rs.getString("t_tipo"), rs.getString("t_origen"), rs.getString("t_destino"),
                     rs.getObject("fecha", LocalDateTime.class),

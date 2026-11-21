@@ -128,9 +128,9 @@ public class PaqueteRealService {
         }
 
         return new Hotel(UUID.randomUUID().toString(), precioPorNocheCop, true, resumen.nombre(),
-                direccion(request.ciudadNombre(), resumen), describirHabitacion(habitaciones, adultos),
-                oferta.noches(), fuente, request.hotelClave(),
-                LocalDateTime.ofInstant(oferta.fechaConsulta(), ZONA), resumen.enlace());
+        direccion(request.ciudadNombre(), resumen), describirHabitacion(habitaciones, adultos),
+        oferta.noches(), fuente, request.hotelClave(),
+        LocalDateTime.ofInstant(oferta.fechaConsulta(), ZONA), resumen.enlace(), request.entrada());
     }
 
     /** La fuente no informa el tipo de habitación: se describe lo que sí se consultó. */

@@ -25,6 +25,12 @@ public class RegistroDTO {
 	@NotBlank(message = "Confirma tu contraseña")
 	private String confirmarPassword;
 
+	@Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
+    private String telefono;
+
+	private boolean notificacionesCorreo;
+    private boolean notificacionesSms;
+
 	public String getNombre() {
 		return nombre;
 	}
@@ -57,4 +63,27 @@ public class RegistroDTO {
 		this.confirmarPassword = confirmarPassword;
 	}
 
+	public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public boolean isNotificacionesCorreo() {
+        return notificacionesCorreo;
+    }
+
+    public void setNotificacionesCorreo(boolean notificacionesCorreo) {
+        this.notificacionesCorreo = notificacionesCorreo;
+    }
+
+    public boolean isNotificacionesSms() {
+        return notificacionesSms;
+    }
+
+    public void setNotificacionesSms(boolean notificacionesSms) {
+        this.notificacionesSms = notificacionesSms;
+    }
 }

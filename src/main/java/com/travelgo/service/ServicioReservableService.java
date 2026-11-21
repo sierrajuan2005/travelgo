@@ -75,8 +75,14 @@ public class ServicioReservableService {
         if (r.noches() == null) {
             throw new IllegalArgumentException("La cantidad de noches es obligatoria.");
         }
+
+        if (r.fechaEntrada() == null) {
+            throw new IllegalArgumentException("La fecha de entrada es obligatoria.");
+        }
+
         return new Hotel(id, precio(r.precio()), disponible(r.disponible()), r.nombre(),
-                r.direccion(), r.tipoHabitacion(), r.noches());
+                r.direccion(), r.tipoHabitacion(), r.noches(),
+                null, null, null, null, r.fechaEntrada());
     }
 
     private Transporte construirTransporte(String id, TransporteRequest r) {
