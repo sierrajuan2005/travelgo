@@ -1,4 +1,4 @@
-﻿package com.travelgo.config;
+package com.travelgo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,10 +45,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/destinos/**")
                     .hasRole("ADMINISTRADOR")
 
-                // Paquetes: consulta autenticada
+                // Paquetes: consulta para usuarios autenticados.
                 .requestMatchers(HttpMethod.GET, "/api/paquetes/**")
                     .authenticated()
                 .requestMatchers("/api/paquetes/**")
+                    .hasRole("ADMINISTRADOR")
+
+                // Paquetes reales: consulta autenticada y armado exclusivo del administrador.
+                .requestMatchers(HttpMethod.GET, "/api/paquetes-reales/**")
+                    .authenticated()
+                .requestMatchers("/api/paquetes-reales/**")
                     .hasRole("ADMINISTRADOR")
 
                 // Servicios: consulta autenticada
