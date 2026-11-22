@@ -11,6 +11,10 @@ import com.travelgo.util.Textos;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import com.travelgo.dao.PaqueteServicioDAO;
+import com.travelgo.model.Hotel;
+import java.time.LocalDate;
+
 
 /** Reglas de negocio del catálogo de paquetes turísticos. */
 @Service
@@ -18,10 +22,12 @@ public class PaqueteService {
 
     private final PaqueteDAO paqueteDAO;
     private final DestinoDAO destinoDAO;
+    private final PaqueteServicioDAO paqueteServicioDAO;
 
-    public PaqueteService(PaqueteDAO paqueteDAO, DestinoDAO destinoDAO) {
+    public PaqueteService(PaqueteDAO paqueteDAO, DestinoDAO destinoDAO, PaqueteServicioDAO paqueteServicioDAO) {
         this.paqueteDAO = paqueteDAO;
         this.destinoDAO = destinoDAO;
+        this.paqueteServicioDAO = paqueteServicioDAO;
     }
 
     public PaqueteTuristico crear(PaqueteTuristico paquete) {
@@ -69,25 +75,50 @@ public class PaqueteService {
      * @param duracionMax  duración máxima en días (incluida)
      * @throws IllegalArgumentException si un rango queda al revés (mínimo mayor que máximo)
      */
-    public List<PaqueteTuristico> buscar(String destino, BigDecimal precioMin, BigDecimal precioMax,
-                                         Integer duracionMin, Integer duracionMax) {
-        if (precioMin != null && precioMax != null && precioMin.compareTo(precioMax) > 0) {
-            throw new IllegalArgumentException("El precio mínimo no puede ser mayor que el máximo.");
+    public List<PaqueteTuristico> buscar(
+            String destino,
+            BigDecimal precioMin,
+            BigDecimal precioMax,
+            Integer duracionMin,
+            Integer duracionMax,
+            LocalDate fechaEntrada) {
+        
+        if (precioMin != null && precioMax != null
+                && precioMin.compareTo(precioMax) > 0) {
+            throw new IllegalArgumentException(
+                "El precio mínimo no puede ser mayor que el máximo.");
         }
-        if (duracionMin != null && duracionMax != null && duracionMin > duracionMax) {
-            throw new IllegalArgumentException("La duración mínima no puede ser mayor que la máxima.");
+
+        if (duracionMin != null && duracionMax != null
+                && duracionMin > duracionMax) {
+            throw new IllegalArgumentException(
+                "La duración mínima no puede ser mayor que la máxima.");
         }
-        String texto = destino == null || destino.isBlank() ? null : Textos.normalizar(destino.trim());
+
+        String texto = destino == null || destino.isBlank()
+         ? null : Textos.normalizar(destino.trim());
+        
         List<PaqueteTuristico> resultado = new ArrayList<>();
+        
         for (PaqueteTuristico p : paqueteDAO.listarActivos()) {
             if (precioMin != null && p.getPrecio().compareTo(precioMin) < 0) continue;
             if (precioMax != null && p.getPrecio().compareTo(precioMax) > 0) continue;
             if (duracionMin != null && p.getDuracionDias() < duracionMin) continue;
             if (duracionMax != null && p.getDuracionDias() > duracionMax) continue;
             if (texto != null && !tieneDestino(p, texto)) continue;
+            if (fechaEntrada != null
+                && !tieneHotelConFecha(p.getId(), fechaEntrada)) continue;
+
             resultado.add(p);
         }
         return resultado;
+    }
+
+    private boolean tieneHotelConFecha(Long paqueteId, LocalDate fecha) {
+        return paqueteServicioDAO.listarServicios(paqueteId).stream()
+                .filter(Hotel.class::isInstance)
+                .map(Hotel.class::cast)
+                .anyMatch(hotel -> fecha.equals(hotel.getFechaEntrada()));
     }
 
     private boolean tieneDestino(PaqueteTuristico paquete, String textoNormalizado) {
