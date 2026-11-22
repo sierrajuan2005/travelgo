@@ -14,6 +14,7 @@ import java.util.List;
 import com.travelgo.dao.PaqueteServicioDAO;
 import com.travelgo.model.Hotel;
 import java.time.LocalDate;
+import java.util.Comparator;
 
 
 /** Reglas de negocio del catálogo de paquetes turísticos. */
@@ -82,7 +83,8 @@ public class PaqueteService {
             Integer duracionMin,
             Integer duracionMax,
             LocalDate fechaEntrada,
-            String orden) {
+            String orden,
+            boolean tercioEconomico) {
         
         if (precioMin != null && precioMax != null
                 && precioMin.compareTo(precioMax) > 0) {
@@ -119,17 +121,25 @@ public class PaqueteService {
                     resultado.sort(
                         java.util.Comparator.comparing(PaqueteTuristico::getPrecio));
 
-        case "DESC" ->
-                resultado.sort(
+                case "DESC" ->
+                    resultado.sort(
                         java.util.Comparator.comparing(PaqueteTuristico::getPrecio).reversed());
 
-        default ->
-                throw new IllegalArgumentException(
+                default ->
+                    throw new IllegalArgumentException(
                         "El orden debe ser ASC o DESC.");
-    }
-}
+            }
+        }
 
-return resultado;
+        if (tercioEconomico) {
+            resultado.sort(Comparator.comparing(PaqueteTuristico::getPrecio));
+
+            int cantidad = (int) Math.ceil(resultado.size() / 3.0);
+
+            return resultado.subList(0, cantidad);
+        }
+
+        return resultado;
     }
 
     private boolean tieneHotelConFecha(Long paqueteId, LocalDate fecha) {

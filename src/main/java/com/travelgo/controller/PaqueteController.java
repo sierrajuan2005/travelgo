@@ -35,8 +35,9 @@ public class PaqueteController {
             @RequestParam(required = false) Integer duracionMin,
             @RequestParam(required = false) Integer duracionMax,
             @RequestParam(required = false) LocalDate fechaEntrada,
-            @RequestParam(required = false) String orden) {
-        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax, fechaEntrada, orden);
+            @RequestParam(required = false) String orden,
+            @RequestParam (defaultValue = "false") boolean tercioEconomico) {
+        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax, fechaEntrada, orden, tercioEconomico);
     }
 
     @GetMapping("/{id}")
