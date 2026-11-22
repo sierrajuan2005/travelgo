@@ -69,50 +69,88 @@ class PaqueteServiceBusquedaTest {
 	@Test
 	@DisplayName("Sin filtros devuelve todos los paquetes activos")
 	void sinFiltros() {
-		assertEquals(4, service.buscar(null, null, null, null, null, null).size());
-		assertEquals(4, service.buscar("  ", null, null, null, null, null).size());
+		assertEquals(4, service.buscar(null, null, null, null, null, null, null).size());
+		assertEquals(4, service.buscar("  ", null, null, null, null, null, null).size());
 	}
 
 	@Test
 	@DisplayName("Destino: ignora tildes y mayúsculas, y busca en ciudad y país")
 	void porDestino() {
-		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar("BOGOTA", null, null, null, null, null)));
-		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar("peru", null, null, null, null, null)));
-		assertEquals(2, service.buscar("colombia", null, null, null, null, null).size());
+		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar("BOGOTA", null, null, null, null, null, null)));
+		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar("peru", null, null, null, null, null, null)));
+		assertEquals(2, service.buscar("colombia", null, null, null, null, null, null).size());
 	}
 
 	@Test
 	@DisplayName("Precio: los extremos están incluidos")
 	void porPrecio() {
-		List<PaqueteTuristico> r = service.buscar(null, new BigDecimal("800000"), new BigDecimal("1200000"), null, null, null);
+		List<PaqueteTuristico> r = service.buscar(null, new BigDecimal("800000"), new BigDecimal("1200000"), null, null, null, null);
 		assertEquals(List.of("Cartagena Esencial", "Bogotá Cultural"), nombres(r));
 	}
 
 	@Test
 	@DisplayName("Duración: rango en días")
 	void porDuracion() {
-		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar(null, null, null, 6, null, null)));
-		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar(null, null, null, null, 3, null)));
+		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar(null, null, null, 6, null, null, null)));
+		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar(null, null, null, null, 3, null, null)));
 	}
 
 	@Test
 	@DisplayName("Los filtros se combinan con Y")
 	void combinados() {
 		assertEquals(List.of("Cartagena Esencial"),
-			nombres(service.buscar("colombia", null, new BigDecimal("2000000"), 4, null, null)));
+			nombres(service.buscar("colombia", null, new BigDecimal("2000000"), 4, null, null, null)));
 	}
 
 	@Test
 	@DisplayName("Sin coincidencias devuelve lista vacía")
 	void sinResultados() {
-		assertTrue(service.buscar("tokio", null, null, null, null, null).isEmpty());
+		assertTrue(service.buscar("tokio", null, null, null, null, null, null).isEmpty());
 	}
 
 	@Test
 	@DisplayName("Rangos al revés lanzan IllegalArgumentException")
 	void rangosInvalidos() {
 		assertThrows(IllegalArgumentException.class,
-			() -> service.buscar(null, new BigDecimal("5"), new BigDecimal("1"), null, null, null));
-		assertThrows(IllegalArgumentException.class, () -> service.buscar(null, null, null, 9, 2, null));
+			() -> service.buscar(null, new BigDecimal("5"), new BigDecimal("1"), null, null, null, null));
+		assertThrows(IllegalArgumentException.class, () -> service.buscar(null, null, null, 9, 2, null, null));
 	}
+
+	@Test
+	@DisplayName("Orden ASC: paquetes de menor a mayor precio")
+	void ordenarPrecioAscendente() {
+    	assertEquals(
+            List.of(
+                    "Bogotá Cultural",
+                    "Cartagena Esencial",
+                    "Cancún Todo Incluido",
+                    "Machu Picchu Aventura"
+            ),
+            nombres(service.buscar(null, null, null, null, null, null, "ASC"))
+    	);
+	}
+
+	@Test
+	@DisplayName("Orden DESC: paquetes de mayor a menor precio")
+	void ordenarPrecioDescendente() {
+    	assertEquals(
+            List.of(
+                    "Machu Picchu Aventura",
+                    "Cancún Todo Incluido",
+                    "Cartagena Esencial",
+                    "Bogotá Cultural"
+            ),
+            nombres(service.buscar(null, null, null, null, null, null, "DESC"))
+    	);
+	}
+
+	@Test
+	@DisplayName("Orden inválido lanza IllegalArgumentException")
+	void ordenInvalido() {
+    	assertThrows(
+            IllegalArgumentException.class,
+            () -> service.buscar(null, null, null, null, null, null, "INVALIDO")
+    	);
+	}
+
 }

@@ -34,8 +34,9 @@ public class PaqueteController {
             @RequestParam(required = false) BigDecimal precioMax,
             @RequestParam(required = false) Integer duracionMin,
             @RequestParam(required = false) Integer duracionMax,
-            @RequestParam(required = false) LocalDate fechaEntrada) {
-        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax, fechaEntrada);
+            @RequestParam(required = false) LocalDate fechaEntrada,
+            @RequestParam(required = false) String orden) {
+        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax, fechaEntrada, orden);
     }
 
     @GetMapping("/{id}")

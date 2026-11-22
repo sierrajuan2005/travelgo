@@ -81,7 +81,8 @@ public class PaqueteService {
             BigDecimal precioMax,
             Integer duracionMin,
             Integer duracionMax,
-            LocalDate fechaEntrada) {
+            LocalDate fechaEntrada,
+            String orden) {
         
         if (precioMin != null && precioMax != null
                 && precioMin.compareTo(precioMax) > 0) {
@@ -111,7 +112,24 @@ public class PaqueteService {
 
             resultado.add(p);
         }
-        return resultado;
+
+        if (orden != null && !orden.isBlank()) {
+            switch (orden.trim().toUpperCase()) {
+                case "ASC" ->
+                    resultado.sort(
+                        java.util.Comparator.comparing(PaqueteTuristico::getPrecio));
+
+        case "DESC" ->
+                resultado.sort(
+                        java.util.Comparator.comparing(PaqueteTuristico::getPrecio).reversed());
+
+        default ->
+                throw new IllegalArgumentException(
+                        "El orden debe ser ASC o DESC.");
+    }
+}
+
+return resultado;
     }
 
     private boolean tieneHotelConFecha(Long paqueteId, LocalDate fecha) {
