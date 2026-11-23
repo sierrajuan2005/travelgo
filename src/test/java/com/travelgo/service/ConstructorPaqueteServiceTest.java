@@ -103,8 +103,18 @@ class ConstructorPaqueteServiceTest {
 	}
 
 	private static PaqueteRealRespuestaDTO respuesta() {
-		return new PaqueteRealRespuestaDTO(10L, "Cartagena 4 noches", "desc", 1950000, "COP", 5, true,
-			List.of("Cartagena de Indias"), List.of());
+		return new PaqueteRealRespuestaDTO(
+				10L,
+				"Cartagena 4 noches",
+				"desc",
+				1950000.0,
+				"COP",
+				5,
+				true,
+				List.of("Cartagena de Indias"),
+				List.of(),
+				null
+		);
 	}
 
 	@Test

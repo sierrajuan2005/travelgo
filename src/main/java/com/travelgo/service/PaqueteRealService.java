@@ -18,7 +18,11 @@ import com.travelgo.proveedor.moneda.ProveedorTasaCambio;
 import com.travelgo.proveedor.moneda.TasaCambio;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.travelgo.dto.ServicioReferenciaDTO;
+import com.travelgo.proveedor.hotel.ClasificadorGama;
+import com.travelgo.proveedor.hotel.GamaHotel;
+import java.util.Objects;
+import java.util.Optional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -45,15 +49,19 @@ public class PaqueteRealService {
     private final DestinoDAO destinoDAO;
     private final PaqueteServicioDAO paqueteServicioDAO;
 
+    private final ClasificadorGama clasificador;
+
     public PaqueteRealService(ProveedorHoteles proveedorHoteles, ProveedorTasaCambio proveedorTasa,
                               ServicioReservableDAO servicioDAO, PaqueteDAO paqueteDAO,
-                              DestinoDAO destinoDAO, PaqueteServicioDAO paqueteServicioDAO) {
+                              DestinoDAO destinoDAO, PaqueteServicioDAO paqueteServicioDAO,
+                              ClasificadorGama clasificador) {
         this.proveedorHoteles = proveedorHoteles;
         this.proveedorTasa = proveedorTasa;
         this.servicioDAO = servicioDAO;
         this.paqueteDAO = paqueteDAO;
         this.destinoDAO = destinoDAO;
         this.paqueteServicioDAO = paqueteServicioDAO;
+        this.clasificador = clasificador;
     }
 
     /**
@@ -93,16 +101,35 @@ public class PaqueteRealService {
             paqueteServicioDAO.vincular(guardado.getId(), extra.getId());
         }
 
-        List<ServicioReservable> servicios = new ArrayList<>();
-        servicios.add(hotel);
-        servicios.addAll(extras);
-        return PaqueteRealRespuestaDTO.desde(guardado, servicios);
+        GamaHotel gama = clasificador.gamaDe(hotel);
+        List<ServicioReferenciaDTO> servicios = new ArrayList<>();
+        servicios.add(ServicioReferenciaDTO.desde(hotel, gama));
+        for (ServicioReservable extra : extras) {
+            servicios.add(ServicioReferenciaDTO.desde(extra, gamaDe(extra)));
+        }
+        return PaqueteRealRespuestaDTO.desde(guardado, servicios, gama);
     }
 
     public PaqueteRealRespuestaDTO detalle(Long paqueteId) {
         PaqueteTuristico paquete = paqueteDAO.buscarPorId(paqueteId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Paquete no encontrado: " + paqueteId));
-        return PaqueteRealRespuestaDTO.desde(paquete, paqueteServicioDAO.listarServicios(paqueteId));
+        List<ServicioReservable> servicios = paqueteServicioDAO.listarServicios(paqueteId);
+        List<ServicioReferenciaDTO> detalle = servicios.stream()
+                .map(s -> ServicioReferenciaDTO.desde(s, gamaDe(s))).toList();
+        return PaqueteRealRespuestaDTO.desde(paquete, detalle, gamaDelPaquete(servicios).orElse(null));
+    }
+
+    /** Gama del paquete = la de su hotel (el primero, si hay varios). La usan el chatbot y la búsqueda. */
+    public Optional<GamaHotel> gamaDelPaquete(Long paqueteId) {
+        return gamaDelPaquete(paqueteServicioDAO.listarServicios(paqueteId));
+    }
+
+    private Optional<GamaHotel> gamaDelPaquete(List<ServicioReservable> servicios) {
+        return servicios.stream().map(this::gamaDe).filter(Objects::nonNull).findFirst();
+    }
+
+    private GamaHotel gamaDe(ServicioReservable servicio) {
+        return servicio instanceof Hotel hotel ? clasificador.gamaDe(hotel) : null;
     }
 
     /** Convierte la oferta consultada en un Hotel con su referencia. El precio queda en pesos, por noche. */
