@@ -17,7 +17,11 @@ import java.util.Optional;
 @Primary
 public class UsuarioDAOJdbc implements UsuarioDAO {
 
-    private static final String SELECT_USUARIO = "SELECT id, nombre, correo, password, rol FROM usuario";
+    private static final String SELECT_USUARIO = """
+            SELECT id, nombre, correo, password, rol, telefono,
+                   notificaciones_correo, notificaciones_sms
+            FROM usuario
+            """;
 
     private final JdbcTemplate jdbc;
 
@@ -29,16 +33,33 @@ public class UsuarioDAOJdbc implements UsuarioDAO {
     public Usuario guardar(Usuario usuario) {
         try {
             jdbc.update("""
-                    INSERT INTO usuario (id, nombre, correo, password, rol)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO usuario (
+                        id, nombre, correo, password, rol, telefono,
+                        notificaciones_correo, notificaciones_sms
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (id) DO UPDATE SET
-                        nombre = EXCLUDED.nombre, correo = EXCLUDED.correo,
-                        password = EXCLUDED.password, rol = EXCLUDED.rol
-                    """, usuario.getId(), usuario.getNombre(), usuario.getCorreo(),
-                    usuario.getPassword(), usuario.getRol().name());
+                        nombre = EXCLUDED.nombre,
+                        correo = EXCLUDED.correo,
+                        password = EXCLUDED.password,
+                        rol = EXCLUDED.rol,
+                        telefono = EXCLUDED.telefono,
+                        notificaciones_correo = EXCLUDED.notificaciones_correo,
+                        notificaciones_sms = EXCLUDED.notificaciones_sms
+                    """,
+                    usuario.getId(),
+                    usuario.getNombre(),
+                    usuario.getCorreo(),
+                    usuario.getPassword(),
+                    usuario.getRol().name(),
+                    usuario.getTelefono(),
+                    usuario.isNotificacionesCorreo(),
+                    usuario.isNotificacionesSms());
+
             return usuario;
         } catch (DataAccessException e) {
-            throw new AccesoDatosException("No se pudo guardar el usuario", e);
+            throw new AccesoDatosException(
+                    "No se pudo guardar el usuario", e);
         }
     }
 
@@ -63,7 +84,15 @@ public class UsuarioDAOJdbc implements UsuarioDAO {
 
     /** Convierte una fila de la tabla usuario en un objeto Usuario. */
     private Usuario mapear(ResultSet rs, int fila) throws SQLException {
-        return new Usuario(rs.getString("id"), rs.getString("nombre"), rs.getString("correo"),
-                rs.getString("password"), RolUsuario.valueOf(rs.getString("rol")));
+        return new Usuario(
+                rs.getString("id"),
+                rs.getString("nombre"),
+                rs.getString("correo"),
+                rs.getString("password"),
+                RolUsuario.valueOf(rs.getString("rol")),
+                rs.getString("telefono"),
+                rs.getBoolean("notificaciones_correo"),
+                rs.getBoolean("notificaciones_sms")
+        );
     }
 }

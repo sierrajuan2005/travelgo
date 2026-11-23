@@ -53,6 +53,28 @@
                            th:classappend="${#fields.hasErrors('confirmarPassword')} ? 'is-invalid'">
                     <div class="invalid-feedback" th:errors="*{confirmarPassword}"></div>
                 </div>
+
+                <!-- Sprint 5: teléfono y preferencias de aviso (recordatorios por correo y SMS) -->
+                <div class="mb-3">
+                    <label for="telefono" class="form-label">Celular <span class="text-muted small">(opcional)</span></label>
+                    <input type="tel" th:field="*{telefono}" class="form-control" placeholder="300 123 4567"
+                           autocomplete="tel"
+                           th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:errors="*{telefono}"></div>
+                </div>
+                <fieldset class="mb-4">
+                    <legend class="form-label fs-6 mb-2">Avisos de mi viaje y mis pagos</legend>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:field="*{notificacionesCorreo}">
+                        <label class="form-check-label" th:for="${#ids.prev('notificacionesCorreo')}">Por correo</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" th:field="*{notificacionesSms}">
+                        <label class="form-check-label" th:for="${#ids.prev('notificacionesSms')}">
+                            Por mensaje de texto (necesita el celular)
+                        </label>
+                    </div>
+                </fieldset>
                 <button type="submit" class="btn btn-tg-acento btn-lg w-100">Registrarme</button>
             </form>
 

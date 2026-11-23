@@ -42,11 +42,28 @@ public class AuthController {
 	}
 
 	@PostMapping("/registro")
-	public String registrar(@Valid @ModelAttribute("registro") RegistroDTO registro, BindingResult result) {
+	public String registrar(
+		@Valid @ModelAttribute("registro") RegistroDTO registro,
+		 BindingResult result) {
+
 		if (registro.getPassword() != null
                 && !registro.getPassword().equals(registro.getConfirmarPassword())) {
-            result.rejectValue("confirmarPassword", "noCoincide",
-                    "Las contraseñas no coinciden");
+            result.rejectValue(
+				"confirmarPassword",
+				"noCoincide",
+				"Las contraseñas no coinciden"
+			);
+        }
+
+		// Si se activan las notificaciones SMS, el teléfono es obligatorio.
+        if (registro.isNotificacionesSms()
+                && (registro.getTelefono() == null
+                || registro.getTelefono().isBlank())) {
+            result.rejectValue(
+                    "telefono",
+                    "telefonoRequerido",
+                    "El teléfono es obligatorio para recibir notificaciones SMS"
+            );
         }
 
         String correo = registro.getCorreo() == null
@@ -55,20 +72,35 @@ public class AuthController {
 
         if (!correo.isBlank()
                 && usuarioService.buscarPorCorreo(correo).isPresent()) {
-            result.rejectValue("correo", "duplicado",
-                    "Ya existe una cuenta con ese correo");
+            result.rejectValue(
+				"correo",
+				"duplicado",
+                "Ya existe una cuenta con ese correo"
+			);
         }
 
 		if (result.hasErrors()) {
 			return "auth/registro";
 		}
 
+		// Normalizar el teléfono: guardar null si el campo está vacío.
+        String telefono = registro.getTelefono() == null
+                ? null
+                : registro.getTelefono().trim();
+
+        if (telefono != null && telefono.isBlank()) {
+            telefono = null;
+        }
+
 		Usuario usuario = new Usuario(
                 UUID.randomUUID().toString(),
                 registro.getNombre().trim(),
                 correo,
                 passwordEncoder.encode(registro.getPassword()),
-                RolUsuario.CLIENTE
+                RolUsuario.CLIENTE,
+                telefono,
+                registro.isNotificacionesCorreo(),
+                registro.isNotificacionesSms()
         );
 
         usuarioService.guardar(usuario);

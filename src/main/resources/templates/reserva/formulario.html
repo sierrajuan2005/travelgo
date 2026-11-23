@@ -144,7 +144,8 @@
                             <span id="total" class="tg-precio" th:attr="data-base=${paquete.precio}"
                                   th:text="${@formato.cop(paquete.precio)}">$ 0</span>
                         </div>
-                        <button type="submit" class="btn btn-tg-acento btn-lg w-100"><i class="bi bi-check2-circle"></i> Confirmar reserva</button>
+                        <button type="submit" class="btn btn-tg-acento btn-lg w-100"
+                                th:disabled="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}"><i class="bi bi-check2-circle"></i> Confirmar reserva</button>
                         <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
                         <p class="text-muted small mt-2 mb-0">
                             Por ahora el total a pagar solo suma los servicios, no el precio del paquete.

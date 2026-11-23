@@ -183,7 +183,7 @@ public class AdminWebController {
 				case Vuelo v -> servicioService.actualizarVuelo(id, new VueloRequest(v.getPrecio(), nuevo,
 					v.getAerolinea(), v.getOrigen(), v.getDestino(), v.getFechaSalida(), v.getFechaLlegada()));
 				case Hotel h -> servicioService.actualizarHotel(id, new HotelRequest(h.getPrecio(), nuevo,
-					h.getNombre(), h.getDireccion(), h.getTipoHabitacion(), h.getNoches()));
+					h.getNombre(), h.getDireccion(), h.getTipoHabitacion(), h.getNoches(), h.getFechaEntrada()));
 				case Transporte t -> servicioService.actualizarTransporte(id, new TransporteRequest(t.getPrecio(),
 					nuevo, t.getTipo(), t.getOrigen(), t.getDestino(), t.getFecha()));
 				default -> throw new IllegalArgumentException("Tipo de servicio desconocido: " + id);

@@ -1,5 +1,7 @@
 package com.travelgo.model;
 
+import java.time.LocalDate;
+
 /*
     Representa un hotel disponible para reserva
 */
@@ -8,6 +10,7 @@ public class Hotel extends ServicioReservable {
     private final String direccion;
     private final String tipoHabitacion;
     private final int noches;
+    private final LocalDate fechaEntrada;
 
     /*
         Construye un hotel
@@ -31,7 +34,7 @@ public class Hotel extends ServicioReservable {
         int noches) {
 
         this(id, precio, disponible, nombre, direccion, tipoHabitacion,
-        noches, null, null, null, null);
+        noches, null, null, null, null, null);
     }
 
     public Hotel(
@@ -45,7 +48,9 @@ public class Hotel extends ServicioReservable {
         String fuente,
         String idExterno,
         java.time.LocalDateTime fechaConsulta,
-        String enlaceReserva) {
+        String enlaceReserva,
+        LocalDate fechaEntrada
+    ) {
 
         super(id, precio, disponible, fuente, idExterno, fechaConsulta, enlaceReserva);
 
@@ -69,6 +74,7 @@ public class Hotel extends ServicioReservable {
         this.direccion = direccion;
         this.tipoHabitacion = tipoHabitacion;
         this.noches = noches;
+        this.fechaEntrada = fechaEntrada;
     }
 
     /*Calcula el costo del hotel */
@@ -95,5 +101,10 @@ public class Hotel extends ServicioReservable {
     /*Obtiene la cantidad de noches reservadas*/
     public int getNoches() {
         return noches;
+    }
+
+    /*Obtiene la fecha de entrada */
+    public LocalDate getFechaEntrada() {
+        return fechaEntrada;
     }
 }

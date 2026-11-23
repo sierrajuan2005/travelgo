@@ -10,20 +10,39 @@ public class Usuario {
     private String correo;
     private String password;
     private RolUsuario rol;
+    private String telefono;
+    private boolean notificacionesCorreo;
+    private boolean notificacionesSms;
 
+
+    /**
+     * Constructor compatible con las implementaciones anteriores.
+     */
+    public Usuario(String id, String nombre, String correo,
+                   String password, RolUsuario rol) {
+        this(id, nombre, correo, password, rol, null, false, false);
+    }
     /*
         Construye un usuario con sus datos principales
     */
-    public Usuario(String id, String nombre, String correo, String password, RolUsuario rol) {
-        if( id == null || id.isBlank()){
+    public Usuario(String id, String nombre, String correo,
+                   String password, RolUsuario rol, String telefono,
+                   boolean notificacionesCorreo,
+                   boolean notificacionesSms) {
+
+        if (id == null || id.isBlank()) {
             throw new IllegalArgumentException(
-                "El id del usuario no puede ser nulo o vacío");
+                    "El id del usuario no puede ser nulo o vacío");
         }
+
         this.id = id;
         setNombre(nombre);
         setCorreo(correo);
         setPassword(password);
         setRol(rol);
+        setTelefono(telefono);
+        setNotificacionesCorreo(notificacionesCorreo);
+        setNotificacionesSms(notificacionesSms);
     }
 
     /*Obtiene el ID del usuario */
@@ -85,5 +104,44 @@ public class Usuario {
                 "El rol del usuario debe ser obligatorio");
         }
         this.rol = rol;
+    }
+
+    /*Obtiene el teléfono del usuario */
+    public String getTelefono() {
+        return telefono;
+    }
+
+    /*Establece el teléfono del usuario */
+    public void setTelefono(String telefono) {
+        this.telefono = (telefono ==  null || telefono.isBlank()) ? null : telefono.trim();
+
+        if(this.telefono == null && this.notificacionesSms){
+            notificacionesSms = false;
+        }
+    }
+
+    /*Obtiene si el usuario desea recibir notificaciones por correo */
+    public boolean isNotificacionesCorreo() {
+        return notificacionesCorreo;
+    }
+
+    /*Establece si el usuario desea recibir notificaciones por correo */
+    public void setNotificacionesCorreo(boolean notificacionesCorreo) {
+        this.notificacionesCorreo = notificacionesCorreo;
+    }
+
+    /*Obtiene si el usuario desea recibir notificaciones por SMS */
+    public boolean isNotificacionesSms() {
+        return notificacionesSms;
+    }
+
+    /*Establece si el usuario desea recibir notificaciones por SMS */
+    public void setNotificacionesSms(boolean notificacionesSms) {
+        if(notificacionesSms && telefono == null){
+            throw new IllegalArgumentException(
+                "Se necesita un telefono para activar las notificaciones SMS");
+        }
+
+        this.notificacionesSms = notificacionesSms;
     }
 }
