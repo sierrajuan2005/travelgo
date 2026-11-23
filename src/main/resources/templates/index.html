@@ -3,6 +3,8 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Inicio')}"></head>
 <body>
+<!-- Intro de bienvenida: globo 3D, rutas de Valledupar al mundo (una vez por pestaña) -->
+<th:block th:replace="~{fragments/intro :: intro}"></th:block>
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <main>
