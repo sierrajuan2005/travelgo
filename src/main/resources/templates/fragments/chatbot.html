@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Widget del chatbot (Sprint 5, Integrante 3). Se incluye desde fragments/layout :: scripts, solo con sesión.
+     Habla con el motor del Integrante 4: POST /api/chatbot y GET /api/chatbot/{sesionId}/mensajes
+     (contrato en docs/chatbot_contrato.md). El token CSRF va en data-* porque /api/chatbot es POST. -->
+<th:block th:fragment="widget">
+    <link rel="stylesheet" th:href="@{/css/chatbot.css}">
+
+    <div id="tg-chat" class="tg-chat"
+         th:data-url="@{/api/chatbot}"
+         th:data-csrf-header="${_csrf?.headerName}"
+         th:data-csrf-token="${_csrf?.token}">
+
+        <button type="button" class="tg-chat-boton" id="tg-chat-boton"
+                aria-controls="tg-chat-ventana" aria-expanded="false" aria-label="Abrir el asistente de TravelGo">
+            <i class="bi bi-chat-dots-fill tg-chat-icono-abrir"></i>
+            <i class="bi bi-x-lg tg-chat-icono-cerrar"></i>
+        </button>
+
+        <section class="tg-chat-ventana" id="tg-chat-ventana" role="dialog" aria-label="Asistente de TravelGo" hidden>
+            <header class="tg-chat-cabecera">
+                <span class="tg-chat-avatar"><i class="bi bi-airplane-fill"></i></span>
+                <div class="flex-grow-1">
+                    <strong>Asistente TravelGo</strong>
+                    <small>Paquetes, reservas, pagos y cupones</small>
+                </div>
+                <button type="button" class="tg-chat-nueva" id="tg-chat-nueva" title="Empezar una conversación nueva">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            </header>
+
+            <div class="tg-chat-mensajes" id="tg-chat-mensajes" aria-live="polite"></div>
+
+            <div class="tg-chat-sugerencias" id="tg-chat-sugerencias"></div>
+
+            <form class="tg-chat-formulario" id="tg-chat-formulario" autocomplete="off">
+                <label for="tg-chat-texto" class="visually-hidden">Escribe tu pregunta</label>
+                <input type="text" id="tg-chat-texto" maxlength="500" placeholder="Ej.: paquetes baratos para Bogotá">
+                <button type="submit" aria-label="Enviar"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </section>
+    </div>
+
+    <script th:src="@{/js/chatbot.js}" defer></script>
+</th:block>
+
+</body>
+</html>
