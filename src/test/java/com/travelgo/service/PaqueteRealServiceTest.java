@@ -29,7 +29,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
+import com.travelgo.proveedor.hotel.ClasificadorGama;
+import com.travelgo.proveedor.hotel.GamaHotel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,7 +51,7 @@ class PaqueteRealServiceTest {
     @Mock private PaqueteDAO paqueteDAO;
     @Mock private DestinoDAO destinoDAO;
     @Mock private PaqueteServicioDAO paqueteServicioDAO;
-
+    @Mock private ClasificadorGama clasificador;
     @InjectMocks
     private PaqueteRealService service;
 
@@ -91,6 +92,7 @@ class PaqueteRealServiceTest {
             p.setId(7L);
             return p;
         });
+        when(clasificador.gamaDe(any(Hotel.class))).thenReturn(GamaHotel.ECONOMICO);
 
         PaqueteRealRespuestaDTO respuesta = service.armar(request());
 
@@ -110,6 +112,7 @@ class PaqueteRealServiceTest {
         assertEquals("COP", respuesta.moneda());
         assertEquals(4, respuesta.duracionDias());                    // 3 noches = 4 días
         assertEquals(1, respuesta.servicios().size());
+        assertEquals(GamaHotel.ECONOMICO, respuesta.gama());
         verify(paqueteServicioDAO).vincular(7L, hotel.getId());
     }
 
