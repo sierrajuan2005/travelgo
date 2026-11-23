@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mis avisos')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<!-- Preferencias de aviso del usuario con sesión (Sprint 5: recordatorios por correo y SMS) -->
+<main>
+    <section class="tg-encabezado">
+        <div class="container position-relative">
+            <span class="tg-eyebrow text-white-50">Tu cuenta</span>
+            <h1 class="h2 mb-1">Mis avisos</h1>
+            <p class="mb-0">Te recordamos cuánto falta para tu viaje, los pagos pendientes y la confirmación de cada pago.</p>
+        </div>
+    </section>
+
+    <div class="container tg-sube">
+        <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <form th:action="@{/perfil/avisos}" method="post" class="card tg-card p-4">
+                    <h2 class="h5 mb-3">¿Cómo quieres recibirlos?</h2>
+
+                    <div class="mb-3">
+                        <label class="form-label">Correo</label>
+                        <input type="email" class="form-control" th:value="${usuario.correo}" disabled>
+                    </div>
+                    <div class="mb-4">
+                        <label for="telefono" class="form-label">Celular</label>
+                        <input type="tel" id="telefono" name="telefono" class="form-control" placeholder="300 123 4567"
+                               autocomplete="tel" th:value="${usuario.telefono}">
+                        <div class="form-text">Si no pones el código del país, usamos el de Colombia (+57).</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch" id="notificacionesCorreo"
+                               name="notificacionesCorreo" value="true" th:checked="${usuario.notificacionesCorreo}">
+                        <label class="form-check-label" for="notificacionesCorreo">Avisos por correo</label>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="notificacionesSms"
+                               name="notificacionesSms" value="true" th:checked="${usuario.notificacionesSms}">
+                        <label class="form-check-label" for="notificacionesSms">Avisos por mensaje de texto (SMS)</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-tg-acento align-self-start">
+                        <i class="bi bi-check2"></i> Guardar
+                    </button>
+                </form>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card tg-card p-4 h-100">
+                    <h2 class="h5 mb-3">Qué te avisamos</h2>
+                    <ul class="list-unstyled d-grid gap-3 mb-0 small">
+                        <li><i class="bi bi-calendar-week me-2"></i><strong>Tu viaje:</strong> 7 días antes, 1 día antes y unas horas antes de la salida.</li>
+                        <li><i class="bi bi-hourglass-split me-2"></i><strong>Pago pendiente:</strong> si una reserva sigue sin pagar unos días después de crearla.</li>
+                        <li><i class="bi bi-receipt me-2"></i><strong>Pago confirmado:</strong> cuando pagas, con el resumen de la factura.</li>
+                    </ul>
+                    <p class="text-muted small mt-4 mb-0">Cada aviso se envía una sola vez. Puedes desactivarlos cuando quieras.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administración · Recordatorios')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+  <section th:replace="~{fragments/layout :: adminEncabezado('recordatorios')}"></section>
+
+  <div class="container tg-sube">
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <div class="card tg-card p-3 p-md-4 mb-4">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <h2 class="h5 mb-2">Canales</h2>
+          <div class="d-flex flex-wrap gap-2">
+            <span th:each="c : ${canales}" class="badge rounded-pill fs-6 fw-normal"
+                  th:classappend="${c.configurado()} ? 'text-bg-success' : 'text-bg-secondary'">
+              <i class="bi" th:classappend="${c.canal().name() == 'CORREO'} ? 'bi-envelope' : 'bi-chat-dots'"></i>
+              <span th:text="${c.canal().name() == 'CORREO'} ? 'Correo' : 'SMS'">Correo</span>
+              · <span th:text="${c.configurado()} ? 'configurado' : 'sin credenciales'">configurado</span>
+            </span>
+          </div>
+          <p class="text-muted small mb-0 mt-2">
+            El servicio revisa las reservas cada 5 minutos. Solo avisa a quien aceptó los avisos de ese canal y nunca
+            repite el mismo aviso.
+          </p>
+        </div>
+        <form th:action="@{/admin/recordatorios/revisar}" method="post">
+          <button type="submit" class="btn btn-tg-acento"><i class="bi bi-arrow-repeat"></i> Revisar ahora</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card tg-card">
+      <div class="p-3 p-md-4 pb-0"><h2 class="h5 mb-0">Últimos envíos</h2></div>
+      <div th:if="${#lists.isEmpty(envios)}" class="p-4 text-muted">Todavía no se ha enviado ningún aviso.</div>
+      <div class="table-responsive" th:unless="${#lists.isEmpty(envios)}">
+        <table class="table align-middle mb-0">
+          <thead>
+          <tr>
+            <th class="ps-4">Fecha</th>
+            <th>Aviso</th>
+            <th>Canal</th>
+            <th>Reserva</th>
+            <th>Estado</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="e : ${envios}">
+            <td class="ps-4" th:text="${@formato.fechaHora(e.fechaEnvio())}">22/11/2026 10:00</td>
+            <td th:switch="${e.tipo().name()}">
+              <span th:case="'VIAJE_7_DIAS'">Viaje en 7 días</span>
+              <span th:case="'VIAJE_1_DIA'">Viaje mañana</span>
+              <span th:case="'VIAJE_HORAS'">Viaje en unas horas</span>
+              <span th:case="'PAGO_PENDIENTE'">Pago pendiente</span>
+              <span th:case="'PAGO_CONFIRMADO'">Pago confirmado</span>
+            </td>
+            <td th:text="${e.canal().name() == 'CORREO'} ? 'Correo' : 'SMS'">Correo</td>
+            <td><code th:text="${#strings.length(e.reservaId()) > 8} ? ${#strings.toUpperCase(#strings.substring(e.reservaId(), 0, 8))} : ${e.reservaId()}">ABCD1234</code></td>
+            <td>
+              <span class="badge" th:classappend="${e.estado().name() == 'ENVIADO'} ? 'text-bg-success' : 'text-bg-danger'"
+                    th:text="${e.estado().name() == 'ENVIADO'} ? 'Enviado' : 'Falló (se reintenta)'">Enviado</span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
