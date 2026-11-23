@@ -1,0 +1,807 @@
+/*
+ * "Lanza tu viaje" (ExpoSoftware, Integrante 3): página del celular (expo/lanzar.html) y pantalla del stand
+ * (expo/pantalla.html). Mismo cielo violeta de la intro. No usa Bootstrap: en la expo el WiFi puede fallar
+ * y las dos páginas deben verse bien solo con este archivo.
+ */
+
+:root {
+    --expo-noche: #0b0820;
+    --expo-noche-2: #171040;
+    --expo-violeta: #5433eb;
+    --expo-violeta-claro: #8051ff;
+    --expo-lavanda: #b9a8ff;
+    --expo-ambar: #f5b83d;
+    --expo-texto: #ffffff;
+    --expo-texto-suave: rgba(255, 255, 255, 0.68);
+    --expo-linea: rgba(185, 168, 255, 0.22);
+    --expo-tarjeta: rgba(255, 255, 255, 0.06);
+    --expo-error: #ff8a8e;
+    --expo-titulo: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --expo-texto-fuente: Geist, "Helvetica Neue", Arial, sans-serif;
+    --expo-serif: "Instrument Serif", Georgia, serif;
+    --expo-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body.expo {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--expo-texto);
+    font-family: var(--expo-texto-fuente);
+    background:
+        radial-gradient(120% 70% at 50% 115%, rgba(128, 81, 255, 0.5) 0%, rgba(84, 51, 235, 0.16) 45%, transparent 70%),
+        linear-gradient(180deg, var(--expo-noche) 0%, var(--expo-noche-2) 60%, #22186a 100%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+[hidden] { display: none !important; }
+
+/* ---------- piezas comunes ---------- */
+.expo-cel-marca {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-family: var(--expo-titulo);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: -.01em;
+}
+
+.expo-cel-marca-sub { color: var(--expo-texto-suave); font-weight: 500; }
+
+.expo-logo-icono {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem; height: 2rem;
+    border-radius: .6rem;
+    background: var(--expo-violeta);
+    box-shadow: 0 0 22px rgba(128, 81, 255, .55);
+}
+
+.expo-logo-icono svg { width: 1.15rem; fill: #fff; transform: rotate(-35deg); }
+
+.expo-titulo {
+    font-family: var(--expo-titulo);
+    font-weight: 700;
+    font-size: clamp(2rem, 8vw, 2.6rem);
+    line-height: 1.02;
+    letter-spacing: -.03em;
+    margin: 0 0 .8rem;
+}
+
+.expo-titulo em {
+    font-family: var(--expo-serif);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--expo-lavanda);
+    letter-spacing: 0;
+}
+
+.expo-eyebrow {
+    margin: 0 0 .5rem;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--expo-ambar);
+}
+
+/* ---------- celular ---------- */
+.expo-cel-app {
+    max-width: 34rem;
+    margin: 0 auto;
+    padding: max(1.1rem, env(safe-area-inset-top)) 1rem 0;
+}
+
+.expo-cel-paso { padding-top: 1.6rem; }
+
+.expo-cel-intro {
+    color: var(--expo-texto-suave);
+    font-size: 1.02rem;
+    line-height: 1.5;
+    margin: 0 0 1.4rem;
+}
+
+.expo-cel-intro strong { color: var(--expo-texto); }
+
+.expo-campo { display: block; margin-bottom: 1rem; }
+
+.expo-campo > span {
+    display: block;
+    font-size: .85rem;
+    font-weight: 600;
+    margin-bottom: .4rem;
+    color: var(--expo-texto-suave);
+}
+
+.expo-campo input {
+    width: 100%;
+    font: inherit;
+    font-size: 1.15rem; /* 16px o más: iOS no hace zoom al escribir */
+    color: var(--expo-texto);
+    background: var(--expo-tarjeta);
+    border: 1px solid var(--expo-linea);
+    border-radius: .9rem;
+    padding: .85rem 1rem;
+    outline: none;
+    transition: border-color .2s, background .2s;
+}
+
+.expo-campo input::placeholder { color: rgba(255, 255, 255, .38); }
+
+.expo-campo input:focus {
+    border-color: var(--expo-violeta-claro);
+    background: rgba(128, 81, 255, .12);
+}
+
+.expo-campo-buscar { margin-top: 1.6rem; }
+
+.expo-region {
+    border: 0;
+    margin: 0 0 1.3rem;
+    padding: 0;
+    min-width: 0;
+}
+
+.expo-region legend {
+    padding: 0;
+    margin-bottom: .6rem;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--expo-lavanda);
+}
+
+.expo-destinos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .6rem;
+}
+
+.expo-destino {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    min-height: 4.6rem;
+    padding: .8rem .9rem;
+    border: 1px solid var(--expo-linea);
+    border-radius: 1rem;
+    background: var(--expo-tarjeta);
+    cursor: pointer;
+    transition: transform .2s var(--expo-ease), border-color .2s, background .2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.expo-destino:active { transform: scale(.97); }
+
+.expo-destino input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.expo-destino-ciudad { font-weight: 700; font-size: 1.02rem; }
+.expo-destino-pais { font-size: .82rem; color: var(--expo-texto-suave); }
+
+.expo-destino-insignia {
+    align-self: flex-start;
+    margin-top: .35rem;
+    padding: .12rem .5rem;
+    border-radius: 99px;
+    font-size: .7rem;
+    font-weight: 600;
+    color: var(--expo-noche);
+    background: var(--expo-ambar);
+}
+
+.expo-destino:has(input:checked) {
+    border-color: var(--expo-violeta-claro);
+    background: linear-gradient(160deg, rgba(128, 81, 255, .45), rgba(84, 51, 235, .25));
+    box-shadow: 0 0 0 1px var(--expo-violeta-claro), 0 8px 26px rgba(84, 51, 235, .45);
+}
+
+.expo-destino:has(input:focus-visible) { outline: 2px solid var(--expo-lavanda); outline-offset: 2px; }
+
+.expo-sin-resultados { color: var(--expo-texto-suave); text-align: center; padding: 1rem 0; }
+
+/* Barra fija abajo con el botón grande */
+.expo-cel-barra {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -1rem;
+    padding: .9rem 1rem max(1rem, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(11, 8, 32, 0) 0%, rgba(11, 8, 32, .92) 32%);
+}
+
+.expo-error {
+    min-height: 1.2em;
+    margin: 0 0 .5rem;
+    color: var(--expo-error);
+    font-size: .92rem;
+    text-align: center;
+}
+
+.expo-boton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    width: 100%;
+    min-height: 3.6rem;
+    padding: .9rem 1.2rem;
+    border: 0;
+    border-radius: 1.1rem;
+    font: inherit;
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(135deg, var(--expo-violeta-claro), var(--expo-violeta));
+    box-shadow: 0 10px 30px rgba(84, 51, 235, .55);
+    cursor: pointer;
+    transition: transform .2s var(--expo-ease), opacity .2s, box-shadow .2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.expo-boton:active { transform: scale(.98); }
+
+.expo-boton:disabled {
+    opacity: .45;
+    box-shadow: none;
+    cursor: default;
+}
+
+.expo-boton-avion { width: 1.3rem; fill: currentColor; flex: none; }
+
+.expo-boton-secundario {
+    margin-top: .7rem;
+    background: transparent;
+    border: 1px solid var(--expo-linea);
+    box-shadow: none;
+}
+
+/* ---------- celular: vuelo en vivo ---------- */
+.expo-cel-vuelo { text-align: center; padding-bottom: 2rem; }
+
+.expo-mini-globo {
+    display: block;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+}
+
+.expo-ruta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .7rem;
+    margin: 0 0 .8rem;
+    font-family: var(--expo-titulo);
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: .04em;
+}
+
+.expo-ruta-linea {
+    position: relative;
+    flex: 0 1 8rem;
+    height: 2px;
+    overflow: hidden;
+    background: repeating-linear-gradient(90deg, var(--expo-linea) 0 6px, transparent 6px 11px);
+}
+
+.expo-ruta-avance {
+    position: absolute;
+    inset: 0;
+    background: var(--expo-ambar);
+    transform: scaleX(0);
+    transform-origin: left;
+}
+
+.expo-cel-vuelo [data-campo="restante"] { font-variant-numeric: tabular-nums; color: var(--expo-texto); }
+
+.expo-aterrizo [data-campo="estado"] {
+    font-size: 1rem;
+    animation: expo-latir .5s var(--expo-ease) 2;
+}
+
+@keyframes expo-latir {
+    50% { transform: scale(1.18); }
+}
+
+/* ---------- celular: página del destino al aterrizar ---------- */
+.expo-destino-app { padding-top: 0; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+
+.expo-portada {
+    position: relative;
+    margin: 0 -1rem;
+    min-height: 62vh;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: radial-gradient(90% 70% at 50% 100%, rgba(128, 81, 255, .55), transparent 70%), var(--expo-noche-2);
+}
+
+.expo-portada-foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: expo-acercar 14s ease-out both;
+}
+
+@keyframes expo-acercar {
+    from { transform: scale(1.12); }
+    to { transform: scale(1); }
+}
+
+.expo-portada::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11, 8, 32, .15) 0%, rgba(11, 8, 32, .05) 40%, rgba(11, 8, 32, .95) 100%);
+}
+
+.expo-portada-texto {
+    position: relative;
+    z-index: 1;
+    padding: 0 1rem 1.6rem;
+    animation: expo-subir .9s var(--expo-ease) .2s both;
+}
+
+.expo-portada-ciudad { font-size: clamp(3rem, 15vw, 4.6rem); margin: 0; }
+.expo-portada-pais { margin: .2rem 0 0; color: var(--expo-texto-suave); font-size: 1.05rem; }
+
+.expo-credito {
+    position: absolute;
+    z-index: 1;
+    top: max(.6rem, env(safe-area-inset-top));
+    right: .8rem;
+    max-width: 70%;
+    margin: 0;
+    padding: .2rem .55rem;
+    border-radius: 99px;
+    font-size: .68rem;
+    color: rgba(255, 255, 255, .8);
+    background: rgba(11, 8, 32, .55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@keyframes expo-subir {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Pase de abordar */
+.expo-pase {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: .8rem;
+    margin: -1rem 0 1.4rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1.1rem;
+    color: var(--expo-noche);
+    background: #fff;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .35);
+    z-index: 2;
+    animation: expo-subir .8s var(--expo-ease) .45s both;
+}
+
+.expo-pase > div:last-child { text-align: right; }
+.expo-pase b { display: block; font-family: var(--expo-titulo); font-size: 1.15rem; }
+
+.expo-pase-etiqueta {
+    display: block;
+    font-size: .62rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #7a7690;
+}
+
+.expo-pase-ruta { display: flex; align-items: center; gap: .55rem; text-align: center; }
+.expo-pase-ruta b { font-size: 1.5rem; letter-spacing: .04em; }
+.expo-pase-ruta svg { width: 1.4rem; fill: var(--expo-violeta); }
+
+/* Bloques de la página */
+.expo-bloque {
+    margin-bottom: 1.2rem;
+    padding: 1.2rem;
+    border: 1px solid var(--expo-linea);
+    border-radius: 1.2rem;
+    background: var(--expo-tarjeta);
+}
+
+.expo-subtitulo {
+    font-family: var(--expo-titulo);
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0 0 .9rem;
+}
+
+.expo-subtitulo em {
+    font-family: var(--expo-serif);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--expo-lavanda);
+}
+
+.expo-fuente { margin: .8rem 0 0; font-size: .72rem; color: rgba(255, 255, 255, .45); }
+
+/* Clima */
+.expo-clima { display: flex; align-items: center; gap: .8rem; }
+.expo-clima-icono { font-size: 2.6rem; color: var(--expo-ambar); }
+
+.expo-clima-temp {
+    font-family: var(--expo-titulo);
+    font-weight: 800;
+    font-size: 3.2rem;
+    line-height: 1;
+    letter-spacing: -.04em;
+}
+
+.expo-clima-texto { color: var(--expo-texto-suave); }
+
+.expo-pronostico {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .4rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+}
+
+.expo-pronostico li {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+    padding: .55rem .2rem;
+    border-radius: .8rem;
+    background: rgba(255, 255, 255, .05);
+    font-size: .8rem;
+}
+
+.expo-pronostico i { font-size: 1.2rem; color: var(--expo-lavanda); }
+.expo-pronostico small { color: var(--expo-texto-suave); }
+
+/* Paquetes */
+.expo-paquete {
+    display: grid;
+    gap: .3rem;
+    margin-top: .7rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    color: var(--expo-texto);
+    text-decoration: none;
+    background: linear-gradient(150deg, rgba(128, 81, 255, .35), rgba(84, 51, 235, .15));
+    border: 1px solid rgba(128, 81, 255, .5);
+    transition: transform .2s var(--expo-ease);
+}
+
+.expo-paquete:active { transform: scale(.98); }
+.expo-paquete-nombre { font-weight: 700; font-size: 1.1rem; }
+.expo-paquete-datos { display: flex; justify-content: space-between; color: var(--expo-texto-suave); }
+.expo-paquete-datos b { color: var(--expo-ambar); font-size: 1.1rem; }
+.expo-paquete-ir { font-size: .85rem; font-weight: 600; color: var(--expo-lavanda); }
+
+/* Sin paquetes */
+.expo-sueno .expo-subtitulo b { color: var(--expo-ambar); font-size: 2.2rem; }
+
+/* Contacto */
+.expo-contacto { border-color: rgba(245, 184, 61, .45); }
+
+.expo-autoriza {
+    display: flex;
+    gap: .6rem;
+    align-items: flex-start;
+    margin: 0 0 .6rem;
+    font-size: .82rem;
+    line-height: 1.45;
+    color: var(--expo-texto-suave);
+}
+
+.expo-autoriza input {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: .1rem;
+    accent-color: var(--expo-violeta-claro);
+}
+
+.expo-contacto-listo p { margin: 0 0 .4rem; font-size: 1.05rem; }
+
+/* Pasos para activar WhatsApp y estado del mensaje */
+.expo-pasos-wa {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: paso;
+    display: grid;
+    gap: 1rem;
+}
+
+.expo-pasos-wa li {
+    counter-increment: paso;
+    display: grid;
+    grid-template-columns: 1.8rem 1fr;
+    gap: .2rem .7rem;
+    align-items: start;
+    font-size: .95rem;
+    color: var(--expo-texto-suave);
+}
+
+.expo-pasos-wa li::before {
+    content: counter(paso);
+    display: grid;
+    place-items: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    font-weight: 700;
+    color: var(--expo-noche);
+    background: var(--expo-ambar);
+}
+
+.expo-pasos-wa .expo-boton { grid-column: 2; margin-top: .5rem; }
+
+.expo-boton-wa {
+    background: linear-gradient(135deg, #2bd46a, #128c4a);
+    box-shadow: 0 10px 30px rgba(18, 140, 74, .45);
+}
+
+.expo-wa-estado {
+    min-height: 1.3em;
+    margin: .9rem 0 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+.expo-wa-estado[data-estado="ENTREGADO"], .expo-wa-estado[data-estado="LEIDO"] { color: #4be08a; }
+.expo-wa-estado[data-estado="SIN_ACTIVAR"], .expo-wa-estado[data-estado="FALLIDO"] { color: var(--expo-error); }
+
+.expo-enlace {
+    padding: 0;
+    border: 0;
+    font: inherit;
+    font-size: .85rem;
+    color: var(--expo-texto-suave);
+    text-decoration: underline;
+    background: none;
+    cursor: pointer;
+}
+
+/* Atracciones */
+.expo-atracciones { margin: 0; padding-left: 1.3rem; }
+.expo-atracciones li { margin-bottom: .55rem; }
+.expo-atracciones a { color: var(--expo-texto); font-weight: 600; text-decoration-color: var(--expo-linea); }
+.expo-atracciones small { display: block; color: var(--expo-texto-suave); }
+
+.expo-acciones { display: grid; gap: .7rem; background: none; border: 0; padding: 0; }
+.expo-acciones .expo-boton-secundario { margin-top: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .expo-portada-foto, .expo-portada-texto, .expo-pase, .expo-aterrizo [data-campo="estado"] { animation: none; }
+}
+
+/* ---------- pantalla del stand ---------- */
+body.expo-pantalla { overflow: hidden; height: 100vh; }
+
+.expo-pantalla-app { position: fixed; inset: 0; }
+.expo-pantalla-app.expo-sin-cursor, .expo-pantalla-app.expo-sin-cursor * { cursor: none; }
+
+.expo-escena { position: absolute; inset: 0; display: block; }
+
+.expo-panel {
+    position: absolute;
+    left: clamp(1.5rem, 3.5vw, 4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(30rem, 34vw);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 2.4vh, 1.8rem);
+    z-index: 1;
+}
+
+.expo-panel-titulo { font-size: clamp(2.4rem, 4.4vw, 4.6rem); margin: 0; }
+
+.expo-qr {
+    display: flex;
+    align-items: center;
+    gap: 1.3rem;
+    padding: 1rem;
+    border: 1px solid var(--expo-linea);
+    border-radius: 1.4rem;
+    background: rgba(11, 8, 32, .55);
+    backdrop-filter: blur(6px);
+}
+
+.expo-qr img {
+    flex: none;
+    width: clamp(9rem, 14vw, 14rem);
+    height: auto;
+    border-radius: .9rem;
+    background: #fff;
+    box-shadow: 0 0 40px rgba(128, 81, 255, .5);
+}
+
+.expo-qr-paso { margin: 0 0 .55rem; font-size: clamp(.95rem, 1.2vw, 1.2rem); font-weight: 600; }
+
+.expo-qr-paso b {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6em; height: 1.6em;
+    margin-right: .45rem;
+    border-radius: 50%;
+    font-size: .85em;
+    color: var(--expo-noche);
+    background: var(--expo-ambar);
+}
+
+.expo-qr-url {
+    margin: .9rem 0 0;
+    font-size: .85rem;
+    color: var(--expo-texto-suave);
+    word-break: break-all;
+}
+
+.expo-alerta {
+    margin: 0;
+    padding: .8rem 1rem;
+    border-radius: .9rem;
+    font-size: .9rem;
+    color: var(--expo-noche);
+    background: var(--expo-ambar);
+}
+
+.expo-contador { display: flex; align-items: center; gap: 1rem; }
+
+.expo-contador-numero {
+    font-family: var(--expo-titulo);
+    font-weight: 800;
+    font-size: clamp(3.4rem, 6vw, 6.4rem);
+    line-height: .9;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--expo-ambar);
+    text-shadow: 0 0 30px rgba(245, 184, 61, .35);
+}
+
+.expo-contador-texto { color: var(--expo-texto-suave); font-size: clamp(.95rem, 1.2vw, 1.2rem); line-height: 1.3; }
+
+.expo-ranking ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: puesto;
+}
+
+.expo-ranking li {
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+    padding: .35rem 0;
+    border-bottom: 1px solid var(--expo-linea);
+    font-size: clamp(1rem, 1.3vw, 1.3rem);
+    counter-increment: puesto;
+}
+
+.expo-ranking li::before {
+    content: counter(puesto);
+    width: 1.4rem;
+    color: var(--expo-lavanda);
+    font-weight: 700;
+}
+
+.expo-ranking li span { flex: 1; font-weight: 600; }
+.expo-ranking li b { color: var(--expo-ambar); font-variant-numeric: tabular-nums; }
+.expo-ranking li.expo-ranking-vacio { color: var(--expo-texto-suave); }
+.expo-ranking li.expo-ranking-vacio::before { content: none; }
+
+/* Avisos: "Ana va de Valledupar a París" */
+.expo-avisos {
+    position: absolute;
+    top: clamp(1rem, 3vh, 2rem);
+    right: clamp(1rem, 3vw, 2.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .5rem;
+    z-index: 1;
+}
+
+.expo-avisos li {
+    padding: .7rem 1.1rem;
+    border: 1px solid var(--expo-linea);
+    border-radius: 99px;
+    background: rgba(11, 8, 32, .7);
+    backdrop-filter: blur(6px);
+    font-size: clamp(.95rem, 1.2vw, 1.25rem);
+    animation: expo-aviso-entra .6s var(--expo-ease) both;
+    transition: opacity .7s, transform .7s;
+}
+
+.expo-avisos li b { color: var(--expo-ambar); }
+
+/* "6 personas van a París": un vuelo de grupo se nota más */
+.expo-avisos li.expo-aviso-grupo {
+    border-color: rgba(245, 184, 61, .6);
+    background: rgba(84, 51, 235, .55);
+    box-shadow: 0 0 30px rgba(245, 184, 61, .25);
+}
+.expo-avisos li.expo-aviso-sale { opacity: 0; transform: translateX(20px); }
+
+@keyframes expo-aviso-entra {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: none; }
+}
+
+.expo-estado {
+    position: absolute;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: .4rem .9rem;
+    border-radius: 99px;
+    font-size: .85rem;
+    color: var(--expo-noche);
+    background: var(--expo-ambar);
+    z-index: 2;
+}
+
+.expo-completa {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    padding: .45rem .9rem;
+    border: 1px solid var(--expo-linea);
+    border-radius: 99px;
+    font: inherit;
+    font-size: .8rem;
+    color: var(--expo-texto-suave);
+    background: rgba(11, 8, 32, .5);
+    cursor: pointer;
+    opacity: .6;
+    z-index: 2;
+}
+
+.expo-completa:hover { opacity: 1; }
+:fullscreen .expo-completa { display: none; }
+
+/* Pantalla vertical o pequeña: el globo arriba y el panel abajo */
+@media (max-width: 900px), (orientation: portrait) {
+    .expo-panel {
+        top: auto;
+        bottom: 1.2rem;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+        transform: none;
+        gap: .8rem;
+    }
+    .expo-panel-titulo { font-size: clamp(1.8rem, 6vw, 3rem); }
+    .expo-ranking { display: none; }
+}

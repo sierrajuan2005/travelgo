@@ -262,3 +262,31 @@ CREATE TABLE IF NOT EXISTS cache_mapa (
 CREATE INDEX IF NOT EXISTS idx_chat_sesion_usuario ON chat_sesion (usuario_id);
 CREATE INDEX IF NOT EXISTS idx_mensaje_sesion      ON mensaje (sesion_id, fecha);
 CREATE INDEX IF NOT EXISTS idx_envio_reserva       ON envio_recordatorio (reserva_id);
+
+-- =====================================================================
+-- ExpoSoftware - Integrante 3: "Lanza tu viaje"
+-- El visitante escribe su nombre en el celular, elige un destino y su avión sale de Valledupar en la
+-- pantalla del stand. destino_id es la clave de CatalogoDestinosSonados (lista fija en Java con
+-- coordenadas), no de la tabla destino: se puede soñar con Tokio aunque no haya paquetes allí.
+-- oculto = TRUE cuando un administrador lo quita de la pantalla (/admin/expo).
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS lanzamiento_expo (
+    id         BIGSERIAL   PRIMARY KEY,
+    nombre     VARCHAR(20) NOT NULL,
+    destino_id VARCHAR(30) NOT NULL,
+    fecha      TIMESTAMP   NOT NULL,
+    oculto     BOOLEAN     NOT NULL DEFAULT FALSE
+);
+
+-- Recorrido del visitante después de lanzar (embudo del stand en /admin/expo):
+--   telefono/fecha_contacto: celular que dejó CON autorización (Ley 1581 de 2012) para su postal y ofertas.
+--   vio_destino: abrió la página de su destino. abrio_paquete: abrió un paquete desde esa página.
+-- ADD COLUMN IF NOT EXISTS para las bases que ya tenían la tabla.
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS telefono       VARCHAR(16);
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS fecha_contacto TIMESTAMP;
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS vio_destino    BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS abrio_paquete  BOOLEAN NOT NULL DEFAULT FALSE;
+-- WhatsApp enviado al visitante: id del mensaje en Twilio, estado (ENVIANDO, ENTREGADO, LEIDO, SIN_ACTIVAR, FALLIDO).
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_id     VARCHAR(64);
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_estado VARCHAR(20);
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_fecha  TIMESTAMP;

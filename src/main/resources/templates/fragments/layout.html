@@ -52,6 +52,14 @@
                 <li class="nav-item" sec:authorize="hasRole('ADMINISTRADOR')">
                     <a class="nav-link" th:href="@{/admin}">Administración</a>
                 </li>
+                <!-- ExpoSoftware: abre la pantalla del stand en otra pestaña (docs/expo_lanza_tu_viaje.md) -->
+                <li class="nav-item" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a class="nav-link" th:href="@{/expo/pantalla}" target="_blank" rel="noopener">
+                        <i class="bi bi-display"></i> Pantalla Expo</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a class="nav-link" th:href="@{/admin/expo}"><i class="bi bi-qr-code"></i> QR Expo</a>
+                </li>
             </ul>
 
             <ul class="navbar-nav align-items-lg-center gap-2 mt-2 mt-lg-0">
@@ -100,7 +108,8 @@
         <h1 class="h2 mb-3"
             th:text="${activa == 'destinos'} ? 'Destinos' : (${activa == 'paquetes'} ? 'Paquetes turísticos'
                 : (${activa == 'constructor'} ? 'Constructor de paquetes'
-                : (${activa == 'recordatorios'} ? 'Recordatorios' : 'Servicios reservables')))">Destinos</h1>
+                : (${activa == 'recordatorios'} ? 'Recordatorios'
+                : (${activa == 'expo'} ? 'Lanza tu viaje (ExpoSoftware)' : 'Servicios reservables'))))">Destinos</h1>
         <ul class="tg-admin-tabs">
             <li><a class="nav-link" th:classappend="${activa == 'destinos'} ? 'active'" th:href="@{/admin/destinos}">
                 <i class="bi bi-geo-alt"></i> Destinos</a></li>
@@ -112,6 +121,8 @@
                 <i class="bi bi-airplane"></i> Servicios</a></li>
             <li><a class="nav-link" th:classappend="${activa == 'recordatorios'} ? 'active'" th:href="@{/admin/recordatorios}">
                 <i class="bi bi-bell"></i> Recordatorios</a></li>
+            <li><a class="nav-link" th:classappend="${activa == 'expo'} ? 'active'" th:href="@{/admin/expo}">
+                <i class="bi bi-globe-americas"></i> Expo</a></li>
         </ul>
     </div>
 </section>

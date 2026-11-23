@@ -27,6 +27,16 @@ public class SecurityConfig {
                     "/css/**", "/js/**", "/img/**"
                 ).permitAll()
 
+                // ExpoSoftware "Lanza tu viaje": los visitantes no tienen cuenta.
+                // /admin/expo (moderación) sigue protegido por la regla de /admin/**.
+                .requestMatchers("/expo", "/expo/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/expo/destinos", "/api/expo/lanzamientos").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/expo/lanzamientos", "/api/expo/lanzamientos/*/contacto",
+                        "/api/expo/lanzamientos/*/whatsapp").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/expo/lanzamientos/*/whatsapp").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/expo/lanzamientos/*/contacto").permitAll()
+                .requestMatchers("/api/expo/**").denyAll()
+
                 // Administración
                 .requestMatchers("/admin/**")
                     .hasRole("ADMINISTRADOR")

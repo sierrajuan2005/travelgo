@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administración · Lanza tu viaje')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+  <section th:replace="~{fragments/layout :: adminEncabezado('expo')}"></section>
+
+  <div class="container tg-sube">
+    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+    <div class="card tg-card p-3 p-md-4 mb-4">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <h2 class="h5 mb-1">Pantalla del stand</h2>
+          <p class="text-muted small mb-3">
+            Ábrela en el monitor grande y pulsa <kbd>F</kbd> para pantalla completa. Los visitantes escanean el QR,
+            escriben su nombre y lanzan un viaje desde Valledupar.
+          </p>
+          <div class="d-flex gap-2 flex-wrap mb-4">
+            <a class="btn btn-tg-acento" th:href="@{/expo/pantalla}" target="_blank" rel="noopener">
+              <i class="bi bi-display"></i> Abrir la pantalla</a>
+            <a class="btn btn-outline-secondary" th:href="@{/expo/pantalla(demo=1)}" target="_blank" rel="noopener">
+              <i class="bi bi-play-circle"></i> Ensayo (visitantes simulados)</a>
+            <a class="btn btn-outline-secondary" th:href="${urlTelefono}" target="_blank" rel="noopener">
+              <i class="bi bi-phone"></i> Página del celular</a>
+          </div>
+
+          <h3 class="h6 mb-1">Dirección pública para el QR</h3>
+          <p class="text-muted small mb-2">
+            Para que entre <b>cualquier celular, con cualquier internet</b>, abre un túnel en el portátil
+            (<code>cloudflared tunnel --url http://localhost:8080</code>) y pega aquí la dirección
+            <code>https://….trycloudflare.com</code> que aparece. Cambia cada vez que abres el túnel.
+          </p>
+          <form th:action="@{/admin/expo/url-publica}" method="post" class="d-flex gap-2 flex-wrap">
+            <input type="text" name="url" class="form-control" style="max-width: 28rem;" inputmode="url"
+                   placeholder="https://ejemplo.trycloudflare.com" th:value="${urlPublica}"
+                   aria-label="Dirección pública">
+            <button type="submit" class="btn btn-tg-acento">Guardar</button>
+          </form>
+          <!-- Formulario aparte: si compartiera el campo "url", se enviarían dos valores -->
+          <form th:action="@{/admin/expo/url-publica}" method="post" class="mt-2"
+                th:if="${!#strings.isEmpty(urlPublica)}">
+            <input type="hidden" name="url" value="">
+            <button type="submit" class="btn btn-sm btn-link px-0 text-muted">Quitar la dirección pública</button>
+          </form>
+          <p class="small mt-2 mb-0" th:classappend="${soloRedLocal} ? 'text-danger' : 'text-success'">
+            <i class="bi" th:classappend="${soloRedLocal} ? 'bi-wifi-off' : 'bi-globe2'"></i>
+            El QR lleva <b th:text="${urlTelefono}">http://192.168.1.20:8080/expo</b>
+            <span th:if="${soloRedLocal}">: solo entran celulares del mismo WiFi (y si el firewall de Windows deja).
+              Pega una dirección pública.</span>
+            <span th:unless="${soloRedLocal}">: entra cualquier celular.</span>
+          </p>
+        </div>
+        <div class="col-lg-4 text-center">
+          <img th:src="@{/expo/qr.svg}" alt="QR que verá el público" class="img-fluid rounded-3 border"
+               style="max-width: 200px;">
+          <p class="text-muted small mt-2 mb-0">Escanéalo con tu celular para probar antes del público.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Embudo del stand: el juego también es estudio de mercado y captación de clientes -->
+    <div class="card tg-card p-3 p-md-4 mb-4" th:with="e=${embudo}">
+      <h2 class="h5 mb-1">Embudo del stand, en vivo</h2>
+      <p class="text-muted small mb-3">
+        Qué tan lejos llega cada visitante en el recorrido. Solo cuentan las visitas del propio visitante desde su
+        celular. Recarga la página para actualizar.
+      </p>
+      <div class="row g-3">
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Lanzaron un viaje</div>
+            <div class="fs-2 fw-bold" th:text="${e.lanzaron()}">0</div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar" style="width: 100%"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Vieron su destino</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.vieronDestino()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.vieronDestino()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar"
+                 th:style="'width: ' + ${e.porcentaje(e.vieronDestino())} + '%'"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Dejaron su celular</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.dejaronContacto()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.dejaronContacto()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar bg-warning"
+                 th:style="'width: ' + ${e.porcentaje(e.dejaronContacto())} + '%'"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Recibieron WhatsApp</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.recibieronWhatsApp()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.recibieronWhatsApp()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar bg-info"
+                 th:style="'width: ' + ${e.porcentaje(e.recibieronWhatsApp())} + '%'"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Abrieron un paquete</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.abrieronPaquete()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.abrieronPaquete()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar bg-success"
+                 th:style="'width: ' + ${e.porcentaje(e.abrieronPaquete())} + '%'"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-warning small mt-3 mb-0" th:unless="${whatsappDisponible}">
+        <i class="bi bi-whatsapp"></i> WhatsApp desactivado: faltan <code>TWILIO_ACCOUNT_SID</code>,
+        <code>TWILIO_AUTH_TOKEN</code> o <code>TRAVELGO_WHATSAPP_CODIGO</code>. Los visitantes pueden dejar su celular,
+        pero no reciben nada (ver docs/expo_lanza_tu_viaje.md).
+      </div>
+      <p class="text-muted small mb-0 mt-3">
+        <span th:text="${total}">0</span> viajes en la pantalla. Si un nombre no debe salir frente al público,
+        ocúltalo en la lista de abajo: la pantalla lo quita en menos de un minuto.
+      </p>
+    </div>
+
+    <div class="card tg-card">
+      <div class="p-3 p-md-4 pb-0"><h2 class="h5 mb-0">Últimos viajes lanzados</h2></div>
+      <div th:if="${#lists.isEmpty(viajes)}" class="p-4 text-muted">Todavía nadie ha lanzado un viaje.</div>
+      <div class="table-responsive" th:unless="${#lists.isEmpty(viajes)}">
+        <table class="table align-middle mb-0">
+          <thead>
+          <tr>
+            <th class="ps-4">Fecha</th>
+            <th>Nombre</th>
+            <th>Destino</th>
+            <th>Contacto</th>
+            <th>Estado</th>
+            <th class="text-end pe-4">Acción</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="v : ${viajes}" th:classappend="${v.lanzamiento().oculto()} ? 'text-muted'">
+            <td class="ps-4" th:text="${@formato.fechaHora(v.lanzamiento().fecha())}">23/11/2026 10:00</td>
+            <td class="fw-semibold" th:text="${v.lanzamiento().nombre()}">Ana</td>
+            <td th:text="${v.destino().ciudad() + ', ' + v.destino().pais()}">París, Francia</td>
+            <td>
+              <th:block th:if="${v.lanzamiento().telefono() != null}">
+                <!-- wa.me abre WhatsApp con ese número: base para enviar la postal (idea 2) -->
+                <a th:href="${'https://wa.me/' + #strings.substring(v.lanzamiento().telefono(), 1)}" target="_blank"
+                   rel="noopener" class="text-decoration-none" th:text="${v.lanzamiento().telefono()}">+573001234567</a>
+                <form th:action="@{/admin/expo/{id}/borrar-contacto(id=${v.lanzamiento().id()})}" method="post"
+                      class="d-inline">
+                  <button type="submit" class="btn btn-link btn-sm p-0 ms-1 text-muted" title="Borrar el celular">
+                    <i class="bi bi-trash"></i></button>
+                </form>
+              </th:block>
+              <span th:if="${v.lanzamiento().telefono() == null}" class="text-muted">—</span>
+            </td>
+            <td>
+              <span th:if="${v.lanzamiento().oculto()}" class="badge text-bg-secondary">Oculto</span>
+              <span th:unless="${v.lanzamiento().oculto()}" class="badge text-bg-success">En pantalla</span>
+            </td>
+            <td class="text-end pe-4">
+              <form th:action="@{/admin/expo/{id}/ocultar(id=${v.lanzamiento().id()})}" method="post" class="d-inline">
+                <input type="hidden" name="oculto" th:value="${!v.lanzamiento().oculto()}">
+                <button type="submit" class="btn btn-sm"
+                        th:classappend="${v.lanzamiento().oculto()} ? 'btn-outline-secondary' : 'btn-outline-danger'">
+                  <i class="bi" th:classappend="${v.lanzamiento().oculto()} ? 'bi-eye' : 'bi-eye-slash'"></i>
+                  <span th:text="${v.lanzamiento().oculto()} ? 'Mostrar' : 'Ocultar'">Ocultar</span>
+                </button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+  "Lanza tu viaje" (ExpoSoftware, Integrante 3): lo que ve el visitante cuando su avión aterriza.
+  Datos reales del destino (Wikipedia, Open-Meteo), los paquetes de TravelGo y el celular para su postal.
+  Ver docs/expo_lanza_tu_viaje.md.
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0820">
+    <title th:text="${destino.ciudad() + ' | TravelGo'}">París | TravelGo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+    <!-- Solo para los íconos del clima (Clima.icono() trae el nombre de un ícono de Bootstrap Icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/expo.css}">
+</head>
+<body class="expo expo-cel expo-destino-pagina">
+
+<main class="expo-cel-app expo-destino-app"
+      th:with="foto=${info.foto() != null ? info.foto().datos() : null}, clima=${info.clima() != null ? info.clima().datos() : null}">
+
+    <!-- Portada: la foto real del destino -->
+    <header class="expo-portada" th:classappend="${foto == null} ? 'expo-portada-sin-foto'">
+        <img th:if="${foto != null}" th:src="${foto.url()}" th:alt="${'Foto de ' + destino.ciudad()}" class="expo-portada-foto">
+        <div class="expo-portada-texto">
+            <p class="expo-eyebrow">
+                <span th:text="${viaje.nombre()}">Jaime</span>, aterrizaste en
+            </p>
+            <h1 class="expo-titulo expo-portada-ciudad" th:text="${destino.ciudad()}">París</h1>
+            <p class="expo-portada-pais" th:text="${destino.pais()}">Francia</p>
+        </div>
+        <p class="expo-credito" th:if="${foto != null}"
+           th:text="${'Foto: ' + foto.autor() + (foto.licencia() != null ? ' · ' + foto.licencia() : '') + ' · Wikimedia Commons'}">
+            Foto: autor · CC BY-SA 4.0</p>
+    </header>
+
+    <!-- Pase de abordar -->
+    <section class="expo-pase" aria-label="Tu pase de abordar">
+        <div>
+            <span class="expo-pase-etiqueta">Pasajero</span>
+            <b th:text="${viaje.nombre()}">Jaime</b>
+        </div>
+        <div class="expo-pase-ruta">
+            <span><span class="expo-pase-etiqueta">Desde</span><b>VUP</b></span>
+            <svg viewBox="-56 -48 112 96" aria-hidden="true"><path d="M54 0L50-3.5L43-6L14-6L-6-44L-17-44L-5-6L-35-6L-45-19L-52-19L-47-4L-51 0L-47 4L-52 19L-45 19L-35 6L-5 6L-17 44L-6 44L14 6L43 6L50 3.5Z"/></svg>
+            <span><span class="expo-pase-etiqueta">Hasta</span><b th:text="${destino.aeropuerto()}">CDG</b></span>
+        </div>
+        <div>
+            <span class="expo-pase-etiqueta">Distancia</span>
+            <b th:text="${#numbers.formatInteger(km, 1, 'POINT') + ' km'}">8.600 km</b>
+        </div>
+    </section>
+
+    <!-- Clima real de hoy -->
+    <section class="expo-bloque" th:if="${clima != null}">
+        <p class="expo-eyebrow">Así está <span th:text="${destino.ciudad()}">París</span> ahora</p>
+        <div class="expo-clima">
+            <i class="bi expo-clima-icono" th:classappend="${clima.icono()}"></i>
+            <span class="expo-clima-temp" th:text="${#numbers.formatDecimal(clima.temperaturaActual(), 1, 0) + '°'}">18°</span>
+            <span class="expo-clima-texto" th:text="${clima.descripcion()}">Nublado</span>
+        </div>
+        <ul class="expo-pronostico">
+            <li th:each="dia, estado : ${clima.dias()}" th:if="${estado.index < 4}">
+                <span th:text="${estado.index == 0 ? 'Hoy' : @formato.diaCorto(dia.fecha())}">sáb 07</span>
+                <i class="bi" th:classappend="${dia.icono()}"></i>
+                <b th:text="${#numbers.formatDecimal(dia.maxima(), 1, 0) + '°'}">20°</b>
+                <small th:text="${#numbers.formatDecimal(dia.minima(), 1, 0) + '°'}">12°</small>
+            </li>
+        </ul>
+        <p class="expo-fuente">
+            <span th:text="${info.clima().atribucion()}">Open-Meteo</span> ·
+            <span th:text="${@formato.fechaHora(info.clima().consultadoEn())}">fecha</span>
+        </p>
+    </section>
+
+    <!-- Paquetes de TravelGo: el sueño se vuelve viaje -->
+    <section class="expo-bloque" th:unless="${#lists.isEmpty(paquetes)}">
+        <p class="expo-eyebrow">Hazlo real con TravelGo</p>
+        <h2 class="expo-subtitulo">Paquetes a <em th:text="${destino.ciudad()}">Cartagena</em></h2>
+        <a class="expo-paquete" th:each="p : ${paquetes}"
+           th:href="@{/expo/viaje/{id}/paquete/{pid}(id=${viaje.id()}, pid=${p.id})}">
+            <span class="expo-paquete-nombre" th:text="${p.nombre}">Cartagena Colonial</span>
+            <span class="expo-paquete-datos">
+                <span th:text="${p.duracionDias + ' días'}">4 días</span>
+                <b th:text="${@formato.cop(p.precio)}">$ 1.200.000</b>
+            </span>
+            <span class="expo-paquete-ir" aria-hidden="true">Ver y reservar →</span>
+        </a>
+    </section>
+
+    <!-- Sin paquetes: prueba social + lista de espera -->
+    <section class="expo-bloque expo-sueno" th:if="${#lists.isEmpty(paquetes)}">
+        <p class="expo-eyebrow">Todavía no vendemos este destino</p>
+        <h2 class="expo-subtitulo">
+            <b th:text="${sonadores}">12</b>
+            <span th:text="${sonadores == 1 ? 'persona sueña' : 'personas sueñan'}">personas sueñan</span>
+            con <em th:text="${destino.ciudad()}">París</em> hoy
+        </h2>
+        <p class="expo-cel-intro">Los destinos más soñados en la ExpoSoftware son los próximos paquetes que armamos.
+            Deja tu celular y te avisamos primero.</p>
+    </section>
+
+    <!-- Contacto para la postal (solo el visitante que lanzó este viaje) -->
+    <section class="expo-bloque expo-contacto" th:if="${propio}" id="expo-contacto"
+             th:data-api="@{/api/expo/lanzamientos/{id}/contacto(id=${viaje.id()})}"
+             th:data-api-whatsapp="@{/api/expo/lanzamientos/{id}/whatsapp(id=${viaje.id()})}"
+             th:data-whatsapp="${whatsappDisponible}"
+             th:data-estado-whatsapp="${estadoWhatsApp}"
+             th:data-csrf-header="${_csrf?.headerName}"
+             th:data-csrf-token="${_csrf?.token}">
+        <p class="expo-eyebrow">Tu recuerdo del viaje</p>
+        <h2 class="expo-subtitulo">Recibe tu <em>postal</em> de <span th:text="${destino.ciudad()}">París</span></h2>
+        <p class="expo-cel-intro">Te enviamos por WhatsApp tu viaje: la foto de <span th:text="${destino.ciudad()}">París</span>,
+            el clima de hoy y las ofertas de TravelGo.</p>
+
+        <div class="expo-contacto-listo" data-estado="guardado" th:hidden="${#strings.isEmpty(telefono)}">
+            <p>Tu celular: <b data-campo="telefono" th:text="${telefono}">+57 300 ••• 4567</b>
+                <button type="button" class="expo-enlace" data-accion="borrar">Borrar</button></p>
+
+            <!-- WhatsApp no deja que una empresa escriba primero: el visitante activa el chat con un mensaje -->
+            <ol class="expo-pasos-wa" th:if="${whatsappDisponible}">
+                <li>
+                    <span>Activa WhatsApp: toca el botón y <b>envía</b> el mensaje que aparece escrito.</span>
+                    <a class="expo-boton expo-boton-wa" th:href="${enlaceActivacion}" target="_blank" rel="noopener"
+                       data-accion="activar">Activar WhatsApp</a>
+                </li>
+                <li>
+                    <span>Vuelve aquí: te enviamos tu viaje solo.</span>
+                    <button type="button" class="expo-boton expo-boton-secundario" data-accion="enviar">
+                        Ya lo activé, envíame mi viaje</button>
+                </li>
+            </ol>
+            <p class="expo-wa-estado" data-campo="estado-wa" aria-live="polite"></p>
+            <p class="expo-cel-intro" th:unless="${whatsappDisponible}">
+                Guardado. Te escribiremos por WhatsApp con tu postal y las ofertas.</p>
+        </div>
+
+        <form class="expo-contacto-form" data-estado="pedir" th:hidden="${!#strings.isEmpty(telefono)}" novalidate>
+            <label class="expo-campo">
+                <span>Tu celular (WhatsApp)</span>
+                <input type="tel" name="telefono" inputmode="tel" autocomplete="tel" placeholder="300 123 4567"
+                       maxlength="20" required>
+            </label>
+            <label class="expo-autoriza">
+                <input type="checkbox" name="autoriza" required>
+                <span>Autorizo a TravelGo a usar mi celular solo para enviarme mi postal y ofertas de viaje.
+                    Puedo pedir que lo borren cuando quiera (Ley 1581 de 2012).</span>
+            </label>
+            <p class="expo-error" role="alert" aria-live="assertive"></p>
+            <button type="submit" class="expo-boton">Quiero mi postal</button>
+        </form>
+    </section>
+
+    <!-- Qué hacer allá -->
+    <section class="expo-bloque" th:if="${info.atracciones() != null and !#lists.isEmpty(info.atracciones().datos())}">
+        <p class="expo-eyebrow">Qué hacer en <span th:text="${destino.ciudad()}">París</span></p>
+        <ol class="expo-atracciones">
+            <li th:each="lugar, estado : ${info.atracciones().datos()}" th:if="${estado.index < 5}">
+                <a th:href="${lugar.enlace()}" target="_blank" rel="noopener" th:text="${lugar.nombre()}">Museo del Louvre</a>
+                <small th:if="${lugar.tipo() != null}" th:text="${lugar.tipo()}">museo</small>
+            </li>
+        </ol>
+        <p class="expo-fuente">
+            <span th:text="${info.atracciones().atribucion()}">Wikipedia</span> ·
+            <span th:text="${@formato.fechaHora(info.atracciones().consultadoEn())}">fecha</span>
+        </p>
+    </section>
+
+    <nav class="expo-bloque expo-acciones">
+        <a class="expo-boton" th:href="@{/expo}">Lanzar otro viaje</a>
+        <a class="expo-boton expo-boton-secundario" th:href="@{/catalogo}">Ver todo el catálogo de TravelGo</a>
+    </nav>
+</main>
+
+<script th:src="@{/js/expo-destino.js}" defer></script>
+</body>
+</html>
