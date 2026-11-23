@@ -192,15 +192,27 @@
         }
 
         function crearMapa() {
-            mapa = new maplibregl.Map({
-                container: lienzo,
-                style: raiz.dataset.estilo,
-                center: [ciudadActual.longitud, ciudadActual.latitud],
-                zoom: ciudadActual.zoom
-            });
+            try {
+                mapa = new maplibregl.Map({
+                    container: lienzo,
+                    style: raiz.dataset.estilo || 'https://tiles.openfreemap.org/styles/liberty',
+                    center: [ciudadActual.longitud, ciudadActual.latitud],
+                    zoom: ciudadActual.zoom
+                });
+            } catch (e) {
+                estado.textContent = 'No se pudo iniciar el mapa: ' + e.message;
+                return;
+            }
             mapa.addControl(new maplibregl.NavigationControl(), 'top-right');
             mapa.addControl(new maplibregl.ScaleControl(), 'bottom-left');
-            mapa.on('load', function () { cargarCiudad(ciudadActual); });
+            mapa.on('error', function (evento) {
+                const mensaje = evento && evento.error && evento.error.message ? evento.error.message : 'error desconocido';
+                estado.textContent = 'Problema con el mapa: ' + mensaje;
+            });
+            mapa.on('load', function () {
+                mapa.resize();
+                cargarCiudad(ciudadActual);
+            });
         }
 
         async function descubrirHotelDelPaquete() {
