@@ -40,7 +40,7 @@ El contrato no depende de la web (no usa cookies propias ni vistas): otro canal 
 | El cliente escribe | Estrategia | Estado |
 |---|---|---|
 | Paquetes baratos para Bogotá | `PaquetesBaratosEstrategia` (tercio más barato del destino) | Listo |
-| Paquetes con hoteles de lujo en Cartagena | `PaquetesLujoEstrategia` | Responde que aún no filtra por gama; se activa cuando el Integrante 2 entregue la gama (basta cambiar `BuscadorPaquetes.porGama`) |
+| Paquetes con hoteles de lujo en Cartagena | `PaquetesLujoEstrategia` | Listo: paquetes del destino con al menos un hotel de esa gama (usa `ClasificadorGama` del Integrante 2), del más barato al más caro |
 | Algo para 2 personas en diciembre | `PaquetesDestinoEstrategia` | Muestra los paquetes del destino y avisa que fechas y personas aún no filtran (depende del Integrante 1) |
 | ¿Qué incluye el paquete X? | `ServiciosPaqueteEstrategia` | Listo, con precio de referencia, fecha de consulta y enlace de reserva |
 | ¿Cómo va mi reserva? / ¿Tengo pagos pendientes? | `EstadoReservaEstrategia`, `PagosPendientesEstrategia` | Listo; solo con sesión y solo del propio usuario |
