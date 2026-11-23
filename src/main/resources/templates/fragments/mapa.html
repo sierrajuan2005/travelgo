@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="explorador(ciudad, paqueteId)">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+    <link rel="stylesheet" th:href="@{/css/mapa.css}">
+
+    <div class="card tg-card mb-4" data-tgm-raiz
+         th:classappend="${ciudad != null} ? 'd-none'"
+         th:attr="data-ciudad=${ciudad},
+                  data-paquete=${paqueteId},
+                  data-estilo=${estiloMapa}">
+        <div class="card-body p-4 p-md-5">
+            <span class="tg-eyebrow">Mapa interactivo</span>
+            <h2 class="h4 mb-3"
+                th:text="${ciudad != null ? 'Explora ' + ciudad : 'Explora los destinos'}">
+                Explora el destino
+            </h2>
+
+            <div class="mb-3" th:if="${ciudad == null}">
+                <label class="form-label" for="tgm-ciudad">Ciudad</label>
+                <select class="form-select" id="tgm-ciudad" data-tgm="ciudad"></select>
+            </div>
+
+            <div class="tgm-chips mb-2" data-tgm="filtros"></div>
+
+            <div class="form-check mb-3" data-tgm="opcion">
+                <input class="form-check-input" type="checkbox"
+                       id="tgm-atenuar" data-tgm="atenuar">
+                <label class="form-check-label small" for="tgm-atenuar">
+                    Atenuar en vez de ocultar
+                </label>
+            </div>
+
+            <div class="tgm-lienzo" data-tgm="lienzo" style="height: 440px; width: 100%;"></div>
+
+            <p class="tg-fuente small mt-3 mb-0"
+               data-tgm="estado" role="status"></p>
+
+            <p class="tg-fuente small mt-2 mb-0">
+                Datos de © OpenStreetMap, Geoapify y Xotelo (TripAdvisor).
+                <a href="https://www.geoapify.com/"
+                   target="_blank" rel="noopener">
+                    Powered by Geoapify
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script defer src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+    <script defer th:src="@{/js/mapa.js}"></script>
+</section>
+</body>
+</html>

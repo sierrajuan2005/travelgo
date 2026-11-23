@@ -92,6 +92,11 @@
                     </p>
                 </div>
 
+                <!-- Mapa interactivo del destino: el hotel del paquete aparece destacado -->
+                <th:block th:if="${destino != null}">
+                    <div th:replace="~{fragments/mapa :: explorador(${destino.ciudad}, ${paquete.id})}"></div>
+                </th:block>
+
                 <!-- Atracciones reales cerca del centro (OpenTripMap o Wikipedia), sin enlaces -->
                 <div th:if="${info != null and info.atracciones() != null}" class="card tg-card tg-aparece">
                     <div class="card-body p-4 p-md-5">
