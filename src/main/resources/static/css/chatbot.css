@@ -140,8 +140,8 @@
 
 .tg-chat-sugerencias {
     display: flex;
+    flex-wrap: wrap;
     gap: .4rem;
-    overflow-x: auto;
     padding: .5rem .75rem;
     background: var(--tg-fondo);
     border-top: 1px solid var(--tg-linea);
