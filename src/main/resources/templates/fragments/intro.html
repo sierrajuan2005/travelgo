@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Intro de bienvenida de la página de inicio (Integrante 3). Ver static/js/intro.js.
+  Uso: <th:block th:replace="~{fragments/intro :: intro}"></th:block>
+  - Sale una vez por pestaña (sessionStorage): al abrir el enlace sí, al recargar (F5) o volver atrás no.
+  - No sale si el usuario pidió menos movimiento (prefers-reduced-motion) ni si JavaScript está apagado.
+  - El script en línea decide ANTES del primer pintado, así la página no parpadea.
+-->
+<th:block th:fragment="intro">
+    <link rel="stylesheet" th:href="@{/css/intro.css}">
+    <div id="tg-intro" class="tg-intro" data-state="off">
+        <canvas class="tg-intro-escena" aria-hidden="true"></canvas>
+        <div class="tg-intro-contenido">
+            <div class="tg-intro-logo">
+                <span class="tg-intro-logo-icono"><i class="bi bi-airplane-fill"></i></span> TravelGo
+            </div>
+            <p class="tg-intro-lema">De Valledupar al mundo</p>
+        </div>
+        <button type="button" class="tg-intro-saltar">Saltar intro <i class="bi bi-skip-forward-fill"></i></button>
+    </div>
+    <script>
+        (function () {
+            try {
+                var el = document.getElementById('tg-intro');
+                if (!el || sessionStorage.getItem('tg-intro-vista')) return;
+                sessionStorage.setItem('tg-intro-vista', '1');
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                el.setAttribute('data-state', 'on');
+                // Si intro.js no llega a arrancar, el velo se quita solo
+                setTimeout(function () {
+                    if (el.getAttribute('data-state') === 'on' && !el.hasAttribute('data-running')) {
+                        el.setAttribute('data-state', 'off');
+                    }
+                }, 7000);
+            } catch (e) { /* sin sessionStorage: no hay intro */ }
+        })();
+    </script>
+    <script th:src="@{/js/intro.js}" defer></script>
+</th:block>
+</body>
+</html>

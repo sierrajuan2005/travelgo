@@ -1,0 +1,102 @@
+/* Intro de bienvenida (fragments/intro.html + js/intro.js): globo 3D "De Valledupar al mundo". */
+
+.tg-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: none;
+    background:
+        radial-gradient(120% 80% at 50% 110%, rgba(128, 81, 255, 0.55) 0%, rgba(84, 51, 235, 0.18) 45%, transparent 70%),
+        linear-gradient(180deg, #0b0820 0%, #171040 55%, #2a1d74 100%);
+    color: #fff;
+    overflow: hidden;
+}
+
+.tg-intro[data-state="on"],
+.tg-intro[data-state="leaving"] { display: block; }
+
+.tg-intro[data-state="leaving"] {
+    opacity: 0;
+    transition: opacity .7s var(--ease-out, ease);
+}
+
+/* Mientras la intro está encima, la página de atrás no se desplaza */
+html:has(.tg-intro[data-state="on"]) { overflow: hidden; }
+
+.tg-intro-escena {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+
+.tg-intro-contenido {
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    transform: translate(-50%, -50%) translateY(14px);
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .8s var(--ease-out, ease), transform .8s var(--ease-out, ease);
+    width: min(90vw, 640px);
+}
+
+.tg-intro[data-fase="marca"] .tg-intro-contenido {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+}
+
+.tg-intro-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: .9rem;
+    font-family: var(--font-titulo, sans-serif);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    letter-spacing: -0.05em;
+    line-height: 1;
+}
+
+.tg-intro-logo-icono {
+    display: inline-grid;
+    place-items: center;
+    width: 1.15em;
+    height: 1.15em;
+    border-radius: .32em;
+    background: var(--tg-violeta, #5433eb);
+    box-shadow: 0 0 0 6px rgba(128, 81, 255, .22), 0 12px 40px rgba(84, 51, 235, .6);
+    font-size: .62em;
+}
+
+.tg-intro-lema {
+    margin: 1rem 0 0;
+    font-family: var(--font-serif, Georgia, serif);
+    font-style: italic;
+    font-size: clamp(1.15rem, 3vw, 1.6rem);
+    color: rgba(255, 255, 255, .78);
+}
+
+.tg-intro-saltar {
+    position: absolute;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, .35);
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+    border-radius: 999px;
+    padding: .45rem 1rem;
+    font-size: .85rem;
+    backdrop-filter: blur(6px);
+    transition: background .2s;
+}
+
+.tg-intro-saltar:hover,
+.tg-intro-saltar:focus-visible { background: rgba(255, 255, 255, .2); }
+
+@media (prefers-reduced-motion: reduce) {
+    .tg-intro { display: none !important; }
+}
+
+@media print {
+    .tg-intro { display: none !important; }
+}
