@@ -529,6 +529,53 @@ body.expo {
 
 .expo-contacto-listo p { margin: 0 0 .4rem; font-size: 1.05rem; }
 
+/* Invitación: quien abre la postal de un amigo */
+.expo-invitacion {
+    border-color: rgba(128, 81, 255, .6);
+    background: linear-gradient(160deg, rgba(128, 81, 255, .28), rgba(84, 51, 235, .08));
+}
+
+.expo-invitacion .expo-acciones { margin-top: 1rem; }
+
+/* Postal del viaje */
+.expo-postal { border-color: rgba(43, 212, 106, .45); }
+
+.expo-postal-marco {
+    position: relative;
+    margin: 0 0 1rem;
+    aspect-ratio: 1080 / 1350;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--expo-noche), var(--expo-noche-2));
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+}
+
+.expo-postal-imagen {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: expo-subir .6s var(--expo-ease) both;
+}
+
+.expo-postal-cargando {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    color: var(--expo-texto-suave);
+}
+
+.expo-postal-otras {
+    display: flex;
+    justify-content: center;
+    gap: 1.4rem;
+    margin-top: .8rem;
+}
+
 /* Pasos para activar WhatsApp y estado del mensaje */
 .expo-pasos-wa {
     margin: 1rem 0 0;
