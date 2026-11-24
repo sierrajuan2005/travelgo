@@ -123,7 +123,14 @@
     function avisar(viajes, ciudad) {
         const li = document.createElement('li');
         const quien = document.createElement('b');
-        if (viajes.length === 1) {
+        if (viajes.length === 1 && viajes[0].invitadoPor) {
+            // Llegó por la postal de un amigo
+            const amigo = document.createElement('b');
+            amigo.textContent = viajes[0].invitadoPor;
+            quien.textContent = viajes[0].nombre;
+            li.classList.add('expo-aviso-grupo');
+            li.append(quien, ' se unió al viaje de ', amigo, ' a ' + ciudad);
+        } else if (viajes.length === 1) {
             quien.textContent = viajes[0].nombre;
             li.append(quien, ' va de Valledupar a ' + ciudad);
         } else {

@@ -65,7 +65,10 @@ class BuscadorPaquetesBasicoTest {
 	@Test
 	@DisplayName("Con un solo paquete, ese es el más barato")
 	void unSoloPaquete() {
-		when(paqueteService.buscar(null, null, null, null, null)).thenReturn(List.of(paquete(1L, "A", "100")));
+		PaqueteTuristico p = paquete(1L, "A", "100");
+
+		when(paqueteService.buscar(null, null, null, null, null))
+				.thenReturn(List.of(p));
 
 		assertEquals(1, buscador.masBaratos(null).size());
 	}

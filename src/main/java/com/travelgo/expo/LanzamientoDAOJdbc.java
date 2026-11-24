@@ -17,7 +17,12 @@ import java.util.Optional;
 @Repository
 public class LanzamientoDAOJdbc implements LanzamientoDAO {
 
-    private static final String COLUMNAS = "id, nombre, destino_id, fecha, oculto, telefono";
+    /** Cada viaje con el nombre de quien lo invitó (misma tabla: el viaje que compartió la postal). */
+    private static final String SELECT = """
+            SELECT l.id, l.nombre, l.destino_id, l.fecha, l.oculto, l.telefono, l.invitado_por,
+                   i.nombre AS invitado_nombre
+            FROM lanzamiento_expo l LEFT JOIN lanzamiento_expo i ON i.id = l.invitado_por
+            """;
 
     private final JdbcTemplate jdbc;
 
@@ -26,12 +31,12 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     }
 
     @Override
-    public long guardar(String nombre, String destinoId, LocalDateTime fecha) {
+    public long guardar(String nombre, String destinoId, LocalDateTime fecha, Long invitadoPor) {
         try {
             Long id = jdbc.queryForObject("""
-                    INSERT INTO lanzamiento_expo (nombre, destino_id, fecha, oculto)
-                    VALUES (?, ?, ?, FALSE) RETURNING id
-                    """, Long.class, nombre, destinoId, fecha);
+                    INSERT INTO lanzamiento_expo (nombre, destino_id, fecha, oculto, invitado_por)
+                    VALUES (?, ?, ?, FALSE, ?) RETURNING id
+                    """, Long.class, nombre, destinoId, fecha, invitadoPor);
             if (id == null) {
                 throw new AccesoDatosException("La base de datos no devolvió el id del lanzamiento", null);
             }
@@ -44,7 +49,7 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     @Override
     public Optional<Lanzamiento> buscar(long id) {
         try {
-            return jdbc.query("SELECT " + COLUMNAS + " FROM lanzamiento_expo WHERE id = ?", this::mapear, id)
+            return jdbc.query(SELECT + "WHERE l.id = ?", this::mapear, id)
                     .stream().findFirst();
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo buscar el viaje lanzado " + id, e);
@@ -55,7 +60,7 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     public List<Lanzamiento> recientesVisibles(int limite) {
         try {
             List<Lanzamiento> lista = new ArrayList<>(jdbc.query(
-                    "SELECT " + COLUMNAS + " FROM lanzamiento_expo WHERE NOT oculto ORDER BY id DESC LIMIT ?",
+                    SELECT + "WHERE NOT l.oculto ORDER BY l.id DESC LIMIT ?",
                     this::mapear, limite));
             Collections.reverse(lista);
             return lista;
@@ -68,7 +73,7 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     public List<Lanzamiento> visiblesDesde(long desdeId, int limite) {
         try {
             return jdbc.query(
-                    "SELECT " + COLUMNAS + " FROM lanzamiento_expo WHERE NOT oculto AND id > ? ORDER BY id LIMIT ?",
+                    SELECT + "WHERE NOT l.oculto AND l.id > ? ORDER BY l.id LIMIT ?",
                     this::mapear, desdeId, limite);
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo listar los viajes nuevos", e);
@@ -78,7 +83,7 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     @Override
     public List<Lanzamiento> ultimos(int limite) {
         try {
-            return jdbc.query("SELECT " + COLUMNAS + " FROM lanzamiento_expo ORDER BY id DESC LIMIT ?",
+            return jdbc.query(SELECT + "ORDER BY l.id DESC LIMIT ?",
                     this::mapear, limite);
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo listar los viajes lanzados", e);
@@ -120,6 +125,11 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
     }
 
     @Override
+    public void marcarCompartioPostal(long id) {
+        marcar("UPDATE lanzamiento_expo SET compartio_postal = TRUE WHERE id = ? AND NOT compartio_postal", id);
+    }
+
+    @Override
     public void marcarAbrioPaquete(long id) {
         marcar("UPDATE lanzamiento_expo SET abrio_paquete = TRUE WHERE id = ? AND NOT abrio_paquete", id);
     }
@@ -154,12 +164,14 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
             return jdbc.queryForObject("""
                     SELECT COUNT(*) AS lanzaron,
                            COUNT(*) FILTER (WHERE vio_destino) AS vieron,
+                           COUNT(*) FILTER (WHERE compartio_postal) AS postal,
                            COUNT(telefono) AS contacto,
                            COUNT(*) FILTER (WHERE whatsapp_estado IN ('ENTREGADO', 'LEIDO')) AS whatsapp,
-                           COUNT(*) FILTER (WHERE abrio_paquete) AS paquete
+                           COUNT(*) FILTER (WHERE abrio_paquete) AS paquete,
+                           COUNT(invitado_por) AS invitados
                     FROM lanzamiento_expo WHERE NOT oculto
                     """, (rs, fila) -> new Embudo(rs.getLong("lanzaron"), rs.getLong("vieron"),
-                    rs.getLong("contacto"), rs.getLong("whatsapp"), rs.getLong("paquete")));
+                    rs.getLong("postal"), rs.getLong("contacto"), rs.getLong("whatsapp"), rs.getLong("paquete"), rs.getLong("invitados")));
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo calcular el embudo del stand", e);
         }
@@ -189,6 +201,8 @@ public class LanzamientoDAOJdbc implements LanzamientoDAO {
                 rs.getString("destino_id"),
                 rs.getObject("fecha", LocalDateTime.class),
                 rs.getBoolean("oculto"),
-                rs.getString("telefono"));
+                rs.getString("telefono"),
+                rs.getObject("invitado_por", Long.class),
+                rs.getString("invitado_nombre"));
     }
 }

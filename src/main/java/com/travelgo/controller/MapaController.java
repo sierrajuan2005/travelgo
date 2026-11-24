@@ -29,10 +29,15 @@ public class MapaController {
         return service.ciudades();
     }
 
+    @GetMapping("/ciudad")
+    public CiudadMapa ciudad(@RequestParam String id) { return service.ciudad(id); }
+
     /** Ejemplo: /api/mapa/lugares?ciudad=cartagena&categorias=RESTAURANTE,CAFE. Sin categorías trae todas. */
     @GetMapping("/lugares")
     public MapaRespuestaDTO lugares(@RequestParam String ciudad,
-                                    @RequestParam(required = false) List<CategoriaMapa> categorias) {
-        return service.lugares(ciudad, categorias, RADIO_METROS, LIMITE);
+                                    @RequestParam(required = false) List<CategoriaMapa> categorias,
+                                    @RequestParam(defaultValue = "5000") int radio,
+                                    @RequestParam(defaultValue = "30") int limite) {
+        return service.lugares(ciudad, categorias, Math.max(100, Math.min(20000, radio)), Math.max(1, Math.min(50, limite)));
     }
 }

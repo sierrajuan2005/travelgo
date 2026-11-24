@@ -1,0 +1,77 @@
+/*
+ * Panel de estado de las APIs (admin/estado.html). Colores de estado reservados (bien, atención, grave,
+ * falló): siempre van con ícono y texto, nunca solos. Las llamadas que respondieron usan el violeta de TravelGo.
+ */
+:root {
+    --estado-bien: #0ca30c;
+    --estado-atencion: #fab219;
+    --estado-grave: #ec835a;
+    --estado-fallo: #d03b3b;
+    --estado-neutro: #8a8a80;
+    --estado-ok: var(--tg-violeta, #5433eb);
+    --estado-base: #c3c2b7;
+}
+
+.tg-estado-tarjeta { border-top: 4px solid transparent; transition: border-color .3s; }
+.tg-estado-tarjeta[data-semaforo="VERDE"] { border-top-color: var(--estado-bien); }
+.tg-estado-tarjeta[data-semaforo="AMARILLO"] { border-top-color: var(--estado-atencion); }
+.tg-estado-tarjeta[data-semaforo="ROJO"] { border-top-color: var(--estado-fallo); }
+.tg-estado-tarjeta[data-semaforo="SIMULADA"] { border-top-color: var(--estado-grave); }
+.tg-estado-tarjeta[data-semaforo="SIN_DATOS"] { border-top-color: var(--estado-base); }
+
+/* Píldora del semáforo: el texto va en tinta; el color lo lleva el ícono */
+.tg-estado-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    flex: none;
+    padding: .2rem .6rem;
+    border-radius: 99px;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--tg-tinta, #1d1d16);
+    background: #f1f0ea;
+    white-space: nowrap;
+}
+
+.tg-estado-pill[data-semaforo="VERDE"] i { color: var(--estado-bien); }
+.tg-estado-pill[data-semaforo="AMARILLO"] i { color: #b37c00; }
+.tg-estado-pill[data-semaforo="ROJO"] i { color: var(--estado-fallo); }
+.tg-estado-pill[data-semaforo="SIMULADA"] i { color: var(--estado-grave); }
+.tg-estado-pill[data-semaforo="SIN_DATOS"] i { color: var(--estado-neutro); }
+
+.tg-estado-cifra {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.tg-estado-cifra small { font-size: .9rem; font-weight: 500; color: var(--tg-tinta-suave, #6f6f66); }
+
+.tg-estado-grafico { width: 160px; height: 48px; flex: none; overflow: visible; }
+.tg-estado-base { stroke: var(--estado-base); stroke-width: 1; }
+.tg-estado-grafico rect[data-resultado="OK"], .tg-estado-muestra[data-resultado="OK"] { fill: var(--estado-ok); background: var(--estado-ok); }
+.tg-estado-grafico rect[data-resultado="VACIA"], .tg-estado-muestra[data-resultado="VACIA"] { fill: var(--estado-atencion); background: var(--estado-atencion); }
+.tg-estado-grafico rect[data-resultado="ERROR"], .tg-estado-muestra[data-resultado="ERROR"] { fill: var(--estado-fallo); background: var(--estado-fallo); }
+.tg-estado-grafico rect[data-resultado="SIMULADA"], .tg-estado-muestra[data-resultado="SIMULADA"] { fill: var(--estado-grave); background: var(--estado-grave); }
+.tg-estado-grafico rect[data-resultado="CACHE"], .tg-estado-muestra[data-resultado="CACHE"] { fill: var(--estado-base); background: var(--estado-base); }
+.tg-estado-grafico rect:hover { opacity: .75; }
+
+.tg-estado-leyenda { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; }
+.tg-estado-leyenda span { display: inline-flex; align-items: center; gap: .35rem; }
+.tg-estado-muestra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+
+.tg-estado-error { color: var(--tg-tinta, #1d1d16); border-left: 3px solid var(--estado-fallo); padding-left: .5rem; }
+
+.tg-estado-alerta {
+    padding: .7rem 1rem;
+    border-radius: .7rem;
+    background: #fdecea;
+    border-left: 4px solid var(--estado-fallo);
+}
+.tg-estado-alerta i { color: var(--estado-fallo); }
+
+.tg-estado-ocupado { cursor: progress; }
+.tg-estado-ocupado button { pointer-events: none; opacity: .7; }

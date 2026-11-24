@@ -36,6 +36,10 @@ public class MapaService {
         this.proveedorHoteles = proveedorHoteles;
     }
 
+    public CiudadMapa ciudad(String id) {
+        return ciudades.buscar(id).orElseThrow(() -> new RecursoNoEncontradoException("Ciudad no disponible: " + id));
+    }
+
     public List<CiudadMapa> ciudades() {
         return ciudades.todas();
     }
@@ -44,14 +48,19 @@ public class MapaService {
         CiudadMapa ciudad = ciudades.buscar(ciudadId).orElseThrow(
                 () -> new RecursoNoEncontradoException("Ciudad no disponible en el mapa: " + ciudadId));
         Set<CategoriaMapa> pedidas = (categorias == null || categorias.isEmpty())
-                ? EnumSet.allOf(CategoriaMapa.class) : EnumSet.copyOf(categorias);
+                ? EnumSet.of(CategoriaMapa.RESTAURANTE, CategoriaMapa.CAFE, CategoriaMapa.HOTEL, CategoriaMapa.SITIO_TURISTICO, CategoriaMapa.MUSEO) : EnumSet.copyOf(categorias);
 
         List<LugarMapa> lugares = new ArrayList<>();
         List<String> avisos = new ArrayList<>();
         for (CategoriaMapa categoria : pedidas) {
             try {
                 if (categoria == CategoriaMapa.HOTEL) {
-                    lugares.addAll(hoteles(ciudad, LIMITE_HOTELES));                } else {
+                    if (ciudad.xoteloClave() != null) {
+                        lugares.addAll(hoteles(ciudad, LIMITE_HOTELES));
+                    } else {
+                        lugares.addAll(proveedorLugares.buscar(categoria, ciudad.latitud(), ciudad.longitud(), radio, limite));
+                    }
+                } else {
                     lugares.addAll(proveedorLugares.buscar(categoria, ciudad.latitud(), ciudad.longitud(),
                             radio, limite));
                 }
@@ -59,7 +68,15 @@ public class MapaService {
                 avisos.add(categoria.etiqueta() + ": " + e.getMessage());
             }
         }
-        return new MapaRespuestaDTO(ciudad, lugares, avisos);
+        java.util.Map<String, LugarMapa> unicos = new java.util.LinkedHashMap<>();
+        for (LugarMapa l : lugares) {
+            if (!Double.isFinite(l.latitud()) || !Double.isFinite(l.longitud())) continue;
+            // Los hoteles conservan el catálogo completo para localizar el hotel del paquete.
+            if (l.categoria() != CategoriaMapa.HOTEL && LugarMapa.distanciaMetros(ciudad.latitud(), ciudad.longitud(), l.latitud(), l.longitud()) > radio) continue;
+            String clave = l.fuente() + "|" + l.id();
+            unicos.merge(clave, l, (a,b) -> a.categoria() == CategoriaMapa.SITIO_TURISTICO ? b : a);
+        }
+        return new MapaRespuestaDTO(ciudad, List.copyOf(unicos.values()), avisos);
     }
 
     private List<LugarMapa> hoteles(CiudadMapa ciudad, int limite) {

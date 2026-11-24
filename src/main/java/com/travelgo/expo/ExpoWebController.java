@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,18 +37,35 @@ public class ExpoWebController {
     private final LanzamientoService service;
     private final DestinoExpoService destinoExpo;
     private final WhatsAppExpoService whatsApp;
+    private final FotosPostal fotosPostal;
     private final UrlTelefono urlTelefono;
 
     public ExpoWebController(LanzamientoService service, DestinoExpoService destinoExpo, WhatsAppExpoService whatsApp,
-                             UrlTelefono urlTelefono) {
+                             FotosPostal fotosPostal, UrlTelefono urlTelefono) {
         this.service = service;
         this.destinoExpo = destinoExpo;
         this.whatsApp = whatsApp;
+        this.fotosPostal = fotosPostal;
         this.urlTelefono = urlTelefono;
     }
 
+    /**
+     * Página del celular. Desde la postal de un amigo llega con {@code ?destino=paris&con=12}: el destino queda
+     * elegido y arriba dice a quién se une. Si el viaje del amigo no existe (o lo ocultaron), es la página normal.
+     */
     @GetMapping("/expo")
-    public String lanzar(Model model) {
+    public String lanzar(@RequestParam(required = false) String destino, @RequestParam(required = false) Long con,
+                         Model model) {
+        if (con != null) {
+            try {
+                LanzamientoService.ViajeLanzado invitacion = service.viaje(con);
+                model.addAttribute("invitacion", invitacion);
+                destino = destino == null ? invitacion.destino().id() : destino;
+            } catch (RecursoNoEncontradoException e) {
+                // Enlace viejo o viaje oculto: se lanza normal
+            }
+        }
+        model.addAttribute("destinoElegido", destino == null ? "" : destino);
         // Agrupados por región, en el orden del catálogo (Colombia primero)
         Map<String, List<DestinoSonado>> regiones = service.destinos().stream().collect(
                 Collectors.groupingBy(DestinoSonado::region, LinkedHashMap::new, Collectors.toList()));
@@ -60,7 +78,7 @@ public class ExpoWebController {
      * Solo la visita del propio visitante cuenta en el embudo.
      */
     @GetMapping("/expo/viaje/{id}")
-    public String viaje(@PathVariable long id, HttpSession sesion, Model model) {
+    public String viaje(@PathVariable long id, HttpSession sesion, HttpServletRequest peticion, Model model) {
         LanzamientoService.ViajeLanzado viaje;
         try {
             viaje = service.viaje(id);
@@ -83,7 +101,27 @@ public class ExpoWebController {
         model.addAttribute("whatsappDisponible", whatsApp.disponible());
         model.addAttribute("enlaceActivacion", whatsApp.enlaceActivacion());
         model.addAttribute("estadoWhatsApp", propio ? whatsApp.estadoGuardado(id).orElse("") : "");
+        // Enlace que va en la postal compartida: la dirección pública (túnel), la misma del QR
+        model.addAttribute("urlCompartir", urlTelefono.resolver(peticion).base() + "/expo/viaje/" + id);
         return "expo/destino";
+    }
+
+    /**
+     * Foto del destino servida desde TravelGo, para que el celular pueda dibujar la postal y compartirla
+     * (ver {@link FotosPostal}). 404 si el destino no tiene foto.
+     */
+    @GetMapping("/expo/viaje/{id}/foto")
+    public ResponseEntity<byte[]> fotoPostal(@PathVariable long id) {
+        try {
+            return fotosPostal.foto(service.viaje(id).destino())
+                    .map(f -> ResponseEntity.ok()
+                            .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePublic())
+                            .contentType(MediaType.parseMediaType(f.tipo()))
+                            .body(f.datos()))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (RecursoNoEncontradoException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /** Abre un paquete desde la página del destino y lo cuenta en el embudo ("abrió un paquete"). */

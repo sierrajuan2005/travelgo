@@ -21,6 +21,8 @@
 <main id="expo-lanzar" class="expo-cel-app"
       th:data-api="@{/api/expo/lanzamientos}"
       th:data-viaje="@{/expo/viaje/}"
+      th:data-destino-elegido="${destinoElegido}"
+      th:data-invitado-por="${invitacion != null ? invitacion.lanzamiento().id() : ''}"
       th:data-csrf-header="${_csrf?.headerName}"
       th:data-csrf-token="${_csrf?.token}">
 
@@ -33,9 +35,18 @@
 
     <!-- Paso 1: nombre y destino -->
     <form class="expo-cel-paso" data-paso="elegir" novalidate>
-        <h1 class="expo-titulo">¿A dónde <em>sueñas</em> viajar?</h1>
-        <p class="expo-cel-intro">Elige un destino y tu avión saldrá de <strong>Valledupar</strong> en la pantalla
-            del stand, con tu nombre.</p>
+        <th:block th:if="${invitacion == null}">
+            <h1 class="expo-titulo">¿A dónde <em>sueñas</em> viajar?</h1>
+            <p class="expo-cel-intro">Elige un destino y tu avión saldrá de <strong>Valledupar</strong> en la pantalla
+                del stand, con tu nombre.</p>
+        </th:block>
+        <!-- Llegó desde la postal de un amigo: se une a su viaje (el destino ya va elegido, lo puede cambiar) -->
+        <th:block th:if="${invitacion != null}">
+            <p class="expo-eyebrow">Te invitaron</p>
+            <h1 class="expo-titulo">Únete al viaje de <em th:text="${invitacion.lanzamiento().nombre()}">Jaime</em></h1>
+            <p class="expo-cel-intro">Escribe tu nombre y tu avión saldrá de <strong>Valledupar</strong> a
+                <strong th:text="${invitacion.destino().ciudad()}">París</strong> en la pantalla del stand, junto al suyo.</p>
+        </th:block>
 
         <label class="expo-campo">
             <span>Tu nombre</span>

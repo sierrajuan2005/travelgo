@@ -20,11 +20,11 @@ import java.nio.charset.StandardCharsets;
 /**
  * WhatsApp con la API de mensajes de Twilio (adaptador). Para la ExpoSoftware se usa el <b>sandbox</b> de
  * WhatsApp de Twilio: es gratis y funciona con la cuenta de prueba, pero cada persona primero envía
- * "join palabra-palabra" al número del sandbox (el enlace de {@link #enlaceActivacion()} lo deja escrito).
+ * "join <código>" al número del sandbox (el enlace de {@link #enlaceActivacion()} lo deja escrito).
  *
  * Usa las mismas credenciales del SMS ({@code TWILIO_ACCOUNT_SID}, {@code TWILIO_AUTH_TOKEN}) y además:
  * - {@code TRAVELGO_WHATSAPP_NUMERO}: número de WhatsApp de Twilio (sandbox: +14155238886).
- * - {@code TRAVELGO_WHATSAPP_CODIGO}: código del sandbox tal como sale en la consola ("join palabra-palabra").
+ * - {@code TRAVELGO_WHATSAPP_CODIGO}: código del sandbox tal como sale en la consola ("join happy-tiger"; cada cuenta tiene el suyo).
  */
 @Component
 public class TwilioWhatsApp implements CanalWhatsApp {
@@ -47,7 +47,7 @@ public class TwilioWhatsApp implements CanalWhatsApp {
         this.accountSid = limpiar(accountSid);
         this.authToken = limpiar(authToken);
         this.numero = limpiar(numero);
-        this.codigoSandbox = limpiar(codigoSandbox);
+        this.codigoSandbox = codigoValido(codigoSandbox);
         if (!configurado()) {
             LOG.info("WhatsApp de la expo desactivado: faltan TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN o "
                     + "TRAVELGO_WHATSAPP_CODIGO (ver docs/expo_lanza_tu_viaje.md).");
@@ -108,6 +108,27 @@ public class TwilioWhatsApp implements CanalWhatsApp {
         } catch (RestClientException e) {
             throw new WhatsAppException("No se pudo consultar el WhatsApp en Twilio: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * El código tal como lo pide Twilio: "join happy-tiger". Si alguien pone solo las dos palabras, se le
+     * agrega "join ". El ejemplo de la documentación ("palabra-palabra") no sirve: se descarta con un aviso,
+     * porque Twilio responde "Failed to join sandbox" y el visitante no entiende por qué.
+     */
+    static String codigoValido(String codigo) {
+        String c = limpiar(codigo);
+        if (c.isEmpty()) {
+            return "";
+        }
+        if (!c.toLowerCase().startsWith("join ")) {
+            c = "join " + c;
+        }
+        if (c.toLowerCase().contains("palabra-palabra")) {
+            LOG.warn("TRAVELGO_WHATSAPP_CODIGO tiene el ejemplo de la documentación ('{}'). Pon el código real "
+                    + "del sandbox (consola de Twilio → Messaging → Try it out → Send a WhatsApp message).", c);
+            return "";
+        }
+        return c;
     }
 
     private static String limpiar(String valor) {
