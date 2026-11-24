@@ -35,6 +35,25 @@ public final class CodigosDestino {
         POR_CIUDAD.put("bogota", new Codigos("BOG", "g294074"));
         POR_CIUDAD.put("cusco", new Codigos("CUZ", "g294314"));
         POR_CIUDAD.put("cancun", new Codigos("CUN", "g150807"));
+        // Catálogo ampliado: identificadores de ciudad de TripAdvisor.
+        POR_CIUDAD.put("dubai", new Codigos("DXB", "g295424"));
+        POR_CIUDAD.put("santa marta", new Codigos("SMR", "g297484"));
+        POR_CIUDAD.put("medellin", new Codigos("MDE", "g297478"));
+        POR_CIUDAD.put("ciudad de mexico", new Codigos("MEX", "g150800"));
+        POR_CIUDAD.put("punta cana", new Codigos("PUJ", "g147293"));
+        POR_CIUDAD.put("miami", new Codigos("MIA", "g34438"));
+        POR_CIUDAD.put("nueva york", new Codigos("JFK", "g60763"));
+        POR_CIUDAD.put("rio de janeiro", new Codigos("GIG", "g303506"));
+        POR_CIUDAD.put("buenos aires", new Codigos("EZE", "g312741"));
+        POR_CIUDAD.put("madrid", new Codigos("MAD", "g187514"));
+        POR_CIUDAD.put("paris", new Codigos("CDG", "g187147"));
+        POR_CIUDAD.put("londres", new Codigos("LHR", "g186338"));
+        POR_CIUDAD.put("roma", new Codigos("FCO", "g187791"));
+        POR_CIUDAD.put("el cairo", new Codigos("CAI", "g294201"));
+        POR_CIUDAD.put("tokio", new Codigos("HND", "g298184"));
+        POR_CIUDAD.put("seul", new Codigos("ICN", "g294197"));
+        POR_CIUDAD.put("sidney", new Codigos("SYD", "g255060"));
+        POR_CIUDAD.put("san andres", new Codigos("ADZ", "g297482"));
     }
 
     private CodigosDestino() {
