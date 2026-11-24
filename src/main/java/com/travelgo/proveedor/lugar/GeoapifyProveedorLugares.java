@@ -96,7 +96,7 @@ public class GeoapifyProveedorLugares implements ProveedorLugares {
                             && p.lat() != null && p.lon() != null)
                     .map(p -> new LugarMapa(
                             p.placeId() != null ? p.placeId() : categoria + "-" + p.lat() + "-" + p.lon(),
-                            p.name(), categoria, p.lat(), p.lon(), p.formatted(), p.website(), null, FUENTE))
+                            p.name(), CategoriaMapa.clasificar(categoria, p.categories()), p.lat(), p.lon(), p.formatted(), p.website(), null, FUENTE))
                     .toList();
         } catch (RestClientException e) {
             // Sin e.getMessage(): podría traer la URL con la llave y llegar al navegador.
@@ -119,5 +119,5 @@ public class GeoapifyProveedorLugares implements ProveedorLugares {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record Propiedades(String name, String formatted, @JsonProperty("place_id") String placeId,
-                       Double lat, Double lon, String website) { }
+                       Double lat, Double lon, String website, List<String> categories) { }
 }
