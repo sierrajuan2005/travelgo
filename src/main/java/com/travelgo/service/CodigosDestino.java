@@ -35,6 +35,12 @@ public final class CodigosDestino {
         POR_CIUDAD.put("bogota", new Codigos("BOG", "g294074"));
         POR_CIUDAD.put("cusco", new Codigos("CUZ", "g294314"));
         POR_CIUDAD.put("cancun", new Codigos("CUN", "g150807"));
+        // Agregados con el constructor el 2026-11-23 (claves de Xotelo verificadas con su API)
+        POR_CIUDAD.put("santa marta", new Codigos("SMR", "g297484"));
+        POR_CIUDAD.put("medellin", new Codigos("MDE", "g297478"));
+        POR_CIUDAD.put("punta cana", new Codigos("PUJ", "g147293"));
+        POR_CIUDAD.put("miami", new Codigos("MIA", "g34438"));
+        POR_CIUDAD.put("madrid", new Codigos("MAD", "g187514"));
         POR_CIUDAD.put("dubai", new Codigos("DXB", "g295424"));
         POR_CIUDAD.put("santa marta", new Codigos("SMR", "g297484"));
         POR_CIUDAD.put("medellin", new Codigos("MDE", "g297478"));
