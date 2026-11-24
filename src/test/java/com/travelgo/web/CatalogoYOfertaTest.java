@@ -31,9 +31,9 @@ class CatalogoYOfertaTest {
 	}
 
 	private final List<PaqueteTuristico> paquetes = List.of(
-		paquete(1, "Cartagena Esencial", "1200000", 4, "Cartagena", "Colombia"),
-		paquete(2, "Bogotá Cultural", "800000", 3, "Bogotá", "Colombia"),
-		paquete(3, "Machu Picchu Aventura", "3500000", 7, "Cusco", "Perú"));
+			paquete(1, "Cartagena Esencial", "1200000", 4, "Cartagena", "Colombia"),
+			paquete(2, "Bogotá Cultural", "800000", 3, "Bogotá", "Colombia"),
+			paquete(3, "Machu Picchu Aventura", "3500000", 7, "Cusco", "Perú"));
 
 	@Test
 	@DisplayName("Filtra por destino sin importar tildes ni mayúsculas")
@@ -56,11 +56,11 @@ class CatalogoYOfertaTest {
 	void ofertaPorCiudad() {
 		LocalDateTime salida = LocalDateTime.of(2026, 12, 10, 8, 0);
 		List<ServicioReservable> servicios = List.of(
-			new Vuelo("v1", 450000, true, "Avianca", "Bogotá", "Cartagena", salida, salida.plusHours(2)),
-			new Vuelo("v2", 520000, true, "LATAM", "Bogotá", "Cusco", salida, salida.plusHours(4)),
-			new Hotel("h1", 200000, true, "Hotel Caribe", "Bocagrande, Cartagena", "Doble", 3),
-			new Hotel("h2", 300000, true, "Hotel Andino", "Centro histórico, Cusco", "Suite", 2),
-			new Transporte("t1", 80000, true, "Bus", "Cartagena", "Barranquilla", salida));
+				new Vuelo("v1", 450000, true, "Avianca", "Bogotá", "Cartagena", salida, salida.plusHours(2)),
+				new Vuelo("v2", 520000, true, "LATAM", "Bogotá", "Cusco", salida, salida.plusHours(4)),
+				new Hotel("h1", 200000, true, "Hotel Caribe", "Bocagrande, Cartagena", "Doble", 3),
+				new Hotel("h2", 300000, true, "Hotel Andino", "Centro histórico, Cusco", "Suite", 2),
+				new Transporte("t1", 80000, true, "Bus", "Cartagena", "Barranquilla", salida));
 
 		OfertaPaquete oferta = OfertaPaquete.de(paquetes.get(0), servicios);
 
@@ -97,5 +97,16 @@ class CatalogoYOfertaTest {
 		assertTrue(oferta.transportes().isEmpty());
 		assertTrue(oferta.buscar("h-real").isPresent());
 		assertTrue(oferta.buscar("otro").isEmpty());
+	}
+	@Test
+	void serviciosIncluidosSeReservanUnaSolaVez() {
+		LocalDateTime salida = LocalDateTime.of(2026, 12, 10, 8, 0);
+		Vuelo vuelo = new Vuelo("v", 700000, true, "Avianca", "BOG", "MIA", salida, salida.plusHours(3));
+		Hotel hotel = new Hotel("h", 400000, true, "Hotel", "Miami", "Doble", 2);
+		OfertaPaquete oferta = OfertaPaquete.incluidos(List.of(vuelo, hotel, hotel));
+		assertEquals(List.of("v", "h"), oferta.seleccionar(true, null, null, null));
+		assertEquals(List.of("v", "h"), oferta.seleccionar(true, "h", "otro", null));
+		assertEquals(List.of("v", "h"), oferta.seleccionar(false, "v", "h", null));
+		assertTrue(oferta.seleccionar(false, "h", "v", null).isEmpty());
 	}
 }
