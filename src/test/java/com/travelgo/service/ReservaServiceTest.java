@@ -19,6 +19,7 @@ import com.travelgo.model.RolUsuario;
 import com.travelgo.model.Transporte;
 import com.travelgo.model.Usuario;
 import com.travelgo.model.Vuelo;
+import com.travelgo.dao.PaqueteServicioDAO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +66,8 @@ class ReservaServiceTest {
     private PaqueteDAO paqueteDAO;
     @Mock
     private PagoDAO pagoDAO;
+    @Mock
+    private PaqueteServicioDAO paqueteServicioDAO;
 
     @InjectMocks
     private ReservaService service;

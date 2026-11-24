@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import com.travelgo.dao.PagoDAO;
 import com.travelgo.model.EstadoPago;
 import com.travelgo.model.Pago;
+import com.travelgo.dao.PaqueteServicioDAO;
 
 
 import java.util.List;
@@ -28,13 +29,15 @@ public class ReservaService {
     private final UsuarioDAO usuarioDAO;
     private final PaqueteDAO paqueteDAO;
     private final PagoDAO pagoDAO;
+    private final PaqueteServicioDAO paqueteServicioDAO;
 
-    public ReservaService(ReservaDAO reservaDAO,ServicioReservableDAO servicioDAO,UsuarioDAO usuarioDAO,PaqueteDAO paqueteDAO,PagoDAO pagoDAO) {
+    public ReservaService(ReservaDAO reservaDAO,ServicioReservableDAO servicioDAO,UsuarioDAO usuarioDAO,PaqueteDAO paqueteDAO,PagoDAO pagoDAO,PaqueteServicioDAO paqueteServicioDAO) {
         this.reservaDAO = reservaDAO;
         this.servicioDAO = servicioDAO;
         this.usuarioDAO = usuarioDAO;
         this.paqueteDAO = paqueteDAO;
         this.pagoDAO = pagoDAO;
+        this.paqueteServicioDAO = paqueteServicioDAO;
     }
 
     /** Crea la reserva; si un servicio no existe o no está disponible, no se guarda nada. */
@@ -51,7 +54,20 @@ public class ReservaService {
 
         Reserva reserva = new Reserva(usuario, paquete);
 
-        for (String idServicio : request.serviciosIds()) {
+        if (paquete != null) {
+            for (ServicioReservable servicio : paqueteServicioDAO.listarServicios(paquete.getId())) {
+                reserva.agregarServicio(servicio);
+            }
+        }
+
+                for (String idServicio : request.serviciosIds()) {
+            boolean yaIncluido = reserva.getServicios().stream()
+                    .anyMatch(servicio -> servicio.getId().equals(idServicio));
+
+            if (yaIncluido) {
+                continue;
+            }
+
             ServicioReservable servicio = servicioDAO.buscarPorId(idServicio)
                     .orElseThrow(() -> new RecursoNoEncontradoException(
                             "Servicio no encontrado: " + idServicio));

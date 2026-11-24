@@ -21,51 +21,51 @@ import java.util.Optional;
 @Component
 public class BuscadorPaquetesBasico implements BuscadorPaquetes {
 
-	private final PaqueteService paqueteService;
-	private final PaqueteServicioDAO paqueteServicioDAO;
-	private final ClasificadorGama clasificador;
+    private final PaqueteService paqueteService;
+    private final PaqueteServicioDAO paqueteServicioDAO;
+    private final ClasificadorGama clasificador;
 
-	public BuscadorPaquetesBasico(PaqueteService paqueteService, PaqueteServicioDAO paqueteServicioDAO,
-			ClasificadorGama clasificador) {
-		this.paqueteService = paqueteService;
-		this.paqueteServicioDAO = paqueteServicioDAO;
-		this.clasificador = clasificador;
-	}
+    public BuscadorPaquetesBasico(PaqueteService paqueteService, PaqueteServicioDAO paqueteServicioDAO,
+            ClasificadorGama clasificador) {
+        this.paqueteService = paqueteService;
+        this.paqueteServicioDAO = paqueteServicioDAO;
+        this.clasificador = clasificador;
+    }
 
-	@Override
-	public List<PaqueteTuristico> porDestino(String destino) {
-		return paqueteService.buscar(destino, null, null, null, null);
-	}
+    @Override
+    public List<PaqueteTuristico> porDestino(String destino) {
+        return paqueteService.buscar(destino, null, null, null, null, null, null, false, null);
+    }
 
-	@Override
-	public List<PaqueteTuristico> masBaratos(String destino) {
-		List<PaqueteTuristico> ordenados = porDestino(destino).stream()
-			.sorted(Comparator.comparing(PaqueteTuristico::getPrecio))
-			.toList();
-		int tercio = (int) Math.ceil(ordenados.size() / 3.0);
-		return ordenados.subList(0, tercio);
-	}
+    @Override
+    public List<PaqueteTuristico> masBaratos(String destino) {
+        List<PaqueteTuristico> ordenados = porDestino(destino).stream()
+            .sorted(Comparator.comparing(PaqueteTuristico::getPrecio))
+            .toList();
+        int tercio = (int) Math.ceil(ordenados.size() / 3.0);
+        return ordenados.subList(0, tercio);
+    }
 
-	/** Paquetes del destino con al menos un hotel de esa gama, del más barato al más caro. */
-	@Override
-	public Optional<List<PaqueteTuristico>> porGama(String destino, Gama gama) {
-		if (gama == null) {
-			return Optional.of(List.of());
-		}
-		GamaHotel buscada = GamaHotel.valueOf(gama.name());
-		List<PaqueteTuristico> encontrados = porDestino(destino).stream()
-			.filter(paquete -> tieneHotelDeGama(paquete, buscada))
-			.sorted(Comparator.comparing(PaqueteTuristico::getPrecio))
-			.toList();
-		return Optional.of(encontrados);
-	}
+    /** Paquetes del destino con al menos un hotel de esa gama, del más barato al más caro. */
+    @Override
+    public Optional<List<PaqueteTuristico>> porGama(String destino, Gama gama) {
+        if (gama == null) {
+            return Optional.of(List.of());
+        }
+        GamaHotel buscada = GamaHotel.valueOf(gama.name());
+        List<PaqueteTuristico> encontrados = porDestino(destino).stream()
+            .filter(paquete -> tieneHotelDeGama(paquete, buscada))
+            .sorted(Comparator.comparing(PaqueteTuristico::getPrecio))
+            .toList();
+        return Optional.of(encontrados);
+    }
 
-	private boolean tieneHotelDeGama(PaqueteTuristico paquete, GamaHotel buscada) {
-		for (ServicioReservable servicio : paqueteServicioDAO.listarServicios(paquete.getId())) {
-			if (servicio instanceof Hotel hotel && clasificador.gamaDe(hotel) == buscada) {
-				return true;
-			}
-		}
-		return false;
-	}
+    private boolean tieneHotelDeGama(PaqueteTuristico paquete, GamaHotel buscada) {
+        for (ServicioReservable servicio : paqueteServicioDAO.listarServicios(paquete.getId())) {
+            if (servicio instanceof Hotel hotel && clasificador.gamaDe(hotel) == buscada) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

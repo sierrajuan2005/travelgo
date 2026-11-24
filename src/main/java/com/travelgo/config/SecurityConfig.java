@@ -10,8 +10,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.http.HttpMethod;
 
 /**
- * Configuración base de seguridad: rutas públicas y página de login propia.
- * Integrante 1 la amplía con el UserDetailsService, el PasswordEncoder y los permisos por rol.
+ * ConfiguraciÃ³n base de seguridad: rutas pÃºblicas y pÃ¡gina de login propia.
+ * Integrante 1 la amplÃ­a con el UserDetailsService, el PasswordEncoder y los permisos por rol.
  */
 @Configuration
 @EnableWebSecurity
@@ -41,11 +41,11 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**")
                     .hasRole("ADMINISTRADOR")
 
-                // Gestión de agentes
+                // GestiÃ³n de agentes
                 .requestMatchers("/agente/**")
                     .hasAnyRole("AGENTE", "ADMINISTRADOR")
 
-                // Área del cliente
+                // Ãrea del cliente
                 .requestMatchers("/cliente/**")
                     .hasRole("CLIENTE")
 
@@ -55,10 +55,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/destinos/**")
                     .hasRole("ADMINISTRADOR")
 
-                // Paquetes: consulta autenticada
+                // Paquetes: consulta para usuarios autenticados.
                 .requestMatchers(HttpMethod.GET, "/api/paquetes/**")
                     .authenticated()
                 .requestMatchers("/api/paquetes/**")
+                    .hasRole("ADMINISTRADOR")
+
+                // Paquetes reales: consulta autenticada y armado exclusivo del administrador.
+                .requestMatchers(HttpMethod.GET, "/api/paquetes-reales/**")
+                    .authenticated()
+                .requestMatchers("/api/paquetes-reales/**")
                     .hasRole("ADMINISTRADOR")
 
                 // Servicios: consulta autenticada
@@ -104,6 +110,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/hoteles-reales/**")
                     .denyAll()
 
+                // Facturas: consulta para clientes, agentes y administradores.
+                // La propiedad de las facturas de clientes se valida en FacturaService.
+                .requestMatchers(HttpMethod.GET, "/api/facturas/**")
+                    .hasAnyRole("CLIENTE", "AGENTE", "ADMINISTRADOR")
+
+                .requestMatchers("/api/facturas/**")
+                    .denyAll()
+
                 // Cupones: consulta para usuarios autenticados.
                 .requestMatchers(HttpMethod.GET, "/api/cupones/**")
                     .authenticated()
@@ -133,7 +147,7 @@ public class SecurityConfig {
 		return http.build();
 	}
 	/**
-     * Proporciona el codificador BCrypt para las contraseñas.
+     * Proporciona el codificador BCrypt para las contraseÃ±as.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

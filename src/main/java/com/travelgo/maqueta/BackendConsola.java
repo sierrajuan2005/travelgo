@@ -41,7 +41,9 @@ public final class BackendConsola {
 	/** El mismo codificador BCrypt que usa SecurityConfig para la web. */
 	private static final PasswordEncoder ENCRIPTADOR = new BCryptPasswordEncoder();
 
-	public static final UsuarioService USUARIOS = new UsuarioService(new UsuarioDAOMemoria());
+	private static final UsuarioDAOMemoria USUARIO_DAO = new UsuarioDAOMemoria();
+
+public static final UsuarioService USUARIOS = new UsuarioService(USUARIO_DAO);
 
 	public static final ReservaDAO RESERVAS = new ReservaDAOMemoria();
 
@@ -49,7 +51,8 @@ public final class BackendConsola {
 
 	public static final PagoService PAGOS = new PagoService(new PagoDAOMemoria(), FACTURA_DAO, RESERVAS);
 
-	public static final FacturaService FACTURAS = new FacturaService(FACTURA_DAO);
+	public static final FacturaService FACTURAS =
+        new FacturaService(FACTURA_DAO, USUARIO_DAO);
 
 	static {
 		crearUsuariosDeEjemplo();

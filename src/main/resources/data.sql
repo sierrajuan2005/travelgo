@@ -49,6 +49,7 @@ INSERT INTO paquete_destino (paquete_id, destino_id) VALUES
  (1, 1), (2, 2), (3, 3), (4, 4), (5, 2)
 ON CONFLICT DO NOTHING;
 
+
 -- ---------- Servicios reservables ----------
 INSERT INTO servicio_reservable (id, precio, disponible, tipo) VALUES
  ('s-vuelo-1',  450000.00, TRUE,  'VUELO'),
@@ -75,6 +76,15 @@ INSERT INTO transporte (id, tipo, origen, destino, fecha) VALUES
  ('s-trans-1', 'Bus',    'Cartagena', 'Barranquilla', '2026-12-12 07:00'),
  ('s-trans-2', 'Tren',   'Cusco',     'Machu Picchu',  '2026-12-16 05:45')
 ON CONFLICT (id) DO NOTHING;
+
+-- ---------- Servicios asociados a paquetes ----------
+INSERT INTO paquete_servicio (paquete_id, servicio_id) VALUES
+    (1, 's-vuelo-1'),
+    (1, 's-hotel-1'),
+    (3, 's-vuelo-2'),
+    (3, 's-hotel-2'),
+    (3, 's-trans-2')
+ON CONFLICT DO NOTHING;
 
 -- ---------- Reservas de ejemplo ----------
 -- Total = suma de calcularCosto(): vuelo = precio, hotel = precio x noches, transporte = precio.

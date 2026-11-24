@@ -53,14 +53,17 @@ flowchart LR
 ## 3. Especificación de los casos de uso de reservas y pagos
 
 ### CU-05 Crear reserva
+
 | | |
 |---|---|
-| Actores | Cliente (también Agente) |
-| Precondición | Tiene sesión iniciada |
-| Flujo principal | 1. Elige uno o más servicios disponibles (vuelo, hotel, transporte) y, opcionalmente, un paquete. 2. Envía la reserva. 3. El sistema toma el usuario de la sesión, valida cada servicio y calcula el total (vuelo y transporte = precio; hotel = precio × noches). 4. Guarda la reserva en estado PENDIENTE y la muestra. |
-| Flujos alternos | A1. Un servicio no existe → error 404, no se guarda nada. A2. Un servicio no está disponible → error 409. A3. No eligió servicios → error 400. A4. El paquete no existe → error 404. |
-| Postcondición | Existe una reserva PENDIENTE a nombre del usuario autenticado |
-| Reglas | El dueño nunca se toma del cuerpo de la petición. Si un servicio falla, no queda una reserva a medias. |
+| Actores | Cliente |
+| Precondición | El cliente tiene sesión iniciada y desea reservar uno o más servicios o un paquete |
+| Flujo principal | 1. El cliente selecciona uno o más servicios y, opcionalmente, un paquete. 2. Envía la solicitud de reserva. 3. El sistema identifica al usuario mediante su correo de autenticación. 4. Si se seleccionó un paquete, consulta los servicios asociados e incorpora los que todavía no estén incluidos. 5. Consulta los servicios enviados por el cliente y evita duplicados. 6. Valida la existencia y disponibilidad de los servicios. 7. Calcula el total y guarda la reserva en estado PENDIENTE. |
+| Flujos alternos | A1. Un servicio no existe → error 404. A2. Un servicio no está disponible → error 409. A3. La lista de servicios enviada está vacía → error 400. A4. El paquete no existe → error 404. |
+| Postcondición | Existe una reserva PENDIENTE asociada al usuario autenticado y con los servicios correspondientes. |
+| Reglas | El propietario nunca se toma del cuerpo de la petición. Los servicios asociados al paquete se agregan automáticamente y no se duplican. La solicitud todavía exige una lista de servicios no vacía. |
+
+
 
 ### CU-06 Cancelar reserva
 | | |

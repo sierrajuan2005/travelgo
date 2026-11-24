@@ -1,6 +1,7 @@
 package com.travelgo.controller;
 import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.service.PaqueteService;
+import com.travelgo.proveedor.hotel.GamaHotel;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.time.LocalDate;
 
 /** Endpoints REST del catálogo de paquetes turísticos. */
 @RestController
@@ -27,12 +29,17 @@ public class PaqueteController {
 
     /** Búsqueda con filtros: /api/paquetes/buscar?destino=cartagena&precioMax=2000000&duracionMin=3 */
     @GetMapping("/buscar")
-    public List<PaqueteTuristico> buscar(@RequestParam(required = false) String destino,
-                                         @RequestParam(required = false) BigDecimal precioMin,
-                                         @RequestParam(required = false) BigDecimal precioMax,
-                                         @RequestParam(required = false) Integer duracionMin,
-                                         @RequestParam(required = false) Integer duracionMax) {
-        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax);
+    public List<PaqueteTuristico> buscar(
+            @RequestParam(required = false) String destino,
+            @RequestParam(required = false) BigDecimal precioMin,
+            @RequestParam(required = false) BigDecimal precioMax,
+            @RequestParam(required = false) Integer duracionMin,
+            @RequestParam(required = false) Integer duracionMax,
+            @RequestParam(required = false) LocalDate fechaEntrada,
+            @RequestParam(required = false) String orden,
+            @RequestParam (defaultValue = "false") boolean tercioEconomico,
+            @RequestParam(required = false) GamaHotel gamaHotel) {
+        return service.buscar(destino, precioMin, precioMax, duracionMin, duracionMax, fechaEntrada, orden, tercioEconomico, gamaHotel  );
     }
 
     @GetMapping("/{id}")
