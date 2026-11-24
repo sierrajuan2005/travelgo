@@ -15,6 +15,8 @@ import com.travelgo.dao.PaqueteServicioDAO;
 import com.travelgo.model.Hotel;
 import java.time.LocalDate;
 import java.util.Comparator;
+import com.travelgo.proveedor.hotel.ClasificadorGama;
+import com.travelgo.proveedor.hotel.GamaHotel;
 
 
 /** Reglas de negocio del catálogo de paquetes turísticos. */
@@ -24,11 +26,13 @@ public class PaqueteService {
     private final PaqueteDAO paqueteDAO;
     private final DestinoDAO destinoDAO;
     private final PaqueteServicioDAO paqueteServicioDAO;
+    private final ClasificadorGama clasificadorGama;
 
-    public PaqueteService(PaqueteDAO paqueteDAO, DestinoDAO destinoDAO, PaqueteServicioDAO paqueteServicioDAO) {
+    public PaqueteService(PaqueteDAO paqueteDAO, DestinoDAO destinoDAO, PaqueteServicioDAO paqueteServicioDAO, ClasificadorGama clasificadorGama) {
         this.paqueteDAO = paqueteDAO;
         this.destinoDAO = destinoDAO;
         this.paqueteServicioDAO = paqueteServicioDAO;
+        this.clasificadorGama = clasificadorGama;
     }
 
     public PaqueteTuristico crear(PaqueteTuristico paquete) {
@@ -84,7 +88,9 @@ public class PaqueteService {
             Integer duracionMax,
             LocalDate fechaEntrada,
             String orden,
-            boolean tercioEconomico) {
+            boolean tercioEconomico,
+            GamaHotel gamaHotel)
+            {
         
         if (precioMin != null && precioMax != null
                 && precioMin.compareTo(precioMax) > 0) {
@@ -111,6 +117,7 @@ public class PaqueteService {
             if (texto != null && !tieneDestino(p, texto)) continue;
             if (fechaEntrada != null
                 && !tieneHotelConFecha(p.getId(), fechaEntrada)) continue;
+            if (gamaHotel != null && !tieneHotelDeGama(p.getId(), gamaHotel)) continue;
 
             resultado.add(p);
         }
@@ -173,5 +180,12 @@ public class PaqueteService {
                     .orElseThrow(() -> new RecursoNoEncontradoException("Destino no encontrado: " + d.getId())));
         }
         return resueltos;
+    }
+
+    private boolean tieneHotelDeGama(Long paqueteId, GamaHotel gama) {
+        return paqueteServicioDAO.listarServicios(paqueteId).stream()
+                .filter(Hotel.class::isInstance)
+                .map(Hotel.class::cast)
+                .anyMatch(hotel -> clasificadorGama.gamaDe(hotel) == gama);
     }
 }

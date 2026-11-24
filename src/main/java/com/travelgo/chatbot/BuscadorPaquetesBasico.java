@@ -34,7 +34,7 @@ public class BuscadorPaquetesBasico implements BuscadorPaquetes {
 
     @Override
     public List<PaqueteTuristico> porDestino(String destino) {
-        return paqueteService.buscar(destino, null, null, null, null, null, null, false);
+        return paqueteService.buscar(destino, null, null, null, null, null, null, false, null);
     }
 
     @Override

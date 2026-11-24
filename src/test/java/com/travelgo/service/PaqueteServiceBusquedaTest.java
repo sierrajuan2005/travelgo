@@ -7,6 +7,9 @@ import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.dao.PaqueteServicioDAO;
 import com.travelgo.model.Hotel;
 import com.travelgo.model.ServicioReservable;
+import com.travelgo.proveedor.hotel.ClasificadorGama;
+import com.travelgo.proveedor.hotel.GamaHotel;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,23 +27,30 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 /** Pruebas de la búsqueda y filtros de PaqueteService (Sprint 4, Integrante 4). Sin base de datos. */
 @ExtendWith(MockitoExtension.class)
 class PaqueteServiceBusquedaTest {
 
-	@Mock
-	private PaqueteDAO paqueteDAO;
-	@Mock
-	private DestinoDAO destinoDAO;
-	@Mock
-	private PaqueteServicioDAO paqueteServicioDAO;
+    @Mock
+    private PaqueteDAO paqueteDAO;
+    @Mock
+    private DestinoDAO destinoDAO;
+    @Mock
+    private PaqueteServicioDAO paqueteServicioDAO;
 
-	private PaqueteService service;
+    private PaqueteService service;
 
-	@BeforeEach
-	void preparar() {
-    service = new PaqueteService(paqueteDAO, destinoDAO, paqueteServicioDAO);
+    @BeforeEach
+    void preparar() {
+        ClasificadorGama clasificadorGama = new ClasificadorGama(400000, 1000000);
+        service = new PaqueteService(
+            paqueteDAO,
+            destinoDAO,
+            paqueteServicioDAO,
+            clasificadorGama
+        );
 
     List<PaqueteTuristico> paquetes = new ArrayList<>(List.of(
             paquete("Cartagena Esencial", "1200000", 4, "Colombia", "Cartagena"),
@@ -56,101 +66,167 @@ class PaqueteServiceBusquedaTest {
     lenient().when(paqueteDAO.listarActivos()).thenReturn(paquetes);
 }
 
-	private static PaqueteTuristico paquete(String nombre, String precio, int dias, String pais, String ciudad) {
-		PaqueteTuristico p = new PaqueteTuristico(nombre, "desc", new BigDecimal(precio), dias);
-		p.setDestinos(List.of(new Destino(ciudad, "desc", pais, ciudad)));
-		return p;
-	}
+    private static PaqueteTuristico paquete(String nombre, String precio, int dias, String pais, String ciudad) {
+        PaqueteTuristico p = new PaqueteTuristico(nombre, "desc", new BigDecimal(precio), dias);
+        p.setDestinos(List.of(new Destino(ciudad, "desc", pais, ciudad)));
+        return p;
+    }
 
-	private List<String> nombres(List<PaqueteTuristico> lista) {
-		return lista.stream().map(PaqueteTuristico::getNombre).toList();
-	}
+    private List<String> nombres(List<PaqueteTuristico> lista) {
+        return lista.stream().map(PaqueteTuristico::getNombre).toList();
+    }
 
-	@Test
-	@DisplayName("Sin filtros devuelve todos los paquetes activos")
-	void sinFiltros() {
-		assertEquals(4, service.buscar(null, null, null, null, null, null, null, false).size());
-		assertEquals(4, service.buscar("  ", null, null, null, null, null, null, false).size());
-	}
+    @Test
+    @DisplayName("Sin filtros devuelve todos los paquetes activos")
+    void sinFiltros() {
+        assertEquals(4, service.buscar(null, null, null, null, null, null, null, false, null).size());
+        assertEquals(4, service.buscar("  ", null, null, null, null, null, null, false, null).size());
+    }
 
-	@Test
-	@DisplayName("Destino: ignora tildes y mayúsculas, y busca en ciudad y país")
-	void porDestino() {
-		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar("BOGOTA", null, null, null, null, null, null, false)));
-		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar("peru", null, null, null, null, null, null, false)));
-		assertEquals(2, service.buscar("colombia", null, null, null, null, null, null, false).size());
-	}
+    @Test
+    @DisplayName("Destino: ignora tildes y mayúsculas, y busca en ciudad y país")
+    void porDestino() {
+        assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar("BOGOTA", null, null, null, null, null, null, false, null)));
+        assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar("peru", null, null, null, null, null, null, false, null)));
+        assertEquals(2, service.buscar("colombia", null, null, null, null, null, null, false, null).size());
+    }
 
-	@Test
-	@DisplayName("Precio: los extremos están incluidos")
-	void porPrecio() {
-		List<PaqueteTuristico> r = service.buscar(null, new BigDecimal("800000"), new BigDecimal("1200000"), null, null, null, null, false);
-		assertEquals(List.of("Cartagena Esencial", "Bogotá Cultural"), nombres(r));
-	}
+    @Test
+    @DisplayName("Precio: los extremos están incluidos")
+    void porPrecio() {
+        List<PaqueteTuristico> r = service.buscar(null, new BigDecimal("800000"), new BigDecimal("1200000"), null, null, null, null, false, null);
+        assertEquals(List.of("Cartagena Esencial", "Bogotá Cultural"), nombres(r));
+    }
 
-	@Test
-	@DisplayName("Duración: rango en días")
-	void porDuracion() {
-		assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar(null, null, null, 6, null, null, null, false)));
-		assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar(null, null, null, null, 3, null, null, false)));
-	}
+    @Test
+    @DisplayName("Duración: rango en días")
+    void porDuracion() {
+        assertEquals(List.of("Machu Picchu Aventura"), nombres(service.buscar(null, null, null, 6, null, null, null, false, null)));
+        assertEquals(List.of("Bogotá Cultural"), nombres(service.buscar(null, null, null, null, 3, null, null, false, null)));
+    }
 
-	@Test
-	@DisplayName("Los filtros se combinan con Y")
-	void combinados() {
-		assertEquals(List.of("Cartagena Esencial"),
-			nombres(service.buscar("colombia", null, new BigDecimal("2000000"), 4, null, null, null, false)));
-	}
+    @Test
+    @DisplayName("Los filtros se combinan con Y")
+    void combinados() {
+        assertEquals(List.of("Cartagena Esencial"),
+            nombres(service.buscar("colombia", null, new BigDecimal("2000000"), 4, null, null, null, false, null)));
+    }
 
-	@Test
-	@DisplayName("Sin coincidencias devuelve lista vacía")
-	void sinResultados() {
-		assertTrue(service.buscar("tokio", null, null, null, null, null, null, false).isEmpty());
-	}
+    @Test
+    @DisplayName("Sin coincidencias devuelve lista vacía")
+    void sinResultados() {
+        assertTrue(service.buscar("tokio", null, null, null, null, null, null, false, null).isEmpty());
+    }
 
-	@Test
-	@DisplayName("Rangos al revés lanzan IllegalArgumentException")
-	void rangosInvalidos() {
-		assertThrows(IllegalArgumentException.class,
-			() -> service.buscar(null, new BigDecimal("5"), new BigDecimal("1"), null, null, null, null, false));
-		assertThrows(IllegalArgumentException.class, () -> service.buscar(null, null, null, 9, 2, null, null, false));
-	}
+    @Test
+    @DisplayName("Rangos al revés lanzan IllegalArgumentException")
+    void rangosInvalidos() {
+        assertThrows(IllegalArgumentException.class,
+            () -> service.buscar(null, new BigDecimal("5"), new BigDecimal("1"), null, null, null, null, false, null));
+        assertThrows(IllegalArgumentException.class, () -> service.buscar(null, null, null, 9, 2, null, null, false, null));
+    }
 
-	@Test
-	@DisplayName("Orden ASC: paquetes de menor a mayor precio")
-	void ordenarPrecioAscendente() {
-    	assertEquals(
+    @Test
+    @DisplayName("Orden ASC: paquetes de menor a mayor precio")
+    void ordenarPrecioAscendente() {
+        assertEquals(
             List.of(
                     "Bogotá Cultural",
                     "Cartagena Esencial",
                     "Cancún Todo Incluido",
                     "Machu Picchu Aventura"
             ),
-            nombres(service.buscar(null, null, null, null, null, null, "ASC", false))
-    	);
-	}
+            nombres(service.buscar(null, null, null, null, null, null, "ASC", false, null))
+        );
+    }
 
-	@Test
-	@DisplayName("Orden DESC: paquetes de mayor a menor precio")
-	void ordenarPrecioDescendente() {
-    	assertEquals(
+    @Test
+    @DisplayName("Orden DESC: paquetes de mayor a menor precio")
+    void ordenarPrecioDescendente() {
+        assertEquals(
             List.of(
                     "Machu Picchu Aventura",
                     "Cancún Todo Incluido",
                     "Cartagena Esencial",
                     "Bogotá Cultural"
             ),
-            nombres(service.buscar(null, null, null, null, null, null, "DESC", false))
-    	);
-	}
+            nombres(service.buscar(null, null, null, null, null, null, "DESC", false, null))
+        );
+    }
 
-	@Test
-	@DisplayName("Orden inválido lanza IllegalArgumentException")
-	void ordenInvalido() {
-    	assertThrows(
+    @Test
+    @DisplayName("Orden inválido lanza IllegalArgumentException")
+    void ordenInvalido() {
+        assertThrows(
             IllegalArgumentException.class,
-            () -> service.buscar(null, null, null, null, null, null, "INVALIDO", false)
-    	);
-	}
+            () -> service.buscar(null, null, null, null, null, null, "INVALIDO", false, null)
+        );
+    }
+
+    @Test
+    @DisplayName("Filtra paquetes con hoteles de gama económica")
+    void porGamaEconomica() {
+        Hotel hotel = new Hotel(
+                "hotel-economico", 300000, true,
+                "Hotel Económico", "Cartagena", "Estándar", 1
+        );
+
+        lenient().when(paqueteServicioDAO.listarServicios(anyLong()))
+            .thenReturn(List.of());
+
+        when(paqueteServicioDAO.listarServicios(1L))
+                .thenReturn(List.of(hotel));
+
+        List<PaqueteTuristico> resultado = service.buscar(
+                null, null, null, null, null, null, null, false,
+                GamaHotel.ECONOMICO
+        );
+
+        assertEquals(List.of("Cartagena Esencial"), nombres(resultado));
+    }
+
+    @Test
+    @DisplayName("Filtra paquetes con hoteles de gama media")
+    void porGamaMedia() {
+        Hotel hotel = new Hotel(
+                "hotel-medio", 700000, true,
+                "Hotel Medio", "Bogotá", "Superior", 1
+        );
+
+        lenient().when(paqueteServicioDAO.listarServicios(anyLong()))
+            .thenReturn(List.of());
+
+        when(paqueteServicioDAO.listarServicios(2L))
+                .thenReturn(List.of(hotel));
+
+        List<PaqueteTuristico> resultado = service.buscar(
+                null, null, null, null, null, null, null, false,
+                GamaHotel.MEDIO
+        );
+
+        assertEquals(List.of("Bogotá Cultural"), nombres(resultado));
+    }
+
+    @Test
+    @DisplayName("Filtra paquetes con hoteles de gama lujo")
+    void porGamaLujo() {
+        Hotel hotel = new Hotel(
+                "hotel-lujo", 1200000, true,
+                "Hotel de Lujo", "Cusco", "Suite", 1
+        );
+
+        lenient().when(paqueteServicioDAO.listarServicios(anyLong()))
+            .thenReturn(List.of());
+
+        when(paqueteServicioDAO.listarServicios(3L))
+                .thenReturn(List.of(hotel));
+
+        List<PaqueteTuristico> resultado = service.buscar(
+                null, null, null, null, null, null, null, false,
+                GamaHotel.LUJO
+        );
+
+        assertEquals(List.of("Machu Picchu Aventura"), nombres(resultado));
+    }
 
 }

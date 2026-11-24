@@ -55,7 +55,7 @@ class BuscadorPaquetesBasicoTest {
     void masBaratos() {
         List<PaqueteTuristico> seis = List.of(paquete(1L, "A", "600"), paquete(2L, "B", "100"),
             paquete(3L, "C", "500"), paquete(4L, "D", "200"), paquete(5L, "E", "300"), paquete(6L, "F", "400"));
-        when(paqueteService.buscar("Bogotá", null, null, null, null, null, null, false)).thenReturn(seis);
+        when(paqueteService.buscar("Bogotá", null, null, null, null, null, null, false, null)).thenReturn(seis);
 
         List<PaqueteTuristico> baratos = buscador.masBaratos("Bogotá");
 
@@ -67,7 +67,7 @@ class BuscadorPaquetesBasicoTest {
     void unSoloPaquete() {
         PaqueteTuristico unico = paquete(1L, "A", "100");
 
-        when(paqueteService.buscar(null, null, null, null, null, null, null, false))
+        when(paqueteService.buscar(null, null, null, null, null, null, null, false, null))
                 .thenReturn(List.of(unico));
 
         assertEquals(1, buscador.masBaratos(null).size());
@@ -76,7 +76,7 @@ class BuscadorPaquetesBasicoTest {
     @Test
     @DisplayName("Sin paquetes, devuelve lista vacía")
     void sinPaquetes() {
-        when(paqueteService.buscar("Tokio", null, null, null, null, null, null, false)).thenReturn(List.of());
+        when(paqueteService.buscar("Tokio", null, null, null, null, null, null, false, null)).thenReturn(List.of());
 
         assertTrue(buscador.masBaratos("Tokio").isEmpty());
     }
@@ -96,7 +96,7 @@ class BuscadorPaquetesBasicoTest {
         when(paqueteServicioDAO.listarServicios(1L)).thenReturn(List.of(mock(Vuelo.class), hotelLujo));
         when(paqueteServicioDAO.listarServicios(2L)).thenReturn(List.of(hotelEconomico));
         when(paqueteServicioDAO.listarServicios(3L)).thenReturn(List.of(hotelLujo2));
-        when(paqueteService.buscar("Cartagena", null, null, null, null, null, null, false)).thenReturn(List.of(premium, basico, lujoBarato));
+        when(paqueteService.buscar("Cartagena", null, null, null, null, null, null, false, null)).thenReturn(List.of(premium, basico, lujoBarato));
 
         Optional<List<PaqueteTuristico>> lujo = buscador.porGama("Cartagena", Gama.LUJO);
 
@@ -113,7 +113,7 @@ class BuscadorPaquetesBasicoTest {
         when(clasificador.gamaDe(sinPrecio)).thenReturn(null);
         when(paqueteServicioDAO.listarServicios(1L)).thenReturn(List.of(mock(Vuelo.class)));
         when(paqueteServicioDAO.listarServicios(2L)).thenReturn(List.of(sinPrecio));
-        when(paqueteService.buscar(null, null, null, null, null, null, null, false)).thenReturn(List.of(soloVuelo, hotelSinPrecio));
+        when(paqueteService.buscar(null, null, null, null, null, null, null, false, null)).thenReturn(List.of(soloVuelo, hotelSinPrecio));
 
         assertTrue(buscador.porGama(null, Gama.LUJO).orElseThrow().isEmpty());
     }
