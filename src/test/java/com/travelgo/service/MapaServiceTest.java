@@ -98,4 +98,32 @@ class MapaServiceTest {
     void ciudadInexistente() {
         assertThrows(RecursoNoEncontradoException.class, () -> service.lugares("narnia", null, 3000, 10));
     }
+    @Test
+    void eliminaDuplicadosYDescartaLugaresLejanos() {
+        LugarMapa general = new LugarMapa("p1", "Museo", CategoriaMapa.SITIO_TURISTICO, 10.391, -75.4794, null, null, null, "Geoapify");
+        LugarMapa museo = new LugarMapa("p1", "Museo", CategoriaMapa.MUSEO, 10.391, -75.4794, null, null, null, "Geoapify");
+        LugarMapa lejano = new LugarMapa("p2", "Otro", CategoriaMapa.MUSEO, 4.7, -74, null, null, null, "Geoapify");
+        when(proveedorLugares.buscar(eq(CategoriaMapa.SITIO_TURISTICO), anyDouble(), anyDouble(), anyInt(), anyInt())).thenReturn(List.of(general));
+        when(proveedorLugares.buscar(eq(CategoriaMapa.MUSEO), anyDouble(), anyDouble(), anyInt(), anyInt())).thenReturn(List.of(museo, lejano));
+        var resultado = service.lugares("cartagena", Set.of(CategoriaMapa.SITIO_TURISTICO, CategoriaMapa.MUSEO), 5000, 30);
+        assertEquals(List.of(museo), resultado.lugares());
+    }
+
+    @Test
+    void clasificaTurismoYCalculaDistancia() {
+        assertEquals(CategoriaMapa.MUSEO, CategoriaMapa.clasificar(CategoriaMapa.SITIO_TURISTICO, List.of("tourism.sights", "entertainment.museum")));
+        assertEquals(0.0, LugarMapa.distanciaMetros(10, -75, 10, -75), 0.001);
+        assertEquals(111195, LugarMapa.distanciaMetros(0, 0, 1, 0), 2);
+    }
+    @Test
+    void destinoNuevoSeGeolocalizaPorIdYUsaCache() {
+        var destinos = org.mockito.Mockito.mock(DestinoService.class);
+        var geo = org.mockito.Mockito.mock(com.travelgo.proveedor.destinos.Geocodificador.class);
+        when(destinos.obtener(99L)).thenReturn(new com.travelgo.model.Destino("Miami", "", "Estados Unidos", "Miami"));
+        when(geo.ubicar("Miami", "Estados Unidos")).thenReturn(java.util.Optional.of(new com.travelgo.proveedor.destinos.Coordenadas(25.76, -80.19)));
+        var catalogo = new CiudadesMapa(destinos, geo);
+        assertEquals(25.76, catalogo.buscar("destino-99").orElseThrow().latitud());
+        assertEquals("Miami", catalogo.buscar("destino-99").orElseThrow().nombre());
+        verify(geo).ubicar("Miami", "Estados Unidos");
+    }
 }

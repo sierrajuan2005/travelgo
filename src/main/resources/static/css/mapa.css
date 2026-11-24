@@ -3,13 +3,29 @@
     padding: 4px 14px; cursor: pointer; font-size: .9rem; }
 .tgm-chip.activo { background: var(--color); color: #fff; }
 .tgm-lienzo { width: 100%; height: 440px; border-radius: 16px; overflow: hidden; }
-.tgm-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
+.tgm-pin { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
     box-shadow: 0 0 3px rgba(0, 0, 0, .5); }
 .tgm-pin.tgm-oculto { display: none; }
 .tgm-pin.tgm-atenuado { opacity: .15; pointer-events: none; }
-.tgm-pin.tgm-destacado { width: 26px; height: 26px; border-width: 3px; z-index: 5;
+.tgm-pin.tgm-destacado { width: 38px; height: 38px; font-size: 20px; border-width: 3px; z-index: 5;
     box-shadow: 0 0 0 3px #5a3df0, 0 0 12px rgba(0, 0, 0, .55); }
 .tgm-popup h3 { margin: 0 0 4px; font-size: 1rem; }
 .tgm-popup p { margin: 2px 0; font-size: .85rem; }
 .tgm-popup button { margin-top: 6px; }
 .tgm-tu-hotel { color: #5a3df0; font-weight: 600; }
+.tgm-chips { display: grid; gap: 8px; }
+.tgm-chips details { border: 1px solid #ddd; border-radius: 8px; padding: 8px; }
+.tgm-chips summary { font-weight: 600; cursor: pointer; }
+.tgm-chips .tgm-chip { margin: 4px; }
+.tgm-controles { display: flex; flex-wrap: wrap; gap: 12px; }
+.tgm-controles label { flex: 1 1 160px; }
+.tgm-cluster { border: 2px solid white; border-radius: 50%; width: 36px; height: 36px; background: #243b70; color: white; font-weight: bold; box-shadow: 0 1px 5px #555; cursor: pointer; }
+
+.tgm-barra { display:flex; gap:8px; align-items:center; }
+.tgm-barra input { min-width:0; flex:1; }
+.tgm-barra button { white-space:nowrap; }
+.tgm-rapidos { display:flex; gap:6px; flex-wrap:wrap; }
+.tgm-rapidos .tgm-chip { font-size:.8rem; padding:4px 10px; }
+[data-tgm="panel"] { max-height:320px; overflow:auto; padding:8px; border:1px solid #ddd; border-radius:10px; margin-bottom:8px; }
+[data-tgm="panel"][hidden] { display:none !important; }
+.tgm-lienzo:fullscreen { width:100% !important; height:100% !important; border-radius:0; }
