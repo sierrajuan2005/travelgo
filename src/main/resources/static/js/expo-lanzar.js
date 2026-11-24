@@ -171,7 +171,12 @@
             const respuesta = await fetch(app.dataset.api, {
                 method: 'POST',
                 headers: cabeceras,
-                body: JSON.stringify({ nombre: nombre.value.trim(), destinoId: destino.value })
+                body: JSON.stringify({
+                    nombre: nombre.value.trim(),
+                    destinoId: destino.value,
+                    // Llegó desde la postal de un amigo: su viaje cuenta como "se unió al viaje de..."
+                    invitadoPor: app.dataset.invitadoPor ? Number(app.dataset.invitadoPor) : null
+                })
             });
             const datos = await respuesta.json().catch(() => ({}));
             if (!respuesta.ok) {
@@ -205,6 +210,13 @@
             actualizarBoton();
         }
     });
+
+    // Desde la postal de un amigo el destino llega elegido (se puede cambiar)
+    const elegido = app.dataset.destinoElegido
+        && form.querySelector('input[name="destino"][value="' + CSS.escape(app.dataset.destinoElegido) + '"]');
+    if (elegido) {
+        elegido.checked = true;
+    }
 
     actualizarBoton();
 })();

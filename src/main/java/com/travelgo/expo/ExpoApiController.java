@@ -21,12 +21,13 @@ import java.util.List;
  * API pública de "Lanza tu viaje" (SecurityConfig la deja abierta: los visitantes no tienen cuenta).
  *
  * GET  /api/expo/destinos              → destinos que se pueden elegir
- * POST /api/expo/lanzamientos          → {nombre, destinoId}; el celular lanza un viaje
+ * POST /api/expo/lanzamientos          → {nombre, destinoId, invitadoPor?}; el celular lanza un viaje
  * GET  /api/expo/lanzamientos?desde=N  → la pantalla pide los viajes nuevos y el total
  * POST   /api/expo/lanzamientos/{id}/contacto → {telefono, autoriza}; solo desde el celular que lanzó el viaje
  * DELETE /api/expo/lanzamientos/{id}/contacto → el visitante borra su celular
  * POST   /api/expo/lanzamientos/{id}/whatsapp → envía su viaje por WhatsApp (solo desde el celular que lanzó)
  * GET    /api/expo/lanzamientos/{id}/whatsapp → estado real del WhatsApp (enviando, entregado, sin activar...)
+ * POST   /api/expo/lanzamientos/{id}/compartio → el visitante compartió o descargó su postal (embudo)
  */
 @RestController
 @RequestMapping("/api/expo")
@@ -51,7 +52,7 @@ public class ExpoApiController {
     @ResponseStatus(HttpStatus.CREATED)
     public ViajeLanzadoDTO lanzar(@RequestBody LanzamientoRequest solicitud, HttpSession sesion) {
         LanzamientoService.ViajeLanzado viaje =
-                service.lanzar(solicitud.nombre(), solicitud.destinoId(), sesion.getId());
+                service.lanzar(solicitud.nombre(), solicitud.destinoId(), sesion.getId(), solicitud.invitadoPor());
         SesionExpo.recordar(sesion, viaje.lanzamiento().id());
         return ViajeLanzadoDTO.de(viaje);
     }
@@ -69,6 +70,13 @@ public class ExpoApiController {
     public void borrarContacto(@PathVariable long id, HttpSession sesion) {
         SesionExpo.exigirPropio(sesion, id);
         service.borrarContacto(id);
+    }
+
+    @PostMapping("/lanzamientos/{id}/compartio")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void compartioPostal(@PathVariable long id, HttpSession sesion) {
+        SesionExpo.exigirPropio(sesion, id);
+        service.marcarCompartioPostal(id);
     }
 
     @PostMapping("/lanzamientos/{id}/whatsapp")
@@ -98,7 +106,8 @@ public class ExpoApiController {
         return new PantallaDTO(p.total(), p.viajes().stream().map(ViajeLanzadoDTO::de).toList());
     }
 
-    public record LanzamientoRequest(String nombre, String destinoId) {
+    /** invitadoPor: id del viaje de quien le compartió la postal (opcional). */
+    public record LanzamientoRequest(String nombre, String destinoId, Long invitadoPor) {
     }
 
     public record ContactoRequest(String telefono, boolean autoriza) {

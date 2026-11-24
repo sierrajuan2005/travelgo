@@ -87,6 +87,25 @@
         </div>
         <div class="col-6 col-lg">
           <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Compartieron su postal</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.compartieronPostal()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.compartieronPostal()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar bg-success"
+                 th:style="'width: ' + ${e.porcentaje(e.compartieronPostal())} + '%'"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-lg">
+          <div class="border rounded-3 p-3 h-100">
+            <div class="small text-muted">Llegaron por una postal</div>
+            <div class="fs-2 fw-bold"><span th:text="${e.llegaronPorPostal()}">0</span>
+              <small class="fs-6 text-muted" th:text="${e.porcentaje(e.llegaronPorPostal()) + ' %'}">0 %</small></div>
+            <div class="progress" style="height: 6px;"><div class="progress-bar bg-success"
+                 th:style="'width: ' + ${e.porcentaje(e.llegaronPorPostal())} + '%'"></div></div>
+          </div>
+        </div>
+        <!-- Celular y WhatsApp automático: solo si WhatsApp está configurado (Twilio) -->
+        <div class="col-6 col-lg" th:if="${whatsappDisponible}">
+          <div class="border rounded-3 p-3 h-100">
             <div class="small text-muted">Dejaron su celular</div>
             <div class="fs-2 fw-bold"><span th:text="${e.dejaronContacto()}">0</span>
               <small class="fs-6 text-muted" th:text="${e.porcentaje(e.dejaronContacto()) + ' %'}">0 %</small></div>
@@ -94,7 +113,7 @@
                  th:style="'width: ' + ${e.porcentaje(e.dejaronContacto())} + '%'"></div></div>
           </div>
         </div>
-        <div class="col-6 col-lg">
+        <div class="col-6 col-lg" th:if="${whatsappDisponible}">
           <div class="border rounded-3 p-3 h-100">
             <div class="small text-muted">Recibieron WhatsApp</div>
             <div class="fs-2 fw-bold"><span th:text="${e.recibieronWhatsApp()}">0</span>
@@ -113,11 +132,10 @@
           </div>
         </div>
       </div>
-      <div class="alert alert-warning small mt-3 mb-0" th:unless="${whatsappDisponible}">
-        <i class="bi bi-whatsapp"></i> WhatsApp desactivado: faltan <code>TWILIO_ACCOUNT_SID</code>,
-        <code>TWILIO_AUTH_TOKEN</code> o <code>TRAVELGO_WHATSAPP_CODIGO</code>. Los visitantes pueden dejar su celular,
-        pero no reciben nada (ver docs/expo_lanza_tu_viaje.md).
-      </div>
+      <p class="text-muted small mt-3 mb-0" th:unless="${whatsappDisponible}">
+        <i class="bi bi-whatsapp"></i> El viaje llega a WhatsApp con la <b>postal</b>, que comparte cada visitante.
+        El WhatsApp automático (Twilio) está apagado; para encenderlo ver docs/expo_lanza_tu_viaje.md.
+      </p>
       <p class="text-muted small mb-0 mt-3">
         <span th:text="${total}">0</span> viajes en la pantalla. Si un nombre no debe salir frente al público,
         ocúltalo en la lista de abajo: la pantalla lo quita en menos de un minuto.
