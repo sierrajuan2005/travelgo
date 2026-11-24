@@ -126,6 +126,30 @@
                         </p>
                     </div>
                 </div>
+
+                <!-- Cada viajero elige según sus gustos (reserva/viajeros.html); aquí solo se muestran -->
+                <div th:if="${!#maps.isEmpty(actividadesPorGusto)}" class="card tg-card tg-aparece mt-4">
+                    <div class="card-body p-4 p-md-5">
+                        <span class="tg-eyebrow">Cada viajero, su plan</span>
+                        <h2 class="h4 mb-2">No todos viajan para lo mismo</h2>
+                        <p class="text-muted mb-4">Al reservar, cada persona del grupo marca lo que le gusta y elige sus
+                            actividades. TravelGo arma un plan distinto para cada uno con lugares reales de
+                            <span th:text="${destino.ciudad}">la ciudad</span>.</p>
+                        <div class="row g-3">
+                            <div class="col-md-6" th:each="grupo : ${actividadesPorGusto}">
+                                <div class="fw-semibold mb-2">
+                                    <i class="bi" th:classappend="${grupo.key.icono}"></i>
+                                    <span th:text="${grupo.key.etiqueta}">Fiesta</span>
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted mb-1 gap-2"
+                                     th:each="a : ${grupo.value}">
+                                    <span th:text="${a.nombre()}">Actividad</span>
+                                    <span class="text-nowrap" th:text="${@formato.cop(a.precio())}">$ 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="col-lg-4">

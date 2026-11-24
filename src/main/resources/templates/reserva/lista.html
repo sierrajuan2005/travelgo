@@ -54,7 +54,18 @@
                                       : (r.estado() == 'CANCELADA' ? 'text-bg-secondary' : 'text-bg-warning')}"
                                   th:text="${r.estado()}">PENDIENTE</span>
                         </td>
-                        <td class="text-end pe-4">
+                        <td class="text-end pe-4 text-nowrap">
+                            <!-- Plan por viajero, o agregar los viajeros si todavía no hay -->
+                            <a th:if="${r.viajeros() > 0}" class="btn btn-outline-secondary btn-sm"
+                               th:href="@{/reservas/{id}/plan(id=${r.id()})}"
+                               th:title="${r.viajeros() + (r.viajeros() == 1 ? ' viajero' : ' viajeros')}">
+                                <i class="bi bi-map"></i> Plan
+                            </a>
+                            <a th:if="${r.viajeros() == 0 and !r.pagada() and r.estado() != 'CANCELADA'}"
+                               class="btn btn-outline-secondary btn-sm"
+                               th:href="@{/reservas/{id}/viajeros(id=${r.id()})}">
+                                <i class="bi bi-people"></i> Viajeros
+                            </a>
                             <a th:if="${r.pagada()}" class="btn btn-outline-secondary btn-sm"
                                th:href="@{/reservas/{id}/factura(id=${r.id()})}">
                                 <i class="bi bi-receipt"></i> Ver factura

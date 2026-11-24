@@ -16,6 +16,8 @@ public class Reserva{
     private final Usuario usuario;
     private final PaqueteTuristico paqueteTuristico;
     private final List<ServicioReservable> servicios;
+    /* Personas que viajan, cada una con sus gustos y sus actividades pagas (puede estar vacía) */
+    private final List<Viajero> viajeros = new ArrayList<>();
     private final LocalDate fechaReserva;
     private EstadoReserva estado;
     private double total;
@@ -80,10 +82,33 @@ public class Reserva{
         calcularTotal();
     }
 
-    /*Calcula el total de la reserva */
+    /*Calcula el total de la reserva: servicios + actividades pagas de los viajeros */
     public double calcularTotal(){
-        total = servicios.stream().mapToDouble(ServicioReservable::calcularCosto).sum();
+        total = servicios.stream().mapToDouble(ServicioReservable::calcularCosto).sum()
+                + viajeros.stream().mapToDouble(Viajero::costoActividades).sum();
         return total;
+    }
+
+    /*Cambia la lista de viajeros (y sus actividades) y actualiza el total */
+    public void reemplazarViajeros(List<Viajero> nuevos){
+        if(estado == EstadoReserva.CANCELADA){
+            throw new IllegalStateException("No se pueden cambiar los viajeros de una reserva cancelada.");
+        }
+        cargarViajeros(nuevos);
+        calcularTotal();
+    }
+
+    /*Pone los viajeros leídos de la base de datos sin recalcular el total guardado */
+    public void cargarViajeros(List<Viajero> guardados){
+        viajeros.clear();
+        if(guardados != null){
+            viajeros.addAll(guardados);
+        }
+    }
+
+    /*Obtiene los viajeros de la reserva */
+    public List<Viajero> getViajeros() {
+        return Collections.unmodifiableList(viajeros);
     }
 
     /*Confirma la reserva */

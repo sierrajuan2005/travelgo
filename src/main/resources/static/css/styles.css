@@ -817,3 +817,71 @@ a.tg-card, .tg-card-paquete { color: inherit; text-decoration: none; }
 
     .tg-factura-franja, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- Viajeros y gustos (reserva/viajeros.html y reserva/plan.html) ---------- */
+.tg-viajero-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 3rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--tg-violeta-suave);
+    color: var(--tg-violeta);
+    font-size: 1.3rem;
+}
+.tg-agregar-viajero { border-style: dashed; border-radius: var(--tg-radio-sm); }
+
+/* Gustos como chips que se marcan */
+.tg-gustos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tg-gusto { cursor: pointer; }
+.tg-gusto input { position: absolute; opacity: 0; pointer-events: none; }
+.tg-gusto > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border: 1.5px solid var(--tg-linea);
+    border-radius: 999px;
+    background: var(--tg-blanco);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.tg-gusto:hover > span { border-color: #c8c8bc; }
+.tg-gusto input:checked + span { border-color: var(--tg-violeta); background: var(--tg-violeta); color: #fff; }
+.tg-gusto input:focus-visible + span { outline: 2px solid var(--tg-violeta); outline-offset: 2px; }
+
+/* Plan día por día */
+.tg-pestanas-viajeros { gap: 0.5rem; flex-wrap: wrap; }
+.tg-pestanas-viajeros .nav-link {
+    border-radius: 999px;
+    background: var(--tg-blanco);
+    color: var(--tg-tinta);
+    font-weight: 600;
+}
+.tg-pestanas-viajeros .nav-link.active { background: var(--tg-tinta); color: #fff; }
+
+.tg-momento { display: flex; gap: 1rem; padding: 0.85rem 0; border-top: 1px solid var(--tg-linea); }
+.tg-momento:first-of-type { border-top: none; padding-top: 0; }
+.tg-momento-franja {
+    flex: 0 0 5.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    color: var(--tg-tinta-suave);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding-top: 0.1rem;
+}
+.tg-momento a { color: var(--tg-tinta); text-decoration-color: var(--tg-hueso); }
+.tg-momento a:hover { color: var(--tg-violeta); }
+.tg-momento-libre .fw-semibold, .tg-momento-regreso .fw-semibold { color: var(--tg-tinta-suave); }
+.tg-momento-actividad .tg-momento-franja { color: var(--tg-violeta); }
+.tg-badge-gusto { background: var(--tg-violeta-suave); color: var(--tg-violeta); font-weight: 600; }
+.tg-badge-con { background: #e3f6ec; color: var(--tg-verde); font-weight: 600; }
+
+@media (max-width: 575.98px) {
+    .tg-momento { flex-direction: column; gap: 0.25rem; }
+    .tg-momento-franja { flex-basis: auto; }
+}

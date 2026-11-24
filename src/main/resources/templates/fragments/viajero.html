@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Tarjeta de un viajero: nombre, gustos y actividades pagas -->
+<div th:fragment="tarjeta(i, v)" class="card tg-card mb-4 tg-viajero" th:attr="data-indice=${i}">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="tg-viajero-avatar"><i class="bi bi-person"></i></span>
+            <div class="flex-grow-1">
+                <label class="form-label small text-muted mb-1" th:for="|nombre-${i}|">Nombre del viajero</label>
+                <input type="text" class="form-control form-control-lg tg-viajero-nombre" required maxlength="40"
+                       th:id="|nombre-${i}|" th:name="|viajeros[${i}].nombre|" th:value="${v.nombre}"
+                       placeholder="Por ejemplo: Ana">
+            </div>
+            <button type="button" class="btn btn-outline-secondary tg-quitar-viajero" title="Quitar viajero"
+                    aria-label="Quitar viajero"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <h3 class="h6 mb-2">¿Qué le gusta?</h3>
+        <div class="tg-gustos mb-4">
+            <label class="tg-gusto" th:each="g : ${gustos}">
+                <input type="checkbox" class="tg-gusto-check" th:name="|viajeros[${i}].gustos|" th:value="${g.name()}"
+                       th:checked="${v.gustos.contains(g)}">
+                <span><i class="bi" th:classappend="${g.icono}"></i> <span th:text="${g.etiqueta}">Fiesta</span></span>
+            </label>
+        </div>
+
+        <div th:if="${#maps.isEmpty(actividadesPorGusto)}" class="text-muted small">
+            Este destino todavía no tiene actividades pagas. Igual armamos su plan con lugares reales según sus gustos.
+        </div>
+
+        <th:block th:unless="${#maps.isEmpty(actividadesPorGusto)}">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                <h3 class="h6 mb-0">Actividades para sus gustos</h3>
+                <button type="button" class="btn btn-link btn-sm p-0 tg-ver-todas">Ver todas</button>
+            </div>
+            <p class="text-muted small tg-sin-sugerencias">Marca sus gustos y aquí salen las actividades que van con él o ella.</p>
+            <div class="tg-grupo-actividades" th:each="grupo : ${actividadesPorGusto}"
+                 th:attr="data-gusto=${grupo.key.name()}">
+                <div class="small text-muted fw-semibold mt-2 mb-1">
+                    <i class="bi" th:classappend="${grupo.key.icono}"></i> <span th:text="${grupo.key.etiqueta}">Fiesta</span>
+                </div>
+                <label class="card tg-opcion p-3 mb-2" th:each="a : ${grupo.value}">
+                    <div class="d-flex align-items-center gap-3">
+                        <input class="form-check-input mt-0 tg-actividad-check" type="checkbox"
+                               th:name="|viajeros[${i}].actividades|" th:value="${a.id()}"
+                               th:checked="${v.actividades.contains(a.id())}" th:attr="data-precio=${a.precio()}">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" th:text="${a.nombre()}">Actividad</div>
+                            <div class="text-muted small"
+                                 th:text="${a.descripcion() + ' · ' + a.duracionHoras() + (a.duracionHoras() == 1 ? ' hora' : ' horas')}">Detalle</div>
+                        </div>
+                        <span class="fw-semibold text-nowrap" th:text="${'+ ' + @formato.cop(a.precio())}">+ $ 0</span>
+                    </div>
+                </label>
+            </div>
+        </th:block>
+    </div>
+</div>
+</body>
+</html>

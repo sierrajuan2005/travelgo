@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Plan del viaje')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<!-- Un plan distinto para cada viajero según sus gustos (PlanViajeService). -->
+<main>
+    <section class="tg-encabezado">
+        <div class="container position-relative">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a th:href="@{/reservas}">Reservas</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="${'Plan ' + idCorto}">Plan</li>
+                </ol>
+            </nav>
+            <span class="tg-eyebrow" th:text="${paquete}">Paquete</span>
+            <h1 class="h2 mb-1">Un viaje, <span class="tg-serif">un plan</span> para cada uno</h1>
+            <p class="mb-0">
+                <span th:text="${plan.dias() + (plan.dias() == 1 ? ' día' : ' días') + ' en ' + plan.ciudad()}">5 días en Roma</span>.
+                Cada persona tiene sus propios planes según lo que le gusta; si dos coinciden, lo verás como "con …".
+            </p>
+            <ol class="tg-pasos" th:if="${editable}">
+                <li class="hecho"><span>Elegir servicios</span></li>
+                <li class="hecho"><span>Viajeros y gustos</span></li>
+                <li><span>Pagar</span></li>
+                <li><span>Factura</span></li>
+            </ol>
+        </div>
+    </section>
+
+    <div class="container tg-sube">
+        <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+        <div th:if="${!#lists.isEmpty(plan.avisos())}" class="alert alert-warning small">
+            <i class="bi bi-exclamation-triangle"></i> Algunos lugares no se pudieron cargar:
+            <ul class="mb-0">
+                <li th:each="aviso : ${plan.avisos()}" th:text="${aviso}">Aviso</li>
+            </ul>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Una pestaña por viajero -->
+                <ul class="nav nav-pills tg-pestanas-viajeros mb-4" role="tablist">
+                    <li class="nav-item" role="presentation" th:each="p, estado : ${plan.viajeros()}">
+                        <button class="nav-link" type="button" role="tab" data-bs-toggle="pill"
+                                th:classappend="${estado.first} ? 'active'"
+                                th:attr="data-bs-target=${'#plan-' + estado.index},aria-controls=${'plan-' + estado.index},aria-selected=${estado.first}"
+                                th:id="${'pestana-' + estado.index}">
+                            <i class="bi bi-person"></i> <span th:text="${p.viajero().nombre}">Ana</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade" role="tabpanel" th:each="p, estado : ${plan.viajeros()}"
+                         th:classappend="${estado.first} ? 'show active'" th:id="${'plan-' + estado.index}"
+                         th:attr="aria-labelledby=${'pestana-' + estado.index}">
+
+                        <div class="tg-chips mb-4">
+                            <span class="tg-chip-suave" th:each="g : ${p.viajero().gustos}">
+                                <i class="bi" th:classappend="${g.icono}"></i> <span th:text="${g.etiqueta}">Fiesta</span>
+                            </span>
+                            <span class="tg-chip-suave text-muted" th:if="${#sets.isEmpty(p.viajero().gustos)}">
+                                Sin gustos elegidos
+                            </span>
+                        </div>
+
+                        <div class="card tg-card mb-3 tg-dia" th:each="dia : ${p.dias()}">
+                            <div class="card-body p-4">
+                                <h2 class="h5 mb-3" th:text="${'Día ' + dia.numero()}">Día 1</h2>
+                                <div class="tg-momento" th:each="m : ${dia.momentos()}"
+                                     th:classappend="${'tg-momento-' + #strings.toLowerCase(m.tipo().name())}">
+                                    <div class="tg-momento-franja">
+                                        <i class="bi" th:classappend="${m.franja().icono}"></i>
+                                        <span th:text="${m.franja().etiqueta}">Mañana</span>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold">
+                                            <a th:if="${m.enlace() != null}" th:href="${m.enlace()}" target="_blank"
+                                               rel="noopener" th:text="${m.titulo()}">Lugar</a>
+                                            <span th:unless="${m.enlace() != null}" th:text="${m.titulo()}">Lugar</span>
+                                        </div>
+                                        <div class="text-muted small" th:text="${m.detalle()}">Detalle</div>
+                                        <div class="d-flex flex-wrap gap-2 mt-1">
+                                            <span class="badge tg-badge-gusto" th:if="${m.gusto() != null}">
+                                                <i class="bi" th:classappend="${m.gusto().icono}"></i>
+                                                <span th:text="${m.gusto().etiqueta}">Fiesta</span>
+                                            </span>
+                                            <span class="badge text-bg-light" th:if="${m.tipo().name() == 'ACTIVIDAD'}">
+                                                <i class="bi bi-ticket-perforated"></i>
+                                                <span th:text="${'Actividad paga · ' + @formato.cop(m.precio())}">Actividad</span>
+                                            </span>
+                                            <span class="badge tg-badge-con" th:unless="${#lists.isEmpty(m.companeros())}">
+                                                <i class="bi bi-people"></i>
+                                                <span th:text="${'con ' + #strings.listJoin(m.companeros(), ', ')}">con Luis</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small">Lugares reales de Geoapify (© OpenStreetMap). Las horas son una sugerencia.</p>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card tg-card tg-resumen">
+                    <div class="card-body p-4">
+                        <h2 class="h5">Viajeros</h2>
+                        <div class="d-flex justify-content-between border-top py-2" th:each="p : ${plan.viajeros()}">
+                            <span>
+                                <span class="fw-semibold" th:text="${p.viajero().nombre}">Ana</span>
+                                <span class="text-muted small d-block"
+                                      th:text="${#lists.size(p.viajero().actividades) + (#lists.size(p.viajero().actividades) == 1 ? ' actividad' : ' actividades')}">2 actividades</span>
+                            </span>
+                            <span th:text="${@formato.cop(p.viajero().costoActividades())}">$ 0</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-semibold">Total de la reserva</span>
+                            <span class="tg-precio" th:text="${@formato.cop(reserva.total)}">$ 0</span>
+                        </div>
+                        <a th:if="${editable}" class="btn btn-tg-acento btn-lg w-100 mb-2"
+                           th:href="@{/reservas/{id}/pagar(id=${reserva.id})}">
+                            <i class="bi bi-credit-card"></i> Ir a pagar
+                        </a>
+                        <a th:if="${editable}" class="btn btn-outline-secondary w-100"
+                           th:href="@{/reservas/{id}/viajeros(id=${reserva.id})}">
+                            <i class="bi bi-pencil"></i> Cambiar viajeros o gustos
+                        </a>
+                        <a th:unless="${editable}" class="btn btn-outline-secondary w-100"
+                           th:href="@{/reservas}">Volver a mis reservas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
