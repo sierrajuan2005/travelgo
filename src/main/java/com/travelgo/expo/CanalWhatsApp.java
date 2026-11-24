@@ -14,7 +14,7 @@ public interface CanalWhatsApp {
     boolean configurado();
 
     /**
-     * Enlace que abre WhatsApp con el mensaje de activación ya escrito (por ejemplo "join palabra-palabra"
+     * Enlace que abre WhatsApp con el mensaje de activación ya escrito (por ejemplo "join happy-tiger"
      * al número del sandbox). Vacío si no hace falta activar.
      */
     String enlaceActivacion();
