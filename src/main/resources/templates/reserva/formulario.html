@@ -5,157 +5,158 @@
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 
 <main>
-  <section class="tg-encabezado">
-    <div class="container position-relative">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
-                <li class="breadcrumb-item">
-                    <a th:href="@{/catalogo/{id}(id=${paquete.id})}" th:text="${paquete.nombre}">Paquete</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Reservar</li>
+    <section class="tg-encabezado">
+        <div class="container position-relative">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a th:href="@{/catalogo}">Catálogo</a></li>
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/catalogo/{id}(id=${paquete.id})}" th:text="${paquete.nombre}">Paquete</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Reservar</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-1">Arma tu reserva</h1>
+            <p class="mb-0" th:unless="${incluidos}">Elige al menos un servicio. Se muestran los que llegan a
+                <span th:text="${@formato.destinos(paquete)}">destino</span>.</p>
+            <p class="mb-0" th:if="${incluidos}">Los servicios incluidos en tu paquete ya están seleccionados.</p>
+            <ol class="tg-pasos">
+                <li class="actual"><span>Elegir servicios</span></li>
+                <li><span>Pagar</span></li>
+                <li><span>Factura</span></li>
             </ol>
-        </nav>
-        <h1 class="h2 mb-1">Arma tu reserva</h1>
-        <p class="mb-0">Elige al menos un servicio. Se muestran los que llegan a
-            <span th:text="${@formato.destinos(paquete)}">destino</span>.</p>
-        <ol class="tg-pasos">
-            <li class="actual"><span>Elegir servicios</span></li>
-            <li><span>Pagar</span></li>
-            <li><span>Factura</span></li>
-        </ol>
-    </div>
-  </section>
-
-  <div class="container tg-sube">
-
-    <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
-
-    <div class="alert alert-info"
-         th:if="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}">
-        <i class="bi bi-info-circle"></i> Por ahora este paquete no tiene vuelos, hoteles ni transportes disponibles.
-    </div>
-
-    <form th:action="@{/reserva}" method="post">
-        <input type="hidden" name="paqueteId" th:value="${paquete.id}">
-
-        <div class="row g-4">
-            <div class="col-lg-8">
-
-                <!-- Una sección por tipo de servicio reservable: Vuelo, Hotel y Transporte -->
-                <div class="card tg-card mb-4">
-                    <div class="card-body p-4">
-                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-airplane"></i></span> Vuelo</h2>
-                        <label class="card tg-opcion p-3 mb-2" th:each="vuelo : ${vuelos}">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="vueloId"
-                                       th:value="${vuelo.id}" th:attr="data-precio=${vuelo.calcularCosto()}">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold"
-                                         th:text="${vuelo.aerolinea + ' · ' + vuelo.origen + ' → ' + vuelo.destino}">Vuelo</div>
-                                    <div class="text-muted small"
-                                         th:text="${'Sale ' + #temporals.format(vuelo.fechaSalida, 'dd/MM/yyyy HH:mm') + ' · llega ' + #temporals.format(vuelo.fechaLlegada, 'HH:mm')}">Fechas</div>
-                                </div>
-                                <span class="fw-semibold"
-                                      th:text="${'+ ' + @formato.cop(vuelo.calcularCosto())}">+ $ 0</span>
-                            </div>
-                        </label>
-                        <label class="card tg-opcion p-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="vueloId" value="" data-precio="0" checked>
-                                <span class="text-muted">Sin vuelo</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="card tg-card mb-4">
-                    <div class="card-body p-4">
-                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-building"></i></span> Hotel</h2>
-                        <label class="card tg-opcion p-3 mb-2" th:each="hotel : ${hoteles}">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="hotelId"
-                                       th:value="${hotel.id}" th:attr="data-precio=${hotel.calcularCosto()}">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold" th:text="${hotel.nombre}">Hotel</div>
-                                    <div class="text-muted small"
-                                         th:text="${hotel.tipoHabitacion + ' · ' + hotel.direccion}">Detalle</div>
-                                    <div class="text-muted small"
-                                         th:text="${@formato.cop(hotel.precio) + ' / noche · ' + hotel.noches + ' noches'}">Precio por noche</div>
-                                </div>
-                                <span class="fw-semibold"
-                                      th:text="${'+ ' + @formato.cop(hotel.calcularCosto())}">+ $ 0</span>
-                            </div>
-                        </label>
-                        <label class="card tg-opcion p-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="hotelId" value="" data-precio="0" checked>
-                                <span class="text-muted">Sin hotel</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="card tg-card">
-                    <div class="card-body p-4">
-                        <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-car-front"></i></span> Transporte</h2>
-                        <label class="card tg-opcion p-3 mb-2" th:each="transporte : ${transportes}">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="transporteId"
-                                       th:value="${transporte.id}" th:attr="data-precio=${transporte.calcularCosto()}">
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold" th:text="${transporte.tipo}">Transporte</div>
-                                    <div class="text-muted small"
-                                         th:text="${transporte.origen + ' → ' + transporte.destino + ' · ' + #temporals.format(transporte.fecha, 'dd/MM/yyyy HH:mm')}">Detalle</div>
-                                </div>
-                                <span class="fw-semibold"
-                                      th:text="${'+ ' + @formato.cop(transporte.calcularCosto())}">+ $ 0</span>
-                            </div>
-                        </label>
-                        <label class="card tg-opcion p-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <input class="form-check-input mt-0" type="radio" name="transporteId" value="" data-precio="0" checked>
-                                <span class="text-muted">Sin transporte</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card tg-card tg-resumen">
-                    <div class="card-body p-4">
-                        <h2 class="h5">Resumen</h2>
-                        <p class="mb-1 fw-semibold" th:text="${paquete.nombre}">Paquete</p>
-                        <p class="text-muted small"
-                           th:text="${@formato.destinos(paquete) + ' · ' + paquete.duracionDias + ' días'}">Destino · días</p>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <span>Paquete</span>
-                            <span th:text="${@formato.cop(paquete.precio)}">$ 0</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Servicios extra</span>
-                            <span id="extras">$ 0</span>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-semibold">Total</span>
-                            <span id="total" class="tg-precio" th:attr="data-base=${paquete.precio}"
-                                  th:text="${@formato.cop(paquete.precio)}">$ 0</span>
-                        </div>
-                        <button type="submit" class="btn btn-tg-acento btn-lg w-100"
-                                th:disabled="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}"><i class="bi bi-check2-circle"></i> Confirmar reserva</button>
-                        <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
-                        <p class="text-muted small mt-2 mb-0">
-                            Por ahora el total a pagar solo suma los servicios, no el precio del paquete.
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
-    </form>
-  </div>
+    </section>
+
+    <div class="container tg-sube">
+
+        <th:block th:replace="~{fragments/layout :: alertas}"></th:block>
+
+        <div class="alert alert-info"
+             th:if="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}">
+            <i class="bi bi-info-circle"></i> Por ahora este paquete no tiene vuelos, hoteles ni transportes disponibles.
+        </div>
+
+        <form th:action="@{/reserva}" method="post">
+            <input type="hidden" name="paqueteId" th:value="${paquete.id}">
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+
+                    <!-- Una sección por tipo de servicio reservable: Vuelo, Hotel y Transporte -->
+                    <div class="card tg-card mb-4">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-airplane"></i></span> Vuelo</h2>
+                            <label class="card tg-opcion p-3 mb-2" th:each="vuelo : ${vuelos}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" th:type="${incluidos ? 'checkbox' : 'radio'}" name="vueloId"
+                                           th:value="${vuelo.id}" th:checked="${incluidos}" th:disabled="${incluidos}" th:attr="data-precio=${vuelo.calcularCosto()}">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold"
+                                             th:text="${vuelo.aerolinea + ' · ' + vuelo.origen + ' → ' + vuelo.destino}">Vuelo</div>
+                                        <div class="text-muted small"
+                                             th:text="${'Sale ' + #temporals.format(vuelo.fechaSalida, 'dd/MM/yyyy HH:mm') + ' · llega ' + #temporals.format(vuelo.fechaLlegada, 'HH:mm')}">Fechas</div>
+                                    </div>
+                                    <span class="fw-semibold"
+                                          th:text="${(incluidos ? 'Incluido · ' : '+ ') + @formato.cop(vuelo.calcularCosto())}">+ $ 0</span>
+                                </div>
+                            </label>
+                            <label class="card tg-opcion p-3" th:unless="${incluidos}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" type="radio" name="vueloId" value="" data-precio="0" checked>
+                                    <span class="text-muted">Sin vuelo</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card tg-card mb-4">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-building"></i></span> Hotel</h2>
+                            <label class="card tg-opcion p-3 mb-2" th:each="hotel : ${hoteles}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" th:type="${incluidos ? 'checkbox' : 'radio'}" name="hotelId"
+                                           th:value="${hotel.id}" th:checked="${incluidos}" th:disabled="${incluidos}" th:attr="data-precio=${hotel.calcularCosto()}">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold" th:text="${hotel.nombre}">Hotel</div>
+                                        <div class="text-muted small"
+                                             th:text="${hotel.tipoHabitacion + ' · ' + hotel.direccion}">Detalle</div>
+                                        <div class="text-muted small"
+                                             th:text="${@formato.cop(hotel.precio) + ' / noche · ' + hotel.noches + ' noches'}">Precio por noche</div>
+                                    </div>
+                                    <span class="fw-semibold"
+                                          th:text="${(incluidos ? 'Incluido · ' : '+ ') + @formato.cop(hotel.calcularCosto())}">+ $ 0</span>
+                                </div>
+                            </label>
+                            <label class="card tg-opcion p-3" th:unless="${incluidos}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" type="radio" name="hotelId" value="" data-precio="0" checked>
+                                    <span class="text-muted">Sin hotel</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card tg-card">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-car-front"></i></span> Transporte</h2>
+                            <label class="card tg-opcion p-3 mb-2" th:each="transporte : ${transportes}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" th:type="${incluidos ? 'checkbox' : 'radio'}" name="transporteId"
+                                           th:value="${transporte.id}" th:checked="${incluidos}" th:disabled="${incluidos}" th:attr="data-precio=${transporte.calcularCosto()}">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold" th:text="${transporte.tipo}">Transporte</div>
+                                        <div class="text-muted small"
+                                             th:text="${transporte.origen + ' → ' + transporte.destino + ' · ' + #temporals.format(transporte.fecha, 'dd/MM/yyyy HH:mm')}">Detalle</div>
+                                    </div>
+                                    <span class="fw-semibold"
+                                          th:text="${(incluidos ? 'Incluido · ' : '+ ') + @formato.cop(transporte.calcularCosto())}">+ $ 0</span>
+                                </div>
+                            </label>
+                            <label class="card tg-opcion p-3" th:unless="${incluidos}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input class="form-check-input mt-0" type="radio" name="transporteId" value="" data-precio="0" checked>
+                                    <span class="text-muted">Sin transporte</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card tg-card tg-resumen">
+                        <div class="card-body p-4">
+                            <h2 class="h5">Resumen</h2>
+                            <p class="mb-1 fw-semibold" th:text="${paquete.nombre}">Paquete</p>
+                            <p class="text-muted small"
+                               th:text="${@formato.destinos(paquete) + ' · ' + paquete.duracionDias + ' días'}">Destino · días</p>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <span>Precio de referencia del paquete</span>
+                                <span th:text="${@formato.cop(paquete.precio)}">$ 0</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Servicios seleccionados</span>
+                                <span id="extras" th:text="${@formato.cop(totalInicial)}">$ 0</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="fw-semibold">Total</span>
+                                <span id="total" class="tg-precio"
+                                      th:text="${@formato.cop(totalInicial)}">$ 0</span>
+                            </div>
+                            <button type="submit" class="btn btn-tg-acento btn-lg w-100"
+                                    th:disabled="${#lists.isEmpty(vuelos) and #lists.isEmpty(hoteles) and #lists.isEmpty(transportes)}"><i class="bi bi-check2-circle"></i> Confirmar reserva</button>
+
+                            <p class="text-muted small mt-2 mb-0">
+                                El total corresponde a los servicios seleccionados, sin duplicar el precio del paquete.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
