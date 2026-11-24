@@ -21,7 +21,8 @@ import java.util.Optional;
 
 /**
  * Implementación JDBC del DAO de reservas. Guarda la reserva en la tabla reserva y sus servicios
- * en la tabla intermedia reserva_servicio.
+ * en la tabla intermedia reserva_servicio. Los viajeros (con sus gustos y actividades) van en
+ * reserva_viajero y viajero_actividad, por medio de ViajeroDAO.
  */
 @Repository
 @Primary
@@ -34,13 +35,15 @@ public class ReservaDAOJdbc implements ReservaDAO {
     private final UsuarioDAO usuarioDAO;
     private final PaqueteDAO paqueteDAO;
     private final ServicioReservableDAO servicioDAO;
+    private final ViajeroDAO viajeroDAO;
 
     public ReservaDAOJdbc(JdbcTemplate jdbc, UsuarioDAO usuarioDAO,
-                          PaqueteDAO paqueteDAO, ServicioReservableDAO servicioDAO) {
+                          PaqueteDAO paqueteDAO, ServicioReservableDAO servicioDAO, ViajeroDAO viajeroDAO) {
         this.jdbc = jdbc;
         this.usuarioDAO = usuarioDAO;
         this.paqueteDAO = paqueteDAO;
         this.servicioDAO = servicioDAO;
+        this.viajeroDAO = viajeroDAO;
     }
 
     @Override
@@ -64,6 +67,8 @@ public class ReservaDAOJdbc implements ReservaDAO {
                 jdbc.update("INSERT INTO reserva_servicio (reserva_id, servicio_id) VALUES (?, ?)",
                         reserva.getId(), servicio.getId());
             }
+            // Viajeros con sus gustos y actividades (Integrante 3)
+            viajeroDAO.reemplazar(reserva.getId(), reserva.getViajeros());
             return reserva;
         } catch (DataAccessException e) {
             throw new AccesoDatosException("No se pudo guardar la reserva", e);
@@ -116,9 +121,11 @@ public class ReservaDAOJdbc implements ReservaDAO {
             servicioDAO.buscarPorId(idServicio).ifPresent(servicios::add);
         }
 
-        return new Reserva(id, usuario, paquete, servicios,
+        Reserva reserva = new Reserva(id, usuario, paquete, servicios,
                 rs.getObject("fecha_reserva", LocalDate.class),
                 EstadoReserva.valueOf(rs.getString("estado")),
                 rs.getDouble("total"));
+        reserva.cargarViajeros(viajeroDAO.listarPorReserva(id));
+        return reserva;
     }
 }

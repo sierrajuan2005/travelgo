@@ -294,3 +294,41 @@ ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_fecha  TIMESTAMP;
 ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS compartio_postal BOOLEAN NOT NULL DEFAULT FALSE;
 -- Viaje de quien le compartió la postal ("se unió al viaje de Jaime"); NULL si llegó por el QR del stand.
 ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS invitado_por BIGINT REFERENCES lanzamiento_expo (id);
+
+-- =====================================================================
+-- Viajeros y gustos - Integrante 3 (pedido del profesor, 2026-11-24)
+-- Una reserva puede tener varios viajeros. Cada uno elige sus gustos (fiesta, museos, iglesias...)
+-- y sus propias actividades pagas; TravelGo arma un plan distinto para cada persona.
+--   actividad ......... catálogo de experiencias con precio por destino y gusto
+--   reserva_viajero ... personas de la reserva; gustos va como lista separada por comas (FIESTA,CULTURA)
+--   viajero_actividad . actividades pagas que eligió cada viajero (suman al total de la reserva)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS actividad (
+    id             VARCHAR(60)   PRIMARY KEY,
+    destino_id     BIGINT        NOT NULL REFERENCES destino (id) ON DELETE CASCADE,
+    nombre         VARCHAR(120)  NOT NULL,
+    descripcion    VARCHAR(400),
+    gusto          VARCHAR(20)   NOT NULL
+                   CHECK (gusto IN ('FIESTA', 'CULTURA', 'HISTORIA', 'RELIGION', 'NATURALEZA',
+                                    'GASTRONOMIA', 'COMPRAS', 'FAMILIA')),
+    precio         NUMERIC(10,2) NOT NULL CHECK (precio >= 0),
+    duracion_horas INTEGER       NOT NULL CHECK (duracion_horas >= 1),
+    activa         BOOLEAN       NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS reserva_viajero (
+    id         VARCHAR(36)  PRIMARY KEY,
+    reserva_id VARCHAR(36)  NOT NULL REFERENCES reserva (id) ON DELETE CASCADE,
+    nombre     VARCHAR(40)  NOT NULL,
+    gustos     VARCHAR(200) NOT NULL DEFAULT '',
+    orden      INTEGER      NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS viajero_actividad (
+    viajero_id   VARCHAR(36) NOT NULL REFERENCES reserva_viajero (id) ON DELETE CASCADE,
+    actividad_id VARCHAR(60) NOT NULL REFERENCES actividad (id),
+    PRIMARY KEY (viajero_id, actividad_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_actividad_destino ON actividad (destino_id);
+CREATE INDEX IF NOT EXISTS idx_viajero_reserva   ON reserva_viajero (reserva_id, orden);
