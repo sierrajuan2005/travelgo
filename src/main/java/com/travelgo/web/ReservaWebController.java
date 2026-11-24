@@ -61,8 +61,8 @@ public class ReservaWebController {
 	private final ConstructorPaqueteService constructorPaquete;
 
 	public ReservaWebController(UsuarioService usuarioService, PaqueteService paqueteService,
-			ServicioReservableService servicioService, ReservaService reservaService, PagoService pagoService,
-			FacturaService facturaService, ConstructorPaqueteService constructorPaquete) {
+								ServicioReservableService servicioService, ReservaService reservaService, PagoService pagoService,
+								FacturaService facturaService, ConstructorPaqueteService constructorPaquete) {
 		this.usuarioService = usuarioService;
 		this.paqueteService = paqueteService;
 		this.servicioService = servicioService;
@@ -76,12 +76,12 @@ public class ReservaWebController {
 	private OfertaPaquete oferta(PaqueteTuristico paquete) {
 		List<ServicioReservable> propios = constructorPaquete.serviciosDe(paquete.getId());
 		return propios.isEmpty() ? OfertaPaquete.de(paquete, servicioService.listar(true))
-			: OfertaPaquete.incluidos(propios);
+				: OfertaPaquete.incluidos(propios);
 	}
 
 	/** Una fila de la tabla de reservas. */
 	public record FilaReserva(String id, String idCorto, String paquete, String cliente, double total,
-			String estado, boolean pagada) {
+							  String estado, boolean pagada) {
 	}
 
 	/** Una línea del detalle de pago o de la factura. */
@@ -93,13 +93,16 @@ public class ReservaWebController {
 	 */
 	@GetMapping("/reserva")
 	public String formulario(@RequestParam(name = "paquete", required = false) Long paqueteId,
-			Authentication autenticacion, Model model) {
+							 Authentication autenticacion, Model model) {
 		usuarioQueReserva(autenticacion);
 		Optional<PaqueteTuristico> paquete = paqueteActivo(paqueteId);
 		if (paquete.isEmpty()) {
 			return "redirect:/catalogo";
 		}
-		OfertaPaquete oferta = oferta(paquete.get());
+		List<ServicioReservable> propios = constructorPaquete.serviciosDe(paqueteId);
+		OfertaPaquete oferta = propios.isEmpty() ? oferta(paquete.get()) : OfertaPaquete.incluidos(propios);
+		model.addAttribute("incluidos", !propios.isEmpty());
+		model.addAttribute("totalInicial", propios.stream().mapToDouble(ServicioReservable::calcularCosto).sum());
 		model.addAttribute("paquete", paquete.get());
 		model.addAttribute("vuelos", oferta.vuelos());
 		model.addAttribute("hoteles", oferta.hoteles());
@@ -113,32 +116,28 @@ public class ReservaWebController {
 	 */
 	@PostMapping("/reserva")
 	public String guardar(@RequestParam Long paqueteId,
-			@RequestParam(required = false) String vueloId,
-			@RequestParam(required = false) String hotelId,
-			@RequestParam(required = false) String transporteId,
-			Authentication autenticacion, RedirectAttributes redirect) {
+						  @RequestParam(required = false) String vueloId,
+						  @RequestParam(required = false) String hotelId,
+						  @RequestParam(required = false) String transporteId,
+						  Authentication autenticacion, RedirectAttributes redirect) {
 		usuarioQueReserva(autenticacion);
 		Optional<PaqueteTuristico> paquete = paqueteActivo(paqueteId);
 		if (paquete.isEmpty()) {
 			return "redirect:/catalogo";
 		}
 		// Solo se aceptan servicios de la oferta del paquete, aunque alguien cambie el formulario a mano
-		OfertaPaquete oferta = oferta(paquete.get());
-		List<String> serviciosIds = new ArrayList<>();
-		for (String id : new String[] {vueloId, hotelId, transporteId}) {
-			if (id != null && !id.isBlank()) {
-				oferta.buscar(id).map(ServicioReservable::getId).ifPresent(serviciosIds::add);
-			}
-		}
+		List<ServicioReservable> propios = constructorPaquete.serviciosDe(paqueteId);
+		OfertaPaquete oferta = propios.isEmpty() ? oferta(paquete.get()) : OfertaPaquete.incluidos(propios);
+		List<String> serviciosIds = oferta.seleccionar(!propios.isEmpty(), vueloId, hotelId, transporteId);
 		if (serviciosIds.isEmpty()) {
 			redirect.addFlashAttribute("error", "Elige al menos un vuelo, un hotel o un transporte.");
 			return "redirect:/reserva?paquete=" + paqueteId;
 		}
 		try {
 			Reserva reserva = reservaService.crearReserva(new ReservaRequest(serviciosIds, paqueteId),
-				autenticacion.getName());
+					autenticacion.getName());
 			redirect.addFlashAttribute("mensaje", "Reserva " + FormatoWeb.idCorto(reserva.getId())
-				+ " guardada (" + reserva.getEstado() + "). Ya puedes pagarla.");
+					+ " guardada (" + reserva.getEstado() + "). Ya puedes pagarla.");
 		} catch (IllegalArgumentException | IllegalStateException | RecursoNoEncontradoException e) {
 			redirect.addFlashAttribute("error", "No se pudo guardar la reserva: " + e.getMessage());
 			return "redirect:/reserva?paquete=" + paqueteId;
@@ -156,15 +155,15 @@ public class ReservaWebController {
 		List<Reserva> reservas = esAgente ? reservaService.listar() : reservaService.listarPropias(usuario.getCorreo());
 
 		Set<String> pagadas = facturaService.listar().stream()
-			.filter(f -> f.getEstado() == EstadoFactura.PAGADA)
-			.map(f -> f.getReserva().getId())
-			.collect(Collectors.toSet());
+				.filter(f -> f.getEstado() == EstadoFactura.PAGADA)
+				.map(f -> f.getReserva().getId())
+				.collect(Collectors.toSet());
 
 		List<FilaReserva> filas = reservas.stream()
-			.sorted(Comparator.comparing(Reserva::getFechaReserva).reversed())
-			.map(r -> new FilaReserva(r.getId(), FormatoWeb.idCorto(r.getId()), FormatoWeb.nombrePaquete(r),
-				r.getUsuario().getNombre(), r.getTotal(), r.getEstado(), pagadas.contains(r.getId())))
-			.toList();
+				.sorted(Comparator.comparing(Reserva::getFechaReserva).reversed())
+				.map(r -> new FilaReserva(r.getId(), FormatoWeb.idCorto(r.getId()), FormatoWeb.nombrePaquete(r),
+						r.getUsuario().getNombre(), r.getTotal(), r.getEstado(), pagadas.contains(r.getId())))
+				.toList();
 		model.addAttribute("reservas", filas);
 		model.addAttribute("esAgente", esAgente);
 		return "reserva/lista";
@@ -189,8 +188,8 @@ public class ReservaWebController {
 	 */
 	@PostMapping("/reservas/{id}/pagar")
 	public String pagar(@PathVariable String id, @RequestParam(required = false) MetodoPago metodo,
-			@RequestParam(required = false) String codigoCupon,
-			Authentication autenticacion, RedirectAttributes redirect) {
+						@RequestParam(required = false) String codigoCupon,
+						Authentication autenticacion, RedirectAttributes redirect) {
 		Reserva reserva = reservaVisible(autenticacion, id);
 		if (metodo == null) {
 			redirect.addFlashAttribute("error", "Elige un método de pago.");
@@ -198,14 +197,14 @@ public class ReservaWebController {
 		}
 		try {
 			boolean esAgente = autenticacion.getAuthorities().stream()
-        .anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
+					.anyMatch(a -> a.getAuthority().equals("ROLE_AGENTE"));
 
-pagoService.pagar(
-        new PagoRequest(reserva.getId(), metodo,
-                codigoCupon == null || codigoCupon.isBlank() ? null : codigoCupon.trim().toUpperCase()),
-        autenticacion.getName(),
-        esAgente
-);
+			pagoService.pagar(
+					new PagoRequest(reserva.getId(), metodo,
+							codigoCupon == null || codigoCupon.isBlank() ? null : codigoCupon.trim().toUpperCase()),
+					autenticacion.getName(),
+					esAgente
+			);
 		} catch (IllegalArgumentException | IllegalStateException | RecursoNoEncontradoException e) {
 			redirect.addFlashAttribute("error", "No se pudo pagar: " + e.getMessage());
 			return "redirect:/reservas/" + id + "/pagar";
@@ -216,7 +215,7 @@ pagoService.pagar(
 
 	@GetMapping("/reservas/{id}/factura")
 	public String factura(@PathVariable String id, Authentication autenticacion, Model model,
-			RedirectAttributes redirect) {
+						  RedirectAttributes redirect) {
 		Reserva reserva = reservaVisible(autenticacion, id);
 		Optional<Factura> factura = factura(reserva);
 		if (factura.isEmpty()) {
@@ -241,7 +240,7 @@ pagoService.pagar(
 	 */
 	private Usuario usuarioQueReserva(Authentication autenticacion) {
 		Usuario usuario = usuarioService.buscarPorCorreo(autenticacion.getName())
-			.orElseThrow(() -> new AccessDeniedException("Usuario no encontrado"));
+				.orElseThrow(() -> new AccessDeniedException("Usuario no encontrado"));
 		if (usuario.getRol() != RolUsuario.CLIENTE && usuario.getRol() != RolUsuario.AGENTE) {
 			throw new AccessDeniedException("El rol " + usuario.getRol() + " no reserva ni paga.");
 		}
@@ -256,8 +255,8 @@ pagoService.pagar(
 		Usuario usuario = usuarioQueReserva(autenticacion);
 		try {
 			return usuario.getRol() == RolUsuario.AGENTE
-				? reservaService.obtener(id)
-				: reservaService.obtenerPropia(id, usuario.getCorreo());
+					? reservaService.obtener(id)
+					: reservaService.obtenerPropia(id, usuario.getCorreo());
 		} catch (RecursoNoEncontradoException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
 		}
@@ -292,8 +291,8 @@ pagoService.pagar(
 
 	private List<LineaFactura> lineas(Reserva reserva) {
 		return reserva.getServicios().stream()
-			.map(servicio -> new LineaFactura(FormatoWeb.describir(servicio), servicio.calcularCosto()))
-			.toList();
+				.map(servicio -> new LineaFactura(FormatoWeb.describir(servicio), servicio.calcularCosto()))
+				.toList();
 	}
 
 	private Map<MetodoPago, String> metodosDePago() {

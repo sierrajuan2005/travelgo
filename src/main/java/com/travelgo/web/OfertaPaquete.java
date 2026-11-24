@@ -34,22 +34,22 @@ public record OfertaPaquete(List<Vuelo> vuelos, List<Hotel> hoteles, List<Transp
 	 */
 	public static OfertaPaquete de(PaqueteTuristico paquete, List<ServicioReservable> servicios) {
 		List<String> ciudades = paquete.getDestinos().stream()
-			.map(Destino::getCiudad)
-			.map(Textos::normalizar)
-			.filter(c -> !c.isEmpty())
-			.toList();
+				.map(Destino::getCiudad)
+				.map(Textos::normalizar)
+				.filter(c -> !c.isEmpty())
+				.toList();
 		List<Vuelo> vuelos = servicios.stream()
-			.filter(Vuelo.class::isInstance).map(Vuelo.class::cast)
-			.filter(v -> ciudades.contains(Textos.normalizar(v.getDestino())))
-			.toList();
+				.filter(Vuelo.class::isInstance).map(Vuelo.class::cast)
+				.filter(v -> ciudades.contains(Textos.normalizar(v.getDestino())))
+				.toList();
 		List<Hotel> hoteles = servicios.stream()
-			.filter(Hotel.class::isInstance).map(Hotel.class::cast)
-			.filter(h -> ciudades.stream().anyMatch(Textos.normalizar(h.getDireccion())::contains))
-			.toList();
+				.filter(Hotel.class::isInstance).map(Hotel.class::cast)
+				.filter(h -> ciudades.stream().anyMatch(Textos.normalizar(h.getDireccion())::contains))
+				.toList();
 		List<Transporte> transportes = servicios.stream()
-			.filter(Transporte.class::isInstance).map(Transporte.class::cast)
-			.filter(t -> ciudades.contains(Textos.normalizar(t.getOrigen())) || ciudades.contains(Textos.normalizar(t.getDestino())))
-			.toList();
+				.filter(Transporte.class::isInstance).map(Transporte.class::cast)
+				.filter(t -> ciudades.contains(Textos.normalizar(t.getOrigen())) || ciudades.contains(Textos.normalizar(t.getDestino())))
+				.toList();
 		return new OfertaPaquete(vuelos, hoteles, transportes);
 	}
 
@@ -60,18 +60,31 @@ public record OfertaPaquete(List<Vuelo> vuelos, List<Hotel> hoteles, List<Transp
 	 */
 	public static OfertaPaquete incluidos(List<ServicioReservable> servicios) {
 		return new OfertaPaquete(
-			servicios.stream().filter(Vuelo.class::isInstance).map(Vuelo.class::cast).toList(),
-			servicios.stream().filter(Hotel.class::isInstance).map(Hotel.class::cast).toList(),
-			servicios.stream().filter(Transporte.class::isInstance).map(Transporte.class::cast).toList());
+				servicios.stream().filter(Vuelo.class::isInstance).map(Vuelo.class::cast).toList(),
+				servicios.stream().filter(Hotel.class::isInstance).map(Hotel.class::cast).toList(),
+				servicios.stream().filter(Transporte.class::isInstance).map(Transporte.class::cast).toList());
 	}
 
 	/** Busca un servicio de la oferta por id. */
 	public Optional<ServicioReservable> buscar(String id) {
 		return java.util.stream.Stream.of(vuelos, hoteles, transportes)
-			.flatMap(List::stream)
-			.map(ServicioReservable.class::cast)
-			.filter(s -> s.getId().equals(id))
-			.findFirst();
+				.flatMap(List::stream)
+				.map(ServicioReservable.class::cast)
+				.filter(s -> s.getId().equals(id))
+				.findFirst();
+	}
+
+	/** Los servicios incluidos se reservan una sola vez; los manuales se eligen por tipo. */
+	public List<String> seleccionar(boolean incluidos, String vueloId, String hotelId, String transporteId) {
+		if (incluidos) {
+			return java.util.stream.Stream.of(vuelos, hoteles, transportes)
+					.flatMap(List::stream).map(ServicioReservable::getId).distinct().toList();
+		}
+		return java.util.stream.Stream.of(
+						vuelos.stream().filter(v -> v.getId().equals(vueloId)).map(Vuelo::getId),
+						hoteles.stream().filter(h -> h.getId().equals(hotelId)).map(Hotel::getId),
+						transportes.stream().filter(t -> t.getId().equals(transporteId)).map(Transporte::getId))
+				.flatMap(java.util.function.Function.identity()).distinct().toList();
 	}
 
 }
