@@ -2,11 +2,11 @@
     'use strict';
 
     const CATEGORIAS = [
-        { id: 'RESTAURANTE', etiqueta: 'Restaurantes', color: '#e4572e' },
-        { id: 'CAFE', etiqueta: 'Cafés', color: '#8d5524' },
-        { id: 'HOTEL', etiqueta: 'Hoteles', color: '#1d6fa5' },
-        { id: 'SITIO_TURISTICO', etiqueta: 'Sitios turísticos', color: '#2a9d8f' },
-        { id: 'MUSEO', etiqueta: 'Museos', color: '#7b2cbf' }
+        { id: 'RESTAURANTE', etiqueta: 'Restaurantes', color: '#e4572e', icono: '🍴' },
+        { id: 'CAFE', etiqueta: 'Cafés', color: '#8d5524', icono: '☕' },
+        { id: 'HOTEL', etiqueta: 'Hoteles', color: '#1d6fa5', icono: '🛏' },
+        { id: 'SITIO_TURISTICO', etiqueta: 'Sitios turísticos', color: '#2a9d8f', icono: '📷' },
+        { id: 'MUSEO', etiqueta: 'Museos', color: '#7b2cbf', icono: '🏛' }
     ];
 
     function normalizar(texto) {
@@ -73,7 +73,7 @@
                 boton.type = 'button';
                 boton.className = 'tgm-chip';
                 boton.style.setProperty('--color', c.color);
-                boton.textContent = c.etiqueta;
+                boton.textContent = c.icono + ' ' + c.etiqueta;
                 boton.addEventListener('click', function () {
                     if (seleccionadas.has(c.id)) { seleccionadas.delete(c.id); } else { seleccionadas.add(c.id); }
                     boton.classList.toggle('activo', seleccionadas.has(c.id));
@@ -156,9 +156,12 @@
             const elemento = document.createElement('div');
             elemento.className = 'tgm-pin' + (destacado ? ' tgm-destacado' : '');
             elemento.style.background = cat.color;
+            elemento.textContent = cat.icono;
+            elemento.setAttribute('aria-label', cat.etiqueta + ': ' + lugar.nombre);
+            elemento.title = lugar.nombre;
             const marker = new maplibregl.Marker({ element: elemento })
                 .setLngLat([lugar.longitud, lugar.latitud])
-                .setPopup(new maplibregl.Popup({ offset: 14 }).setDOMContent(contenidoPopup(lugar, destacado)))
+                .setPopup(new maplibregl.Popup({ offset: 20 }).setDOMContent(contenidoPopup(lugar, destacado)))
                 .addTo(mapa);
             marcadores.push({ categoria: lugar.categoria, marker: marker, elemento: elemento, destacado: destacado });
         }

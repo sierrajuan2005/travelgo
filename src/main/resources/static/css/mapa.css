@@ -3,11 +3,11 @@
     padding: 4px 14px; cursor: pointer; font-size: .9rem; }
 .tgm-chip.activo { background: var(--color); color: #fff; }
 .tgm-lienzo { width: 100%; height: 440px; border-radius: 16px; overflow: hidden; }
-.tgm-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
+.tgm-pin { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; border-radius: 50%; border: 2px solid #fff; cursor: pointer;
     box-shadow: 0 0 3px rgba(0, 0, 0, .5); }
 .tgm-pin.tgm-oculto { display: none; }
 .tgm-pin.tgm-atenuado { opacity: .15; pointer-events: none; }
-.tgm-pin.tgm-destacado { width: 26px; height: 26px; border-width: 3px; z-index: 5;
+.tgm-pin.tgm-destacado { width: 38px; height: 38px; font-size: 20px; border-width: 3px; z-index: 5;
     box-shadow: 0 0 0 3px #5a3df0, 0 0 12px rgba(0, 0, 0, .55); }
 .tgm-popup h3 { margin: 0 0 4px; font-size: 1rem; }
 .tgm-popup p { margin: 2px 0; font-size: .85rem; }
