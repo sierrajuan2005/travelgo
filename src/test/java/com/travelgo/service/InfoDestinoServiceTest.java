@@ -149,6 +149,18 @@ class InfoDestinoServiceTest {
 	}
 
 	@Test
+	@DisplayName("Si la ciudad es una desambiguación sin foto, se busca como \"ciudad (país)\"")
+	void fotoPorCiudadYPais() {
+		Destino santaMarta = new Destino("Santa Marta", "Playas", "Colombia", "Santa Marta");
+		when(proveedorFotos.buscarFoto("Santa Marta (Colombia)"))
+			.thenReturn(Optional.of(new FotoDestino("https://foto", "Bahia.jpg", "Autor", null, null, "https://c")));
+
+		assertTrue(servicio.foto(santaMarta).isPresent());
+		verify(proveedorFotos).buscarFoto("Santa Marta");
+		verify(proveedorFotos).buscarFoto("Santa Marta (Colombia)");
+	}
+
+	@Test
 	@DisplayName("Para las tarjetas del catálogo, un error de la API de fotos da vacío")
 	void fotoSiSePuede() {
 		when(proveedorFotos.buscarFoto(any()))

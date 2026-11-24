@@ -137,8 +137,9 @@ public class InfoDestinoService {
 	}
 
 	/**
-	 * Foto del destino. Primero busca por el nombre del destino ("Cartagena de Indias") y, si no hay un
-	 * artículo con ese nombre ("Cusco y Machu Picchu"), por la ciudad ("Cusco").
+	 * Foto del destino. Primero busca por el nombre del destino ("Cartagena de Indias"); si no hay un
+	 * artículo con ese nombre ("Cusco y Machu Picchu"), por la ciudad ("Cusco"); y si la ciudad es una
+	 * desambiguación, por "ciudad (país)" ("Santa Marta (Colombia)").
 	 *
 	 * @return la foto, o vacío si no se encontró ninguna
 	 * @throws ProveedorExternoException si la API falla
@@ -147,6 +148,11 @@ public class InfoDestinoService {
 		Set<String> nombres = new LinkedHashSet<>();
 		agregarSiHay(nombres, destino.getNombre());
 		agregarSiHay(nombres, destino.getCiudad());
+		// Ciudades con nombre repetido: en Wikipedia "Santa Marta" es una desambiguación sin foto,
+		// el artículo de la ciudad es "Santa Marta (Colombia)"
+		if (destino.getCiudad() != null && destino.getPais() != null) {
+			agregarSiHay(nombres, destino.getCiudad() + " (" + destino.getPais() + ")");
+		}
 		return cacheFotos.obtener(Textos.normalizar(String.join("|", nombres)), () -> {
 			for (String nombre : nombres) {
 				Optional<FotoDestino> foto = proveedorFotos.buscarFoto(nombre);
