@@ -290,3 +290,7 @@ ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS abrio_paquete  BOOLEAN NOT
 ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_id     VARCHAR(64);
 ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_estado VARCHAR(20);
 ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS whatsapp_fecha  TIMESTAMP;
+-- El visitante compartió o descargó su postal (embudo del stand).
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS compartio_postal BOOLEAN NOT NULL DEFAULT FALSE;
+-- Viaje de quien le compartió la postal ("se unió al viaje de Jaime"); NULL si llegó por el QR del stand.
+ALTER TABLE lanzamiento_expo ADD COLUMN IF NOT EXISTS invitado_por BIGINT REFERENCES lanzamiento_expo (id);

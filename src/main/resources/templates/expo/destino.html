@@ -27,8 +27,11 @@
     <header class="expo-portada" th:classappend="${foto == null} ? 'expo-portada-sin-foto'">
         <img th:if="${foto != null}" th:src="${foto.url()}" th:alt="${'Foto de ' + destino.ciudad()}" class="expo-portada-foto">
         <div class="expo-portada-texto">
-            <p class="expo-eyebrow">
+            <p class="expo-eyebrow" th:if="${propio}">
                 <span th:text="${viaje.nombre()}">Jaime</span>, aterrizaste en
+            </p>
+            <p class="expo-eyebrow" th:unless="${propio}">
+                <span th:text="${viaje.nombre()}">Jaime</span> te invita a
             </p>
             <h1 class="expo-titulo expo-portada-ciudad" th:text="${destino.ciudad()}">París</h1>
             <p class="expo-portada-pais" th:text="${destino.pais()}">Francia</p>
@@ -55,6 +58,59 @@
         </div>
     </section>
 
+    <!-- Quien abre la postal de un amigo: unirse al mismo viaje (lanza su propio avión al mismo destino) -->
+    <section class="expo-bloque expo-invitacion" th:unless="${propio}">
+        <p class="expo-eyebrow">Viaja con <span th:text="${viaje.nombre()}">Jaime</span></p>
+        <h2 class="expo-subtitulo">Únete al viaje a <em th:text="${destino.ciudad()}">París</em></h2>
+        <p class="expo-cel-intro">
+            <span th:text="${viaje.nombre()}">Jaime</span> lanzó este viaje en la ExpoSoftware. Lanza el tuyo al mismo
+            destino: tu avión sale de Valledupar en la pantalla del stand y te llevas tu propia postal.
+            <th:block th:if="${sonadores > 1}">Ya son <b th:text="${sonadores}">12</b> personas soñando con
+                <span th:text="${destino.ciudad()}">París</span>.</th:block>
+        </p>
+        <div class="expo-acciones">
+            <a class="expo-boton" th:href="@{/expo(destino=${destino.id()}, con=${viaje.id()})}">
+                Únete al viaje de <span th:text="${viaje.nombre()}">Jaime</span></a>
+            <a class="expo-boton expo-boton-secundario" href="#paquetes" th:unless="${#lists.isEmpty(paquetes)}">
+                Ver paquetes para ir de verdad</a>
+        </div>
+    </section>
+
+    <!-- Postal del viaje (idea 2): se dibuja en el celular con js/expo-postal.js y se comparte a su WhatsApp.
+         Gratis y sin límites: la comparte la persona desde su celular, no un proveedor. -->
+    <section class="expo-bloque expo-postal" id="expo-postal" th:if="${propio}"
+             th:data-nombre="${viaje.nombre()}"
+             th:data-ciudad="${destino.ciudad()}"
+             th:data-pais="${destino.pais()}"
+             th:data-aeropuerto="${destino.aeropuerto()}"
+             th:data-km="${#numbers.formatInteger(km, 1, 'POINT')}"
+             th:data-fecha="${#temporals.format(viaje.fecha(), 'dd/MM/yyyy')}"
+             th:data-lat="${destino.latitud()}"
+             th:data-lon="${destino.longitud()}"
+             th:data-temperatura="${clima != null ? #numbers.formatDecimal(clima.temperaturaActual(), 1, 0) : ''}"
+             th:data-clima="${clima != null ? clima.descripcion() : ''}"
+             th:data-foto="${foto != null} ? @{/expo/viaje/{id}/foto(id=${viaje.id()})} : ''"
+             th:data-credito="${foto != null ? 'Foto: ' + foto.autor() + (foto.licencia() != null ? ' · ' + foto.licencia() : '') + ' · Wikimedia Commons' : ''}"
+             th:data-enlace="${urlCompartir}"
+             th:data-propio="${propio}"
+             th:data-api="@{/api/expo/lanzamientos/{id}/compartio(id=${viaje.id()})}"
+             th:data-csrf-header="${_csrf?.headerName}"
+             th:data-csrf-token="${_csrf?.token}">
+        <p class="expo-eyebrow">Tu postal del viaje</p>
+        <h2 class="expo-subtitulo">Llévate <em>tu viaje</em> a WhatsApp</h2>
+        <div class="expo-postal-marco">
+            <img class="expo-postal-imagen" alt="Tu postal del viaje" hidden>
+            <p class="expo-postal-cargando">Dibujando tu postal…</p>
+        </div>
+        <button type="button" class="expo-boton expo-boton-wa" data-accion="compartir" disabled>
+            Compartir en WhatsApp
+        </button>
+        <div class="expo-postal-otras">
+            <a class="expo-enlace" data-accion="descargar" download>Descargar postal</a>
+            <a class="expo-enlace" data-accion="enlace" target="_blank" rel="noopener">Enviar solo el enlace</a>
+        </div>
+    </section>
+
     <!-- Clima real de hoy -->
     <section class="expo-bloque" th:if="${clima != null}">
         <p class="expo-eyebrow">Así está <span th:text="${destino.ciudad()}">París</span> ahora</p>
@@ -78,7 +134,7 @@
     </section>
 
     <!-- Paquetes de TravelGo: el sueño se vuelve viaje -->
-    <section class="expo-bloque" th:unless="${#lists.isEmpty(paquetes)}">
+    <section class="expo-bloque" id="paquetes" th:unless="${#lists.isEmpty(paquetes)}">
         <p class="expo-eyebrow">Hazlo real con TravelGo</p>
         <h2 class="expo-subtitulo">Paquetes a <em th:text="${destino.ciudad()}">Cartagena</em></h2>
         <a class="expo-paquete" th:each="p : ${paquetes}"
@@ -100,22 +156,22 @@
             <span th:text="${sonadores == 1 ? 'persona sueña' : 'personas sueñan'}">personas sueñan</span>
             con <em th:text="${destino.ciudad()}">París</em> hoy
         </h2>
-        <p class="expo-cel-intro">Los destinos más soñados en la ExpoSoftware son los próximos paquetes que armamos.
-            Deja tu celular y te avisamos primero.</p>
+        <p class="expo-cel-intro">Los destinos más soñados en la ExpoSoftware son los próximos paquetes que armamos.</p>
     </section>
 
-    <!-- Contacto para la postal (solo el visitante que lanzó este viaje) -->
-    <section class="expo-bloque expo-contacto" th:if="${propio}" id="expo-contacto"
+    <!-- Contacto por WhatsApp: solo para quien lanzó el viaje y solo si WhatsApp está configurado (Twilio).
+         Con la cuenta gratis de Twilio no sirve para el público, así que normalmente no aparece. -->
+    <section class="expo-bloque expo-contacto" th:if="${propio and whatsappDisponible}" id="expo-contacto"
              th:data-api="@{/api/expo/lanzamientos/{id}/contacto(id=${viaje.id()})}"
              th:data-api-whatsapp="@{/api/expo/lanzamientos/{id}/whatsapp(id=${viaje.id()})}"
              th:data-whatsapp="${whatsappDisponible}"
              th:data-estado-whatsapp="${estadoWhatsApp}"
              th:data-csrf-header="${_csrf?.headerName}"
              th:data-csrf-token="${_csrf?.token}">
-        <p class="expo-eyebrow">Tu recuerdo del viaje</p>
-        <h2 class="expo-subtitulo">Recibe tu <em>postal</em> de <span th:text="${destino.ciudad()}">París</span></h2>
-        <p class="expo-cel-intro">Te enviamos por WhatsApp tu viaje: la foto de <span th:text="${destino.ciudad()}">París</span>,
-            el clima de hoy y las ofertas de TravelGo.</p>
+        <p class="expo-eyebrow">Ofertas para ti</p>
+        <h2 class="expo-subtitulo">Te avisamos de <em>ofertas</em> a <span th:text="${destino.ciudad()}">París</span></h2>
+        <p class="expo-cel-intro">Déjanos tu celular y TravelGo te escribe por WhatsApp cuando haya ofertas para este
+            destino.</p>
 
         <div class="expo-contacto-listo" data-estado="guardado" th:hidden="${#strings.isEmpty(telefono)}">
             <p>Tu celular: <b data-campo="telefono" th:text="${telefono}">+57 300 ••• 4567</b>
@@ -136,7 +192,7 @@
             </ol>
             <p class="expo-wa-estado" data-campo="estado-wa" aria-live="polite"></p>
             <p class="expo-cel-intro" th:unless="${whatsappDisponible}">
-                Guardado. Te escribiremos por WhatsApp con tu postal y las ofertas.</p>
+                ✓ Guardado. Te escribiremos por WhatsApp cuando haya ofertas.</p>
         </div>
 
         <form class="expo-contacto-form" data-estado="pedir" th:hidden="${!#strings.isEmpty(telefono)}" novalidate>
@@ -147,11 +203,11 @@
             </label>
             <label class="expo-autoriza">
                 <input type="checkbox" name="autoriza" required>
-                <span>Autorizo a TravelGo a usar mi celular solo para enviarme mi postal y ofertas de viaje.
+                <span>Autorizo a TravelGo a usar mi celular solo para enviarme ofertas de viaje.
                     Puedo pedir que lo borren cuando quiera (Ley 1581 de 2012).</span>
             </label>
             <p class="expo-error" role="alert" aria-live="assertive"></p>
-            <button type="submit" class="expo-boton">Quiero mi postal</button>
+            <button type="submit" class="expo-boton expo-boton-secundario">Quiero las ofertas</button>
         </form>
     </section>
 
@@ -171,11 +227,13 @@
     </section>
 
     <nav class="expo-bloque expo-acciones">
-        <a class="expo-boton" th:href="@{/expo}">Lanzar otro viaje</a>
+        <a class="expo-boton" th:href="@{/expo}" th:text="${propio} ? 'Lanzar otro viaje' : 'Lanza tu propio viaje'">Lanzar otro viaje</a>
         <a class="expo-boton expo-boton-secundario" th:href="@{/catalogo}">Ver todo el catálogo de TravelGo</a>
     </nav>
 </main>
 
+<script th:src="@{/js/globo.js}" defer></script>
+<script th:src="@{/js/expo-postal.js}" defer></script>
 <script th:src="@{/js/expo-destino.js}" defer></script>
 </body>
 </html>

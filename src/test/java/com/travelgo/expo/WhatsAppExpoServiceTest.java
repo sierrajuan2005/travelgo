@@ -181,6 +181,15 @@ class WhatsAppExpoServiceTest {
         assertThat(sinCodigo.enlaceActivacion()).isEmpty();
     }
 
+    @Test
+    @DisplayName("Twilio: agrega 'join' si falta y descarta el código de ejemplo de la documentación")
+    void codigoDelSandbox() {
+        assertThat(TwilioWhatsApp.codigoValido("happy-tiger")).isEqualTo("join happy-tiger");
+        assertThat(TwilioWhatsApp.codigoValido(" join happy-tiger ")).isEqualTo("join happy-tiger");
+        assertThat(TwilioWhatsApp.codigoValido("join palabra-palabra")).isEmpty();
+        assertThat(TwilioWhatsApp.codigoValido(null)).isEmpty();
+    }
+
     /** Canal que guarda lo que "envía" en una lista. */
     private static final class CanalFalso implements CanalWhatsApp {
         record Envio(String telefono, String texto, String imagen) {

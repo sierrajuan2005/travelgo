@@ -57,6 +57,16 @@ public class LanzamientoService {
      * @throws IllegalStateException si ese celular lanzó otro viaje hace muy poco
      */
     public ViajeLanzado lanzar(String nombre, String destinoId, String sesion) {
+        return lanzar(nombre, destinoId, sesion, null);
+    }
+
+    /**
+     * Igual que {@link #lanzar(String, String, String)}, para quien llega desde la postal de otro visitante.
+     *
+     * @param invitadoPor id del viaje que le compartió la postal. Si no existe o lo ocultaron, se ignora:
+     *                    el visitante igual lanza su viaje, solo que no cuenta como invitado.
+     */
+    public ViajeLanzado lanzar(String nombre, String destinoId, String sesion, Long invitadoPor) {
         String limpio = NombreViajero.limpiar(nombre);
         DestinoSonado destino = catalogo.buscar(destinoId).orElseThrow(
                 () -> new RecursoNoEncontradoException("Ese destino no está en la lista: " + destinoId));
@@ -71,9 +81,15 @@ public class LanzamientoService {
         ultimoPorSesion.put(sesion, ahora);
         olvidarSesionesViejas(ahora);
 
+        Optional<Lanzamiento> invitador = invitadoPor == null ? Optional.empty()
+                : dao.buscar(invitadoPor).filter(l -> !l.oculto());
+        Long idInvitador = invitador.map(Lanzamiento::id).orElse(null);
+        String nombreInvitador = invitador.map(Lanzamiento::nombre).orElse(null);
+
         LocalDateTime fecha = LocalDateTime.now(reloj);
-        long id = dao.guardar(limpio, destino.id(), fecha);
-        return new ViajeLanzado(new Lanzamiento(id, limpio, destino.id(), fecha, false), destino);
+        long id = dao.guardar(limpio, destino.id(), fecha, idInvitador);
+        return new ViajeLanzado(new Lanzamiento(id, limpio, destino.id(), fecha, false, null, idInvitador,
+                nombreInvitador), destino);
     }
 
     /**
@@ -132,6 +148,10 @@ public class LanzamientoService {
 
     public void marcarVioDestino(long id) {
         dao.marcarVioDestino(id);
+    }
+
+    public void marcarCompartioPostal(long id) {
+        dao.marcarCompartioPostal(id);
     }
 
     public void marcarAbrioPaquete(long id) {

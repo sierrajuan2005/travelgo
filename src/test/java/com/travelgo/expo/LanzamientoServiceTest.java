@@ -117,7 +117,7 @@ class LanzamientoServiceTest {
     @Test
     @DisplayName("Los lanzamientos de un destino que ya no está en la lista no se pintan")
     void destinoRetiradoNoSePinta() {
-        dao.guardar("Ana", "destino-viejo", LocalDateTime.now());
+        dao.guardar("Ana", "destino-viejo", LocalDateTime.now(), null);
         service.lanzar("Luis", "tokio", "cel-1");
 
         assertThat(service.pantalla(0).viajes()).extracting(v -> v.destino().id()).containsExactly("tokio");
@@ -161,15 +161,35 @@ class LanzamientoServiceTest {
         service.lanzar("Tom", "tokio", "cel-4");
         service.marcarVioDestino(ana);
         service.marcarVioDestino(luis);
+        service.marcarCompartioPostal(luis);
         service.registrarContacto(ana, "3001234567", true);
         service.marcarAbrioPaquete(ana);
 
         LanzamientoDAO.Embudo embudo = service.embudo();
 
-        assertThat(embudo).isEqualTo(new LanzamientoDAO.Embudo(4, 2, 1, 0, 1));
+        assertThat(embudo).isEqualTo(new LanzamientoDAO.Embudo(4, 2, 1, 1, 0, 1, 0));
         assertThat(embudo.porcentaje(embudo.vieronDestino())).isEqualTo(50);
         assertThat(service.sonadoresDe("paris")).isEqualTo(2);
-        assertThat(new LanzamientoDAO.Embudo(0, 0, 0, 0, 0).porcentaje(0)).isZero();
+        assertThat(new LanzamientoDAO.Embudo(0, 0, 0, 0, 0, 0, 0).porcentaje(0)).isZero();
+    }
+
+    @Test
+    @DisplayName("Quien llega por la postal de un amigo se une a su viaje; con un enlace viejo lanza normal")
+    void unirseAlViajeDeUnAmigo() {
+        long jaime = service.lanzar("Jaime", "cancun", "cel-1").lanzamiento().id();
+
+        Lanzamiento ana = service.lanzar("Ana", "cancun", "cel-2", jaime).lanzamiento();
+        assertThat(ana.invitadoPor()).isEqualTo(jaime);
+        assertThat(ana.invitadoPorNombre()).isEqualTo("Jaime");
+        assertThat(service.pantalla(0).viajes()).extracting(v -> v.lanzamiento().invitadoPorNombre())
+                .containsExactly(null, "Jaime");
+
+        service.cambiarOculto(jaime, true);
+        Lanzamiento luis = service.lanzar("Luis", "cancun", "cel-3", jaime).lanzamiento();
+        assertThat(luis.invitadoPor()).isNull();
+        assertThat(service.lanzar("Sara", "cancun", "cel-4", 999L).lanzamiento().invitadoPor()).isNull();
+
+        assertThat(service.embudo().llegaronPorPostal()).isEqualTo(1);
     }
 
     /* ---------- dobles de prueba ---------- */
@@ -179,9 +199,10 @@ class LanzamientoServiceTest {
         final Map<Long, EnvioWhatsApp> whatsapp = new HashMap<>();
 
         @Override
-        public long guardar(String nombre, String destinoId, LocalDateTime fecha) {
+        public long guardar(String nombre, String destinoId, LocalDateTime fecha, Long invitadoPor) {
             long id = filas.size() + 1;
-            filas.add(new Lanzamiento(id, nombre, destinoId, fecha, false));
+            String invitador = invitadoPor == null ? null : buscar(invitadoPor).map(Lanzamiento::nombre).orElse(null);
+            filas.add(new Lanzamiento(id, nombre, destinoId, fecha, false, null, invitadoPor, invitador));
             return id;
         }
 
@@ -208,6 +229,7 @@ class LanzamientoServiceTest {
 
         private final Set<Long> vieron = new HashSet<>();
         private final Set<Long> abrieron = new HashSet<>();
+        private final Set<Long> compartieron = new HashSet<>();
 
         @Override
         public Optional<Lanzamiento> buscar(long id) {
@@ -222,18 +244,23 @@ class LanzamientoServiceTest {
         @Override
         public boolean cambiarOculto(long id, boolean oculto) {
             return reemplazar(id, l -> new Lanzamiento(l.id(), l.nombre(), l.destinoId(), l.fecha(), oculto,
-                    l.telefono()));
+                    l.telefono(), l.invitadoPor(), l.invitadoPorNombre()));
         }
 
         @Override
         public boolean guardarContacto(long id, String telefono, LocalDateTime fecha) {
             return reemplazar(id, l -> new Lanzamiento(l.id(), l.nombre(), l.destinoId(), l.fecha(), l.oculto(),
-                    telefono));
+                    telefono, l.invitadoPor(), l.invitadoPorNombre()));
         }
 
         @Override
         public void marcarVioDestino(long id) {
             vieron.add(id);
+        }
+
+        @Override
+        public void marcarCompartioPostal(long id) {
+            compartieron.add(id);
         }
 
         @Override
@@ -262,10 +289,12 @@ class LanzamientoServiceTest {
             List<Lanzamiento> visibles = filas.stream().filter(l -> !l.oculto()).toList();
             return new Embudo(visibles.size(),
                     visibles.stream().filter(l -> vieron.contains(l.id())).count(),
+                    visibles.stream().filter(l -> compartieron.contains(l.id())).count(),
                     visibles.stream().filter(l -> l.telefono() != null).count(),
                     visibles.stream().filter(l -> whatsapp.containsKey(l.id())
                             && List.of("ENTREGADO", "LEIDO").contains(whatsapp.get(l.id()).estado())).count(),
-                    visibles.stream().filter(l -> abrieron.contains(l.id())).count());
+                    visibles.stream().filter(l -> abrieron.contains(l.id())).count(),
+                    visibles.stream().filter(l -> l.invitadoPor() != null).count());
         }
 
         private boolean reemplazar(long id, UnaryOperator<Lanzamiento> cambio) {

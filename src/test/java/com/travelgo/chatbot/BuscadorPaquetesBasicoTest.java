@@ -65,7 +65,9 @@ class BuscadorPaquetesBasicoTest {
 	@Test
 	@DisplayName("Con un solo paquete, ese es el más barato")
 	void unSoloPaquete() {
-		when(paqueteService.buscar(null, null, null, null, null)).thenReturn(List.of(paquete(1L, "A", "100")));
+		// El paquete simulado se arma antes del when(...): crearlo dentro deja la configuración de Mockito a medias
+		List<PaqueteTuristico> uno = List.of(paquete(1L, "A", "100"));
+		when(paqueteService.buscar(null, null, null, null, null)).thenReturn(uno);
 
 		assertEquals(1, buscador.masBaratos(null).size());
 	}
