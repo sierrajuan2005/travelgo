@@ -46,6 +46,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<!-- Sprint 5: recordatorios por correo (SMTP) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
@@ -87,6 +92,13 @@
 			<scope>test</scope>
 		</dependency>
 
+
+		<!-- Código QR de la pantalla de la ExpoSoftware (com.travelgo.expo.GeneradorQr) -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.postgresql</groupId>

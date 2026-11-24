@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Pantalla grande del stand en la ExpoSoftware (Integrante 3). Ver docs/expo_lanza_tu_viaje.md.
+  Globo 3D (js/globo.js + js/expo-pantalla.js) con un avión por cada visitante que lanza su viaje desde el celular.
+  - /expo/pantalla?demo  → simula visitantes sin base de datos (para ensayar la presentación).
+  - Tecla F o el botón de abajo: pantalla completa.
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b0820">
+    <title>Lanza tu viaje | TravelGo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+    <link rel="stylesheet" th:href="@{/css/expo.css}">
+</head>
+<body class="expo expo-pantalla">
+
+<div id="expo-pantalla" class="expo-pantalla-app" th:data-api="@{/api/expo/lanzamientos}"
+     th:data-destinos="@{/api/expo/destinos}">
+    <canvas class="expo-escena" aria-hidden="true"></canvas>
+
+    <aside class="expo-panel">
+        <header class="expo-cel-marca">
+            <span class="expo-logo-icono" aria-hidden="true">
+                <svg viewBox="-56 -48 112 96"><path d="M54 0L50-3.5L43-6L14-6L-6-44L-17-44L-5-6L-35-6L-45-19L-52-19L-47-4L-51 0L-47 4L-52 19L-45 19L-35 6L-5 6L-17 44L-6 44L14 6L43 6L50 3.5Z"/></svg>
+            </span>
+            TravelGo
+        </header>
+
+        <h1 class="expo-titulo expo-panel-titulo">Lanza tu viaje <em>desde Valledupar</em></h1>
+
+        <div class="expo-qr">
+            <img th:src="@{/expo/qr.svg}" alt="Código QR para lanzar tu viaje desde el celular" width="220" height="220">
+            <div>
+                <p class="expo-qr-paso"><b>1</b> Escanea con la cámara</p>
+                <p class="expo-qr-paso"><b>2</b> Escribe tu nombre</p>
+                <p class="expo-qr-paso"><b>3</b> Elige tu destino soñado</p>
+                <p class="expo-qr-url" th:text="${urlTelefono}">http://192.168.1.20:8080/expo</p>
+            </div>
+        </div>
+        <p class="expo-alerta" th:if="${soloRedLocal}">
+            Este QR solo funciona en el WiFi del portátil. Para que entre cualquier celular: menú
+            <b>QR Expo</b> → pega la dirección del túnel.
+        </p>
+
+        <div class="expo-contador">
+            <span class="expo-contador-numero" data-campo="total">0</span>
+            <span class="expo-contador-texto">viajes lanzados<br>en la ExpoSoftware</span>
+        </div>
+
+        <div class="expo-ranking">
+            <p class="expo-eyebrow">Los destinos más soñados</p>
+            <ol data-campo="ranking"></ol>
+        </div>
+    </aside>
+
+    <ul class="expo-avisos" aria-live="polite"></ul>
+    <p class="expo-estado" data-campo="estado" hidden>Reconectando…</p>
+    <button type="button" class="expo-completa" data-accion="completa">Pantalla completa (F)</button>
+</div>
+
+<script th:src="@{/js/globo.js}" defer></script>
+<script th:src="@{/js/expo-pantalla.js}" defer></script>
+</body>
+</html>
