@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administración · Estado de las APIs')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/estado.css}">
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+  <section th:replace="~{fragments/layout :: adminEncabezado('estado')}"></section>
+
+  <!-- Panel de salud de las APIs (idea 5, Integrante 3). Ver docs/estado_apis.md.
+       js/estado.js pinta las tarjetas con el JSON de /admin/estado/datos y lo vuelve a pedir cada 3 s. -->
+  <div class="container tg-sube" id="tg-estado"
+       th:data-datos="@{/admin/estado/datos}"
+       th:data-base="@{/admin/estado/}"
+       th:data-csrf-header="${_csrf?.headerName}"
+       th:data-csrf-token="${_csrf?.token}">
+
+    <div class="card tg-card p-3 p-md-4 mb-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+        <div>
+          <h2 class="h5 mb-1">TravelGo depende de <span data-campo="cuantas" th:text="${#lists.size(datos.fuentes())}">8</span> APIs externas</h2>
+          <p class="text-muted small mb-0" style="max-width: 46rem;">
+            Cada tarjeta mide las consultas <b>reales</b> que hace la app (no hay pruebas automáticas que gasten
+            cuota). <b>Probar ahora</b> hace una consulta pequeña. <b>Simular caída</b> hace que esa API falle
+            como si no hubiera internet, para ver en vivo cómo se defiende la app (cachés, avisos y planes B).
+          </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-start">
+          <button type="button" class="btn btn-outline-secondary" data-accion="probar-todas">
+            <i class="bi bi-arrow-repeat"></i> Probar todas</button>
+          <button type="button" class="btn" data-accion="sin-internet"
+                  th:classappend="${datos.sinInternet()} ? 'btn-danger' : 'btn-outline-danger'">
+            <i class="bi bi-wifi-off"></i>
+            <span th:text="${datos.sinInternet()} ? 'Volver a conectar todo' : 'Simular sin internet'">Simular sin internet</span>
+          </button>
+        </div>
+      </div>
+      <p class="tg-estado-alerta mt-3 mb-0" data-campo="alerta-sin-internet" th:hidden="${!datos.sinInternet()}">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Simulando <b>sin internet</b>: todas las APIs fallan. Abre el catálogo o el mapa en otra pestaña para ver
+        cómo responde la app. Vuelve a conectar al terminar.
+      </p>
+    </div>
+
+    <p class="tg-estado-leyenda small text-muted">
+      <span><i class="tg-estado-muestra" data-resultado="OK"></i> respondió</span>
+      <span><i class="tg-estado-muestra" data-resultado="VACIA"></i> sin resultados</span>
+      <span><i class="tg-estado-muestra" data-resultado="ERROR"></i> falló</span>
+      <span><i class="tg-estado-muestra" data-resultado="SIMULADA"></i> caída simulada</span>
+      <span><i class="tg-estado-muestra" data-resultado="CACHE"></i> desde su caché</span>
+      · cada barra es una llamada (alto = cuánto tardó)
+    </p>
+
+    <div class="row g-3" data-campo="tarjetas">
+      <!-- Las pinta estado.js; esto se ve si JavaScript no carga -->
+      <div class="col-md-6 col-xl-4" th:each="f : ${datos.fuentes()}">
+        <div class="card tg-card h-100 p-3">
+          <h3 class="h6 mb-1" th:text="${f.nombre()}">Open-Meteo · clima</h3>
+          <p class="small text-muted mb-0" th:text="${f.semaforo()}">VERDE</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="small text-muted mt-3">
+      Datos desde que arrancó la app (en memoria). Se actualiza solo cada 3 segundos.
+    </p>
+  </div>
+</main>
+
+<!-- Tarjeta de una API (la copia estado.js) -->
+<template id="tg-estado-tarjeta">
+  <div class="col-md-6 col-xl-4">
+    <article class="card tg-card h-100 p-3 tg-estado-tarjeta">
+      <header class="d-flex justify-content-between align-items-start gap-2 mb-2">
+        <div>
+          <h3 class="h6 mb-0" data-campo="nombre">Open-Meteo · clima</h3>
+          <p class="small text-muted mb-0" data-campo="para">Clima de cada destino</p>
+        </div>
+        <span class="tg-estado-pill" data-campo="semaforo"><i class="bi"></i> <span>Bien</span></span>
+      </header>
+
+      <div class="d-flex align-items-end justify-content-between gap-3 my-2">
+        <div>
+          <div class="tg-estado-cifra"><span data-campo="ms">—</span><small> ms</small></div>
+          <div class="small text-muted" data-campo="detalle">sin llamadas todavía</div>
+        </div>
+        <svg class="tg-estado-grafico" data-campo="grafico" viewBox="0 0 160 48" role="img"
+             aria-label="Últimas llamadas"></svg>
+      </div>
+
+      <p class="small mb-2 tg-estado-error" data-campo="error" hidden></p>
+
+      <details class="small mb-2">
+        <summary class="text-muted">Si se cae, ¿qué hace TravelGo?</summary>
+        <p class="mb-1 mt-2" data-campo="si-falla"></p>
+        <p class="mb-0 text-muted" data-campo="cuota"></p>
+      </details>
+
+      <footer class="d-flex gap-2 mt-auto pt-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-accion="probar">
+          <i class="bi bi-play"></i> Probar ahora</button>
+        <button type="button" class="btn btn-sm" data-accion="caida"></button>
+      </footer>
+    </article>
+  </div>
+</template>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/estado.js}" defer></script>
+</body>
+</html>

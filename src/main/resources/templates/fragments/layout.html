@@ -109,7 +109,8 @@
             th:text="${activa == 'destinos'} ? 'Destinos' : (${activa == 'paquetes'} ? 'Paquetes turísticos'
                 : (${activa == 'constructor'} ? 'Constructor de paquetes'
                 : (${activa == 'recordatorios'} ? 'Recordatorios'
-                : (${activa == 'expo'} ? 'Lanza tu viaje (ExpoSoftware)' : 'Servicios reservables'))))">Destinos</h1>
+                : (${activa == 'expo'} ? 'Lanza tu viaje (ExpoSoftware)'
+                : (${activa == 'estado'} ? 'Estado de las APIs' : 'Servicios reservables')))))">Destinos</h1>
         <ul class="tg-admin-tabs">
             <li><a class="nav-link" th:classappend="${activa == 'destinos'} ? 'active'" th:href="@{/admin/destinos}">
                 <i class="bi bi-geo-alt"></i> Destinos</a></li>
@@ -123,6 +124,8 @@
                 <i class="bi bi-bell"></i> Recordatorios</a></li>
             <li><a class="nav-link" th:classappend="${activa == 'expo'} ? 'active'" th:href="@{/admin/expo}">
                 <i class="bi bi-globe-americas"></i> Expo</a></li>
+            <li><a class="nav-link" th:classappend="${activa == 'estado'} ? 'active'" th:href="@{/admin/estado}">
+                <i class="bi bi-activity"></i> Estado APIs</a></li>
         </ul>
     </div>
 </section>
