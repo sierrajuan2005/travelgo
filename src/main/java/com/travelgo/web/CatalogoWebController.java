@@ -2,7 +2,9 @@ package com.travelgo.web;
 
 import com.travelgo.util.Textos;
 import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.Actividad;
 import com.travelgo.model.Destino;
+import com.travelgo.model.Gusto;
 import com.travelgo.model.PaqueteTuristico;
 import com.travelgo.model.ServicioReservable;
 import com.travelgo.proveedor.destinos.Consulta;
@@ -10,6 +12,7 @@ import com.travelgo.proveedor.destinos.FotoDestino;
 import com.travelgo.service.ConstructorPaqueteService;
 import com.travelgo.service.InfoDestinoService;
 import com.travelgo.service.PaqueteService;
+import com.travelgo.service.ViajerosService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,13 +40,15 @@ public class CatalogoWebController {
 	private final InfoDestinoService infoDestinoService;
 	private final FormatoWeb formato;
 	private final ConstructorPaqueteService constructorPaquete;
+	private final ViajerosService viajerosService;
 
 	public CatalogoWebController(PaqueteService paqueteService, InfoDestinoService infoDestinoService,
-			FormatoWeb formato, ConstructorPaqueteService constructorPaquete) {
+			FormatoWeb formato, ConstructorPaqueteService constructorPaquete, ViajerosService viajerosService) {
 		this.paqueteService = paqueteService;
 		this.infoDestinoService = infoDestinoService;
 		this.formato = formato;
 		this.constructorPaquete = constructorPaquete;
+		this.viajerosService = viajerosService;
 	}
 
 	/**
@@ -98,6 +103,12 @@ public class CatalogoWebController {
 		model.addAttribute("info", principal == null ? null : infoDestinoService.consultar(principal));
 		model.addAttribute("incluidos", constructorPaquete.serviciosDe(paquete.getId()).stream()
 			.map(Incluido::de).toList());
+		// Actividades pagas por gusto: cada viajero elige las suyas al reservar
+		Map<Gusto, List<Actividad>> porGusto = new java.util.LinkedHashMap<>();
+		for (Actividad actividad : viajerosService.actividadesDe(paquete)) {
+			porGusto.computeIfAbsent(actividad.gusto(), g -> new java.util.ArrayList<>()).add(actividad);
+		}
+		model.addAttribute("actividadesPorGusto", porGusto);
 		return "catalogo/detalle";
 	}
 

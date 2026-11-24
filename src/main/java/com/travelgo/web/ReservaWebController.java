@@ -3,6 +3,7 @@ package com.travelgo.web;
 import com.travelgo.dto.PagoRequest;
 import com.travelgo.dto.ReservaRequest;
 import com.travelgo.exception.RecursoNoEncontradoException;
+import com.travelgo.model.Actividad;
 import com.travelgo.model.EstadoFactura;
 import com.travelgo.model.Factura;
 import com.travelgo.model.MetodoPago;
@@ -12,6 +13,7 @@ import com.travelgo.model.Reserva;
 import com.travelgo.model.RolUsuario;
 import com.travelgo.model.ServicioReservable;
 import com.travelgo.model.Usuario;
+import com.travelgo.model.Viajero;
 import com.travelgo.service.ConstructorPaqueteService;
 import com.travelgo.service.FacturaService;
 import com.travelgo.service.PagoService;
@@ -81,7 +83,7 @@ public class ReservaWebController {
 
 	/** Una fila de la tabla de reservas. */
 	public record FilaReserva(String id, String idCorto, String paquete, String cliente, double total,
-							  String estado, boolean pagada) {
+							  String estado, boolean pagada, int viajeros) {
 	}
 
 	/** Una línea del detalle de pago o de la factura. */
@@ -137,12 +139,13 @@ public class ReservaWebController {
 			Reserva reserva = reservaService.crearReserva(new ReservaRequest(serviciosIds, paqueteId),
 					autenticacion.getName());
 			redirect.addFlashAttribute("mensaje", "Reserva " + FormatoWeb.idCorto(reserva.getId())
-					+ " guardada (" + reserva.getEstado() + "). Ya puedes pagarla.");
+					+ " guardada. Ahora cuéntanos quiénes viajan y qué le gusta a cada uno.");
+			// Paso nuevo: viajeros, gustos y actividades (ViajerosWebController)
+			return "redirect:/reservas/" + reserva.getId() + "/viajeros";
 		} catch (IllegalArgumentException | IllegalStateException | RecursoNoEncontradoException e) {
 			redirect.addFlashAttribute("error", "No se pudo guardar la reserva: " + e.getMessage());
 			return "redirect:/reserva?paquete=" + paqueteId;
 		}
-		return "redirect:/reservas";
 	}
 
 	/**
@@ -162,7 +165,8 @@ public class ReservaWebController {
 		List<FilaReserva> filas = reservas.stream()
 				.sorted(Comparator.comparing(Reserva::getFechaReserva).reversed())
 				.map(r -> new FilaReserva(r.getId(), FormatoWeb.idCorto(r.getId()), FormatoWeb.nombrePaquete(r),
-						r.getUsuario().getNombre(), r.getTotal(), r.getEstado(), pagadas.contains(r.getId())))
+						r.getUsuario().getNombre(), r.getTotal(), r.getEstado(), pagadas.contains(r.getId()),
+						r.getViajeros().size()))
 				.toList();
 		model.addAttribute("reservas", filas);
 		model.addAttribute("esAgente", esAgente);
@@ -289,10 +293,17 @@ public class ReservaWebController {
 		}
 	}
 
+	/** Servicios y luego las actividades pagas de cada viajero ("Noche de bares · Ana"). */
 	private List<LineaFactura> lineas(Reserva reserva) {
-		return reserva.getServicios().stream()
+		List<LineaFactura> lineas = new ArrayList<>(reserva.getServicios().stream()
 				.map(servicio -> new LineaFactura(FormatoWeb.describir(servicio), servicio.calcularCosto()))
-				.toList();
+				.toList());
+		for (Viajero viajero : reserva.getViajeros()) {
+			for (Actividad actividad : viajero.getActividades()) {
+				lineas.add(new LineaFactura(actividad.nombre() + " · " + viajero.getNombre(), actividad.precio()));
+			}
+		}
+		return lineas;
 	}
 
 	private Map<MetodoPago, String> metodosDePago() {

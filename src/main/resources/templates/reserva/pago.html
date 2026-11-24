@@ -16,6 +16,7 @@
         <h1 class="h2 mb-1">Pagar la reserva <code th:text="${idCorto}">abcd1234</code></h1>
         <ol class="tg-pasos">
             <li class="hecho"><span>Elegir servicios</span></li>
+            <li class="hecho"><span>Viajeros y gustos</span></li>
             <li class="actual"><span>Pagar</span></li>
             <li><span>Factura</span></li>
         </ol>
@@ -33,8 +34,20 @@
                     <div class="card-body p-4">
                         <h2 class="h5 mb-3"><span class="tg-seccion-icono"><i class="bi bi-list-check"></i></span> Detalle</h2>
                         <p class="mb-1"><span class="text-muted">Paquete:</span> <span th:text="${paquete}">Paquete</span></p>
-                        <p class="mb-3"><span class="text-muted">Cliente:</span>
+                        <p class="mb-1"><span class="text-muted">Cliente:</span>
                             <span th:text="${reserva.usuario.nombre + ' - ' + reserva.usuario.correo}">Cliente</span></p>
+                        <!-- Viajeros con sus gustos (ViajerosWebController); sus actividades salen abajo como líneas -->
+                        <p class="mb-3">
+                            <span class="text-muted">Viajeros:</span>
+                            <span th:if="${#lists.isEmpty(reserva.viajeros)}" class="text-muted">sin registrar</span>
+                            <span th:each="v, e : ${reserva.viajeros}" th:text="${v.nombre + (e.last ? '' : ', ')}">Ana</span>
+                            ·
+                            <a th:href="@{/reservas/{id}/viajeros(id=${reserva.id})}"
+                               th:text="${#lists.isEmpty(reserva.viajeros) ? 'Agregar viajeros y gustos' : 'Cambiar'}">Cambiar</a>
+                            <th:block th:unless="${#lists.isEmpty(reserva.viajeros)}">
+                                · <a th:href="@{/reservas/{id}/plan(id=${reserva.id})}">Ver el plan</a>
+                            </th:block>
+                        </p>
                         <p th:if="${#lists.isEmpty(lineas)}" class="text-muted mb-0">
                             Esta reserva no tiene servicios, así que no se puede pagar.
                         </p>
@@ -92,9 +105,10 @@
                         <button type="submit" class="btn btn-tg-acento btn-lg w-100">
                             <i class="bi bi-lock-fill"></i> Pagar ahora
                         </button>
-                        <!-- Quitar este aviso cuando Reserva.calcularTotal() sume también el precio del paquete -->
+                        <!-- Quitar la segunda frase cuando Reserva.calcularTotal() sume también el precio del paquete -->
                         <p class="text-muted small mt-2 mb-0">
-                            Por ahora el total solo suma los servicios, no el precio del paquete.
+                            El total suma los servicios y las actividades de los viajeros.
+                            Por ahora no suma el precio del paquete.
                         </p>
                     </div>
                 </div>
