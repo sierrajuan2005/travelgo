@@ -94,9 +94,11 @@ class GeoapifyProveedorLugaresTest {
     }
 
     @Test
-    @DisplayName("La categoría de hoteles no se consulta en Geoapify")
-    void hotelNoVaPorGeoapify() {
-        assertThrows(IllegalArgumentException.class,
+    @DisplayName("Los hoteles pueden consultarse en Geoapify como alternativa")
+    void hotelAlternativo() {
+        servidor.expect(requestTo(containsString("categories=accommodation.hotel")))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+        assertThrows(ProveedorNoDisponibleException.class,
                 () -> new GeoapifyProveedorLugares(cliente, LLAVE)
                         .buscar(CategoriaMapa.HOTEL, 10.39, -75.47, 3000, 20));
     }

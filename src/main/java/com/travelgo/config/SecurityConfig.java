@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .requestMatchers("/expo", "/expo/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/expo/destinos", "/api/expo/lanzamientos").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/expo/lanzamientos", "/api/expo/lanzamientos/*/contacto",
-                        "/api/expo/lanzamientos/*/whatsapp").permitAll()
+                        "/api/expo/lanzamientos/*/whatsapp", "/api/expo/lanzamientos/*/compartio").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/expo/lanzamientos/*/whatsapp").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/api/expo/lanzamientos/*/contacto").permitAll()
                 .requestMatchers("/api/expo/**").denyAll()

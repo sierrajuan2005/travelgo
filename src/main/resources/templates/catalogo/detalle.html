@@ -94,7 +94,7 @@
 
                 <!-- Mapa interactivo del destino: el hotel del paquete aparece destacado -->
                 <th:block th:if="${destino != null}">
-                    <div th:replace="~{fragments/mapa :: explorador(${destino.ciudad}, ${paquete.id})}"></div>
+                    <div th:replace="~{fragments/mapa :: explorador(${destino.ciudad}, ${paquete.id}, ${destino.id})}"></div>
                 </th:block>
 
                 <!-- Atracciones reales cerca del centro (OpenTripMap o Wikipedia), sin enlaces -->

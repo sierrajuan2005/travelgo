@@ -7,8 +7,12 @@ import java.util.Optional;
 /** Acceso a los viajes lanzados en la ExpoSoftware. */
 public interface LanzamientoDAO {
 
-    /** Guarda un lanzamiento visible y devuelve su id (creciente: la pantalla pide "los nuevos desde el id X"). */
-    long guardar(String nombre, String destinoId, LocalDateTime fecha);
+    /**
+     * Guarda un lanzamiento visible y devuelve su id (creciente: la pantalla pide "los nuevos desde el id X").
+     *
+     * @param invitadoPor id del viaje que le compartió la postal; null si llegó por el QR del stand
+     */
+    long guardar(String nombre, String destinoId, LocalDateTime fecha, Long invitadoPor);
 
     Optional<Lanzamiento> buscar(long id);
 
@@ -35,6 +39,9 @@ public interface LanzamientoDAO {
     /** El visitante abrió la página de su destino. */
     void marcarVioDestino(long id);
 
+    /** El visitante compartió (o descargó) su postal. */
+    void marcarCompartioPostal(long id);
+
     /** El visitante abrió un paquete desde la página de su destino. */
     void marcarAbrioPaquete(long id);
 
@@ -54,11 +61,12 @@ public interface LanzamientoDAO {
     }
 
     /**
-     * Embudo de conversión del stand: lanzaron un viaje → vieron su destino → dejaron su celular →
-     * recibieron su viaje por WhatsApp → abrieron un paquete de TravelGo.
+     * Embudo de conversión del stand: lanzaron un viaje → vieron su destino → compartieron su postal →
+     * dejaron su celular → recibieron su viaje por WhatsApp → abrieron un paquete de TravelGo.
+     * {@code llegaronPorPostal}: cuántos lanzaron su viaje desde la postal que les compartió otro visitante.
      */
-    record Embudo(long lanzaron, long vieronDestino, long dejaronContacto, long recibieronWhatsApp,
-                  long abrieronPaquete) {
+    record Embudo(long lanzaron, long vieronDestino, long compartieronPostal, long dejaronContacto,
+                  long recibieronWhatsApp, long abrieronPaquete, long llegaronPorPostal) {
 
         /** Porcentaje de {@code parte} sobre los que lanzaron (0 si nadie ha lanzado). */
         public int porcentaje(long parte) {

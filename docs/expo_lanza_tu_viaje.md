@@ -15,10 +15,22 @@ El recorrido acompaña al visitante de principio a fin:
 5. **Venta:** si TravelGo vende ese destino (Cartagena, Bogotá, Cusco, Cancún), ve los paquetes con precio y
    entra a reservar. Si no, ve cuántas personas sueñan con ese destino hoy (los más soñados son los próximos
    paquetes que se arman).
-6. **Contacto:** deja su celular (WhatsApp) para recibir su postal del viaje y ofertas, con autorización
-   explícita (Ley 1581 de 2012) y un botón para borrarlo.
-7. **Administración:** embudo del stand en vivo (lanzaron → vieron su destino → dejaron su celular → abrieron
-   un paquete), contactos con enlace directo a WhatsApp y moderación de nombres.
+6. **Postal:** el celular dibuja una postal con la foto del destino, su nombre en un pase de abordar, un mini
+   globo con su ruta y un sello de la ExpoSoftware. **"Compartir en WhatsApp"** la envía con el menú de
+   compartir del celular a su propio chat o al de un amigo: gratis, sin límites y sin proveedor.
+7. **Invitación:** quien abre el enlace de la postal ve **otra página**: "Jaime te invita a París", con el
+   destino real, los paquetes para reservar y **"Únete al viaje de Jaime"**. Ese botón abre `/expo` con el
+   destino ya elegido (`?destino=paris&con=12`); su avión sale en la pantalla con el aviso "Ana se unió al
+   viaje de Jaime a París", y después recibe su propia postal para compartir (el ciclo se repite).
+8. **Contacto por WhatsApp (opcional):** solo aparece si el WhatsApp automático (Twilio) está configurado.
+   Con autorización explícita (Ley 1581 de 2012) y un botón para borrarlo.
+9. **Administración:** embudo del stand en vivo (lanzaron → vieron su destino → compartieron su postal →
+   **llegaron por una postal** → abrieron un paquete; y, con WhatsApp encendido, dejaron su celular →
+   recibieron WhatsApp), contactos y moderación de nombres.
+
+**Quién ve qué en `/expo/viaje/{id}`:** la sesión recuerda qué viajes lanzó ese celular (`SesionExpo`).
+El dueño del viaje ve "aterrizaste en", su postal y (si hay WhatsApp) el contacto. Cualquier otra persona ve la
+invitación, sin postal ni contacto. Solo las visitas del dueño cuentan en el embudo.
 
 ## Páginas y API
 
@@ -56,7 +68,29 @@ una torre de control (`expo-pantalla.js`):
 - **Tráfico de fondo:** solo cuando no hay nadie esperando, sin nombres, más pequeño y tenue.
 - Probar el peor caso: `/expo/pantalla?demo&rafaga` (30–40 lanzamientos cada 20 s).
 
-## WhatsApp
+## Postal del viaje (compartir a WhatsApp)
+
+Es la forma **gratis y sin límites** de que el viaje llegue a WhatsApp: no lo envía un proveedor, lo comparte
+la persona desde su celular (`static/js/expo-postal.js`).
+
+- Se dibuja en el celular con `<canvas>` (1080 × 1350): foto del destino, "Saludos desde París", pase de
+  abordar (nombre, VUP → CDG, distancia, clima de hoy), mini globo con la ruta (`globo.js`) y sello de la expo.
+- La foto llega por `/expo/viaje/{id}/foto` (`FotosPostal`): servida desde TravelGo, el navegador deja exportar
+  el canvas como imagen. La URL siempre sale de Wikipedia (servidor), nunca del navegador. Cada foto se
+  descarga una vez y queda en memoria (son 22 destinos).
+- Lleva el crédito de la foto (autor y licencia): la licencia CC BY de Wikimedia lo exige.
+- **Compartir en WhatsApp** usa el menú de compartir del celular (Web Share API con el archivo y un texto con
+  el enlace de su destino). Si el navegador no deja compartir archivos (por ejemplo en el computador), se
+  descarga la postal y se abre WhatsApp con el enlace (`wa.me/?text=...`).
+- El enlace que va en el texto es la dirección pública (la del túnel): quien lo abre ve el destino y puede
+  lanzar su propio viaje.
+- Cuenta en el embudo como "compartieron su postal" (`POST /api/expo/lanzamientos/{id}/compartio`, solo el
+  celular que lanzó el viaje).
+
+## WhatsApp automático (Twilio)
+
+> Con la cuenta gratis de Twilio **solo sirve para la demo con un celular**: la consola nueva ("Try out
+> WhatsApp") deja un solo número de prueba activo a la vez. Para el público se usa la postal.
 
 WhatsApp no deja que una empresa le escriba primero a una persona (anti-spam). La persona tiene que escribirle
 al número de la empresa; desde ese momento hay 24 horas para responderle con mensajes libres (texto e imagen).
@@ -64,8 +98,8 @@ al número de la empresa; desde ese momento hay 24 horas para responderle con me
 Para la expo se usa el **sandbox de WhatsApp de Twilio** (gratis, funciona con la cuenta de prueba):
 
 1. En la página de su destino, el visitante deja su celular y marca la autorización.
-2. Toca **Activar WhatsApp**: se abre WhatsApp con "join palabra-palabra" ya escrito para el número del
-   sandbox (+1 415 523 8886). Lo envía (solo una vez; dura 3 días).
+2. Toca **Activar WhatsApp**: se abre WhatsApp con el código de activación ya escrito para el número del
+   sandbox de la cuenta. Lo envía (solo una vez; dura 3 días).
 3. Al volver al navegador, TravelGo le envía solo su viaje: foto del destino, clima de hoy, paquetes con
    precio y enlace, y el enlace a su página. La página muestra el estado real: enviando → entregado.
    Si envió antes de que WhatsApp registrara la activación, se reintenta solo.
@@ -75,8 +109,8 @@ Configuración (variables de entorno, en la misma terminal donde se arranca la a
 | Variable | Valor |
 |---|---|
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Las mismas del SMS (consola de Twilio) |
-| `TRAVELGO_WHATSAPP_CODIGO` | El código del sandbox tal como sale en la consola: `join palabra-palabra` |
-| `TRAVELGO_WHATSAPP_NUMERO` | Opcional. Por defecto el del sandbox, `+14155238886` |
+| `TRAVELGO_WHATSAPP_CODIGO` | El código **real** del sandbox, tal como sale en la consola de Twilio (Messaging → Try it out → Send a WhatsApp message), por ejemplo `join happy-tiger`. Cada cuenta tiene el suyo |
+| `TRAVELGO_WHATSAPP_NUMERO` | El número que muestra la consola de Twilio (en la consola nueva, por ejemplo `+17372212163`). Si no se pone, se usa el del sandbox antiguo, `+14155238886`, que solo tienen las cuentas pagas |
 
 Sin estas variables la app funciona igual: el visitante puede dejar su celular, pero no recibe nada, y
 `/admin/expo` muestra el aviso "WhatsApp desactivado".
