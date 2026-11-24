@@ -13,3 +13,19 @@
 .tgm-popup p { margin: 2px 0; font-size: .85rem; }
 .tgm-popup button { margin-top: 6px; }
 .tgm-tu-hotel { color: #5a3df0; font-weight: 600; }
+.tgm-chips { display: grid; gap: 8px; }
+.tgm-chips details { border: 1px solid #ddd; border-radius: 8px; padding: 8px; }
+.tgm-chips summary { font-weight: 600; cursor: pointer; }
+.tgm-chips .tgm-chip { margin: 4px; }
+.tgm-controles { display: flex; flex-wrap: wrap; gap: 12px; }
+.tgm-controles label { flex: 1 1 160px; }
+.tgm-cluster { border: 2px solid white; border-radius: 50%; width: 36px; height: 36px; background: #243b70; color: white; font-weight: bold; box-shadow: 0 1px 5px #555; cursor: pointer; }
+
+.tgm-barra { display:flex; gap:8px; align-items:center; }
+.tgm-barra input { min-width:0; flex:1; }
+.tgm-barra button { white-space:nowrap; }
+.tgm-rapidos { display:flex; gap:6px; flex-wrap:wrap; }
+.tgm-rapidos .tgm-chip { font-size:.8rem; padding:4px 10px; }
+[data-tgm="panel"] { max-height:320px; overflow:auto; padding:8px; border:1px solid #ddd; border-radius:10px; margin-bottom:8px; }
+[data-tgm="panel"][hidden] { display:none !important; }
+.tgm-lienzo:fullscreen { width:100% !important; height:100% !important; border-radius:0; }
